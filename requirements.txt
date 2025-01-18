@@ -9,3 +9,4 @@ python-dotenv==1.0.0
 gunicorn==21.2.0
 requests==2.31.0
 mailersend==0.5.6
+postmarker==1.0
