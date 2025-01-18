@@ -4,9 +4,11 @@ from models import User
 from config import Config
 from backup import create_backup
 from werkzeug.serving import is_running_from_reloader
+import os
 
 def before_reload():
-    if not is_running_from_reloader():
+    # Skip backup in production
+    if not os.environ.get('VERCEL'):
         create_backup()
 
 before_reload()

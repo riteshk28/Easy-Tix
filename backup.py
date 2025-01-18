@@ -3,21 +3,29 @@ from datetime import datetime
 import os
 
 def create_backup():
-    # Create backups directory if it doesn't exist
-    if not os.path.exists('backups'):
-        os.makedirs('backups')
-    
-    # Create timestamp for backup name
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    backup_dir = f'backups/backup_{timestamp}'
-    
-    # Create backup
-    shutil.copytree('.', backup_dir, ignore=shutil.ignore_patterns(
-        'backups*', '__pycache__*', '*.pyc', 'venv*', '.git*'
-    ))
-    
-    print(f"Backup created: {backup_dir}")
-    return backup_dir
+    # Skip backup creation on Vercel
+    if os.environ.get('VERCEL'):
+        return
+        
+    try:
+        if not os.path.exists('backups'):
+            os.makedirs('backups')
+        
+        # Create timestamp for backup name
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_dir = f'backups/backup_{timestamp}'
+        
+        # Create backup
+        shutil.copytree('.', backup_dir, ignore=shutil.ignore_patterns(
+            'backups*', '__pycache__*', '*.pyc', 'venv*', '.git*'
+        ))
+        
+        print(f"Backup created: {backup_dir}")
+        return backup_dir
+    except Exception as e:
+        print(f"Backup failed: {str(e)}")
+        # Continue execution even if backup fails
+        pass
 
 def restore_backup(backup_dir):
     """Restore from a specific backup directory"""
