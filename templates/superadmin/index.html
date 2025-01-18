@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Super Admin - Tenants{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Tenant Management</h2>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Company Name</th>
+                        <th>Subscription Plan</th>
+                        <th>Users</th>
+                        <th>Tickets</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tenant in tenants %}
+                    <tr>
+                        <td>{{ tenant.name }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('superadmin.update_tenant', tenant_id=tenant.id) }}" class="d-flex gap-2">
+                                <select name="subscription_plan" class="form-select form-select-sm" style="width: 150px;">
+                                    <option value="free" {% if tenant.subscription_plan == 'free' %}selected{% endif %}>Free</option>
+                                    <option value="pro" {% if tenant.subscription_plan == 'pro' %}selected{% endif %}>Pro</option>
+                                    <option value="enterprise" {% if tenant.subscription_plan == 'enterprise' %}selected{% endif %}>Enterprise</option>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary">Update</button>
+                            </form>
+                        </td>
+                        <td>{{ tenant.users|length }}</td>
+                        <td>{{ tenant.ticket_count }}</td>
+                        <td>{{ tenant.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <a href="{{ url_for('superadmin.view_tenant', tenant_id=tenant.id) }}" 
+                               class="btn btn-sm btn-info">View Details</a>
+                            <button class="btn btn-sm btn-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteTenantModal{{ tenant.id }}">
+                                Delete
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- Delete Tenant Modal -->
+                    <div class="modal fade" id="deleteTenantModal{{ tenant.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Delete Tenant</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Are you sure you want to delete {{ tenant.name }}? This will delete all associated users and data.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <form action="{{ url_for('superadmin.delete_tenant', tenant_id=tenant.id) }}" 
+                                          method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 

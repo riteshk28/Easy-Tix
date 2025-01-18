@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5>Email Integration Settings</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label>Support Email Address</label>
+                <input type="email" name="email_address" class="form-control" 
+                       value="{{ config.email_address if config else '' }}" required>
+            </div>
+            
+            <div class="mb-3">
+                <label>IMAP Server</label>
+                <input type="text" name="imap_server" class="form-control" 
+                       value="{{ config.imap_server if config else '' }}" required>
+            </div>
+            
+            <!-- Add other fields -->
+            
+            <button type="submit" class="btn btn-primary">Save Configuration</button>
+        </form>
+    </div>
+</div>
+{% endblock %} 

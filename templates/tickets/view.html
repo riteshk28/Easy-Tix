@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket: {{ ticket.title }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('tickets.index') }}" class="btn btn-secondary">← Back to Tickets</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-muted">#{{ ticket.ticket_number }}</span>
+                <h4 class="mb-0 d-inline-block ms-2">{{ ticket.title }}</h4>
+            </div>
+            <span class="badge bg-{{ ticket.status }}">{{ ticket.status }}</span>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <p><strong>Created by:</strong> 
+                    {% if ticket.source == 'email' %}
+                        {{ ticket.contact_name }}
+                        <span class="text-muted">&lt;{{ ticket.contact_email }}&gt;</span>
+                    {% elif ticket.created_by %}
+                        {{ ticket.created_by.first_name }} {{ ticket.created_by.last_name }}
+                    {% else %}
+                        {{ ticket.contact_email }}
+                    {% endif %}
+                </p>
+                <p><strong>Source:</strong> {{ ticket.source|title }}</p>
+                <p><strong>Created at:</strong> {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p><strong>Priority:</strong> {{ ticket.priority }}</p>
+            </div>
+            <div class="col-md-6">
+                <form method="POST" action="{{ url_for('tickets.update', ticket_id=ticket.id) }}" class="mb-3">
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select" onchange="this.form.submit()">
+                            <option value="open" {% if ticket.status == 'open' %}selected{% endif %}>Open</option>
+                            <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                            <option value="on_hold" {% if ticket.status == 'on_hold' %}selected{% endif %}>On Hold</option>
+                            <option value="closed" {% if ticket.status == 'closed' %}selected{% endif %}>Closed</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Priority</label>
+                        <select name="priority" class="form-select" onchange="this.form.submit()">
+                            <option value="low" {% if ticket.priority == 'low' %}selected{% endif %}>Low</option>
+                            <option value="medium" {% if ticket.priority == 'medium' %}selected{% endif %}>Medium</option>
+                            <option value="high" {% if ticket.priority == 'high' %}selected{% endif %}>High</option>
+                        </select>
+                    </div>
+                </form>
+                <form method="POST" action="{{ url_for('tickets.update', ticket_id=ticket.id) }}">
+                    <div class="mb-3">
+                        <label class="form-label">Assigned To</label>
+                        <select name="assigned_to_id" class="form-select" onchange="this.form.submit()">
+                            <option value="">Unassigned</option>
+                            {% for agent in agents %}
+                            <option value="{{ agent.id }}" {% if ticket.assigned_to_id == agent.id %}selected{% endif %}>
+                                {{ agent.first_name }} {{ agent.last_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Description</h5>
+            </div>
+            <div class="card-body">
+                <div class="email-content">
+                    {% if ticket.source == 'email' %}
+                        <div class="email-body">
+                            {% for line in ticket.description.split('\n') %}
+                                {% if line.strip() %}
+                                    <p class="mb-2">{{ line }}</p>
+                                {% else %}
+                                    <div class="spacer"></div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {{ ticket.description|safe }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Comments</h5>
+            </div>
+            <div class="card-body">
+                {% if comments %}
+                    {% for comment in comments %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <strong>
+                                {% if comment.user %}
+                                    {{ comment.user.first_name }} {{ comment.user.last_name }}
+                                    {% if comment.is_internal %}
+                                        <span class="badge bg-secondary">Internal</span>
+                                    {% endif %}
+                                {% else %}
+                                    {{ ticket.contact_name }} <span class="badge bg-info">Customer</span>
+                                {% endif %}
+                            </strong>
+                            <small class="text-muted">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        <p class="mb-0">{{ comment.content }}</p>
+                        <hr>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No comments yet.</p>
+                {% endif %}
+
+                <form method="POST" action="{{ url_for('tickets.add_comment', ticket_id=ticket.id) }}">
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Add Comment</label>
+                        <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="is_internal" name="is_internal">
+                        <label class="form-check-label" for="is_internal">
+                            Internal Comment (not visible to customer)
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Comment</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.email-content {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    line-height: 1.6;
+    color: #2c3e50;
+}
+.email-body {
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    position: relative;
+    margin: 0.5rem 0;
+}
+.email-body::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #6c757d;
+    border-radius: 4px 0 0 4px;
+}
+.email-body p {
+    margin-bottom: 0.75rem;
+    white-space: pre-wrap;
+    padding-left: 1rem;
+}
+.email-body p:last-child {
+    margin-bottom: 0;
+}
+.spacer {
+    height: 0.75rem;
+}
+/* Add hover effect */
+.email-body:hover {
+    background: #fff;
+    border-color: #dee2e6;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+}
+</style>
+{% endblock %} 

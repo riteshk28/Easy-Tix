@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Tenant Details - {{ tenant.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('superadmin.index') }}" class="btn btn-secondary">← Back to Tenants</a>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Tenant Details</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Company Name:</strong> {{ tenant.name }}</p>
+                <p><strong>Created:</strong> {{ tenant.created_at.strftime('%Y-%m-%d') }}</p>
+                <p><strong>Public Portal:</strong> 
+                    <a href="{{ url_for('public.submit_ticket', portal_key=tenant.portal_key, _external=True) }}" target="_blank">
+                        View Portal
+                    </a>
+                </p>
+                <form method="POST" action="{{ url_for('superadmin.update_tenant', tenant_id=tenant.id) }}">
+                    <div class="mb-3">
+                        <label class="form-label">Subscription Plan</label>
+                        <select name="subscription_plan" class="form-select" onchange="this.form.submit()">
+                            <option value="free" {% if tenant.subscription_plan == 'free' %}selected{% endif %}>Free</option>
+                            <option value="pro" {% if tenant.subscription_plan == 'pro' %}selected{% endif %}>Pro</option>
+                            <option value="enterprise" {% if tenant.subscription_plan == 'enterprise' %}selected{% endif %}>Enterprise</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Team Members</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.first_name }} {{ user.last_name }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('superadmin.update_user', tenant_id=tenant.id, user_id=user.id) }}" class="d-flex gap-2">
+                                        <select name="role" class="form-select form-select-sm" style="width: 120px;" onchange="this.form.submit()">
+                                            <option value="user" {% if user.role == 'user' %}selected{% endif %}>User</option>
+                                            <option value="agent" {% if user.role == 'agent' %}selected{% endif %}>Agent</option>
+                                            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                                        </select>
+                                    </form>
+                                </td>
+                                <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-warning" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#resetPasswordModal{{ user.id }}">
+                                        Reset Password
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteUserModal{{ user.id }}">
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Reset Password Modal -->
+                            <div class="modal fade" id="resetPasswordModal{{ user.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Reset Password for {{ user.email }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form action="{{ url_for('superadmin.reset_user_password', tenant_id=tenant.id, user_id=user.id) }}" method="POST">
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">New Password</label>
+                                                    <input type="password" name="password" class="form-control" required>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-warning">Reset Password</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Delete User Modal -->
+                            <div class="modal fade" id="deleteUserModal{{ user.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Delete User</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Are you sure you want to delete {{ user.email }}?</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <form action="{{ url_for('superadmin.delete_user', tenant_id=tenant.id, user_id=user.id) }}" 
+                                                  method="POST" class="d-inline">
+                                                <button type="submit" class="btn btn-danger">Delete</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Tickets</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in tenant.recent_tickets %}
+                            <tr class="clickable-row" data-href="{{ url_for('tickets.view', ticket_id=ticket.id) }}">
+                                <td>{{ ticket.title }}</td>
+                                <td><span class="badge bg-{{ ticket.status }}">{{ ticket.status }}</span></td>
+                                <td>{{ ticket.priority }}</td>
+                                <td>{{ ticket.created_at.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

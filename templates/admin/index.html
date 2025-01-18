@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Team Management</h2>
+    <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">Add Team Member</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Subscription Details</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('admin.update_subscription') }}" class="mb-4">
+            <div class="row align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label">Current Plan: <strong>{{ tenant.subscription_plan|title }}</strong></label>
+                    <select name="subscription_plan" class="form-select">
+                        <option value="free" {% if tenant.subscription_plan == 'free' %}selected{% endif %}>
+                            Free Plan (1 team member, 100 tickets/month)
+                        </option>
+                        <option value="pro" {% if tenant.subscription_plan == 'pro' %}selected{% endif %}>
+                            Pro Plan ($49/month - 3 team members, unlimited tickets)
+                        </option>
+                        <option value="enterprise" {% if tenant.subscription_plan == 'enterprise' %}selected{% endif %}>
+                            Enterprise Plan (Custom pricing - unlimited everything)
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <button type="submit" class="btn btn-primary">Update Plan</button>
+                </div>
+            </div>
+        </form>
+
+        <hr>
+
+        <h6>Current Usage:</h6>
+        <p><strong>Team Members:</strong> {{ users|length }} / 
+            {% set quota = tenant.get_team_quota() %}
+            {% if quota > 999999 %}
+                Unlimited
+            {% else %}
+                {{ quota }}
+            {% endif %}
+        </p>
+        <p><strong>Tickets:</strong>
+            {% set ticket_quota = tenant.get_ticket_quota() %}
+            {% if ticket_quota > 999999 %}
+                Unlimited
+            {% else %}
+                {{ ticket_quota }} per month
+            {% endif %}
+        </p>
+
+        {% if tenant.subscription_plan != 'enterprise' %}
+        <div class="alert alert-info">
+            <h6>Need More?</h6>
+            {% if tenant.subscription_plan == 'free' %}
+                <p>Upgrade to Pro for more team members and unlimited tickets!</p>
+            {% elif tenant.subscription_plan == 'pro' %}
+                <p>Contact us to learn about our Enterprise plan with unlimited team members and premium support.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Support Email Configuration</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('admin.update_email_settings') }}">
+            <div class="mb-3">
+                <label class="form-label">Support Email Address</label>
+                <input type="email" name="support_email" class="form-control" 
+                       value="{{ tenant.support_email }}" 
+                       placeholder="e.g., support@yourcompany.com">
+                <small class="text-muted">
+                    This is the email address you'll use to handle support tickets.
+                    Set up email forwarding from this address to: {{ config.CLOUDMAILIN_ADDRESS }}
+                </small>
+            </div>
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+        
+        {% if tenant.support_email %}
+        <div class="mt-3">
+            <h6>Setup Instructions:</h6>
+            <ol>
+                <li>Configure <strong>{{ tenant.support_email }}</strong> to forward emails to:</li>
+                <li><code>{{ config.CLOUDMAILIN_ADDRESS }}</code></li>
+                <li>All emails sent to your support address will create tickets in your account</li>
+            </ol>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if tenant.subscription_plan != 'enterprise' %}
+<div class="modal fade" id="enterpriseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Contact Sales for Enterprise Plan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('admin.contact_sales') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea class="form-control" name="message" rows="4" required
+                            placeholder="Tell us about your needs..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Send Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Public Portal</h5>
+    </div>
+    <div class="card-body">
+        <p><strong>Your Public Portal Link:</strong></p>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" value="{{ url_for('public.submit_ticket', portal_key=tenant.portal_key, _external=True) }}" id="portalLink" readonly>
+            <button class="btn btn-outline-secondary" type="button" onclick="copyPortalLink()">Copy</button>
+        </div>
+        <small class="text-muted">Share this link with your customers to allow them to submit tickets.</small>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Team Members</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.first_name }} {{ user.last_name }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.role }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#resetPasswordModal{{ user.id }}">
+                                Reset Password
+                            </button>
+                            {% if user.id != current_user.id %}
+                            <button class="btn btn-sm btn-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteUserModal{{ user.id }}">
+                                Delete
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <!-- Reset Password Modal -->
+                    <div class="modal fade" id="resetPasswordModal{{ user.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Reset Password</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form action="{{ url_for('admin.reset_password', user_id=user.id) }}" method="POST">
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="password" class="form-label">New Password</label>
+                                            <input type="password" class="form-control" id="password" name="password" required>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">Reset Password</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delete User Modal -->
+                    {% if user.id != current_user.id %}
+                    <div class="modal fade" id="deleteUserModal{{ user.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Delete User</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Are you sure you want to delete {{ user.first_name }} {{ user.last_name }}?</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 
