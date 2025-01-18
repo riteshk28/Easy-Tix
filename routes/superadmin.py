@@ -4,7 +4,7 @@ import os
 # Add the parent directory to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, Flask
+from flask import Blueprint, render_template, request, redirect, url_for, flash, Flask, current_app
 from flask_login import login_required, current_user
 from models import db, User, Tenant
 from functools import wraps
@@ -105,6 +105,44 @@ def delete_user(tenant_id, user_id):
     
     flash('User deleted successfully')
     return redirect(url_for('superadmin.view_tenant', tenant_id=tenant_id))
+
+@superadmin.route('/initialize-system', methods=['GET', 'POST'])
+def initialize_system():
+    setup_key = request.args.get('setup_key')
+    if setup_key != current_app.config.get('SETUP_KEY'):
+        return 'Unauthorized', 401
+
+    # Create database tables
+    db.create_all()
+    
+    # Check if superadmin exists
+    if User.query.filter_by(role='superadmin').first():
+        return 'System already initialized', 400
+
+    # Create Enterprise tenant
+    tenant = Tenant(
+        name="System Admin",
+        subscription_plan="enterprise",
+        support_email=current_app.config.get('MAILERSEND_FROM_EMAIL'),
+        cloudmailin_address=current_app.config.get('CLOUDMAILIN_ADDRESS')
+    )
+    db.session.add(tenant)
+    db.session.flush()
+
+    # Create superadmin
+    superadmin = User(
+        email=current_app.config.get('SUPERADMIN_EMAIL'),
+        first_name='Super',
+        last_name='Admin',
+        role='superadmin',
+        tenant_id=tenant.id
+    )
+    superadmin.set_password(current_app.config.get('SUPERADMIN_PASSWORD'))
+    
+    db.session.add(superadmin)
+    db.session.commit()
+
+    return 'System initialized successfully with superadmin account'
 
 if __name__ == '__main__':
     app = Flask(__name__)
