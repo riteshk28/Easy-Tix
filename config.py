@@ -2,8 +2,6 @@ import uuid
 
 import os
 
-from urllib.parse import quote_plus  # For encoding special characters in password
-
 
 
 class Config:
@@ -32,27 +30,29 @@ class Config:
 
     SECRET_KEY = 'your-secret-key-here'
 
-    DB_URL = os.environ.get('TURSO_DATABASE_URL')
-
-    DB_TOKEN = os.environ.get('TURSO_AUTH_TOKEN')
-
     
 
-    # Construct database URL with authentication
+    # Database configuration
 
-    if DB_URL and DB_TOKEN:
+    database_url = os.environ.get('DATABASE_URL', 'sqlite:///servicedesk.db')
 
-        DB_URL = DB_URL.replace('https://', 'libsql://')
+    # Ensure we're using the correct protocol for PostgreSQL
 
-        SQLALCHEMY_DATABASE_URI = f"{DB_URL}?authToken={quote_plus(DB_TOKEN)}"
+    if database_url and 'neon.tech' in database_url:
 
-    else:
+        if database_url.startswith("postgres://"):
 
-        SQLALCHEMY_DATABASE_URI = 'sqlite:///servicedesk.db'  # Fallback for local development
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
 
-    
+        # Add SSL mode if not present
 
-    SQLALCHEMY_TRACK_MODIFICATIONS = False 
+        if 'sslmode=' not in database_url:
+
+            database_url += '?sslmode=require'
+
+    SQLALCHEMY_DATABASE_URI = database_url
+
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     
 
