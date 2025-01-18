@@ -2,16 +2,11 @@ from flask import Flask
 from extensions import db, login_manager, migrate
 from models import User
 from config import Config
-from backup import create_backup
+
 from werkzeug.serving import is_running_from_reloader
 import os
 
-def before_reload():
-    # Skip backup in production
-    if not os.environ.get('VERCEL'):
-        create_backup()
 
-before_reload()
 
 def create_app():
     app = Flask(__name__)
