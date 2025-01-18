@@ -42,6 +42,8 @@ class Config:
 
     if DB_URL and DB_TOKEN:
 
+        DB_URL = DB_URL.replace('https://', 'libsql://')
+
         SQLALCHEMY_DATABASE_URI = f"{DB_URL}?authToken={quote_plus(DB_TOKEN)}"
 
     else:

@@ -16,4 +16,5 @@ email-validator==2.1.0.post1  # For email validation
 requests==2.31.0  # For API calls
 gunicorn==21.2.0  # For production deployment
 mailersend==0.5.6 
+sqlalchemy-libsql==0.1.0
 # Add any other dependencies your project needs
