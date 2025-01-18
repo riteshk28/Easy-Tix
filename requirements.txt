@@ -12,7 +12,6 @@ beautifulsoup4==4.12.2
 alembic==1.13.1  # Used in migrations
 celery==5.3.6  # For background tasks (celeryconfig.py)
 redis==5.0.1  # Redis backend for Celery
-uuid==1.30  # For generating unique IDs
 email-validator==2.1.0.post1  # For email validation
 requests==2.31.0  # For API calls
 gunicorn==21.2.0  # For production deployment
