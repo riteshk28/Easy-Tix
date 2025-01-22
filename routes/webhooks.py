@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app
 from models import db, Tenant, User
 import stripe
 from datetime import datetime, timedelta
+import json
 
 webhooks = Blueprint('webhooks', __name__)
 
@@ -12,26 +13,34 @@ def stripe_webhook():
     
     current_app.logger.info("Received webhook")
     
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRET']
-        )
-        current_app.logger.info(f"Webhook event type: {event['type']}")
-    except ValueError as e:
-        current_app.logger.error(f"Invalid payload: {str(e)}")
-        return jsonify({'error': 'Invalid payload'}), 400
-    except stripe.error.SignatureVerificationError as e:
-        current_app.logger.error(f"Invalid signature: {str(e)}")
-        return jsonify({'error': 'Invalid signature'}), 400
+    # Skip signature verification in development
+    if current_app.debug:
+        try:
+            event = json.loads(payload)
+        except:
+            return jsonify({'error': 'Invalid payload'}), 400
+    else:
+        try:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, current_app.config['STRIPE_WEBHOOK_SECRET']
+            )
+        except ValueError as e:
+            current_app.logger.error(f"Invalid payload: {str(e)}")
+            return jsonify({'error': 'Invalid payload'}), 400
+        except stripe.error.SignatureVerificationError as e:
+            current_app.logger.error(f"Invalid signature: {str(e)}")
+            return jsonify({'error': 'Invalid signature'}), 400
+
+    current_app.logger.info(f"Webhook event type: {event['type']}")
 
     if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        metadata = session.metadata
-        current_app.logger.info(f"Processing completed checkout. Metadata: {metadata}")
-        
         try:
+            session = event['data']['object']
+            metadata = session.get('metadata', {})
+            current_app.logger.info(f"Processing completed checkout. Metadata: {metadata}")
+            
             # Check if this is a new registration
-            if 'email' in metadata:
+            if metadata.get('email'):
                 current_app.logger.info(f"Creating new tenant for {metadata['email']}")
                 # Create new tenant and user
                 tenant = Tenant(
@@ -55,7 +64,8 @@ def stripe_webhook():
                 db.session.add(user)
                 db.session.commit()
                 current_app.logger.info(f"Successfully created tenant and user for {metadata['email']}")
-            else:
+                
+            elif metadata.get('tenant_id'):
                 # Handle plan upgrade
                 tenant_id = int(metadata['tenant_id'])
                 current_app.logger.info(f"Upgrading tenant {tenant_id} to pro")
@@ -69,6 +79,9 @@ def stripe_webhook():
                     current_app.logger.info(f"Successfully upgraded tenant {tenant_id} to pro")
                 else:
                     current_app.logger.error(f"Tenant {tenant_id} not found")
+            else:
+                current_app.logger.error("No email or tenant_id in metadata")
+                
         except Exception as e:
             current_app.logger.error(f"Error processing webhook: {str(e)}")
             return jsonify({'error': str(e)}), 500
