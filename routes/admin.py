@@ -29,24 +29,12 @@ def admin_required(f):
 @admin_required
 def index():
     users = User.query.filter_by(tenant_id=current_user.tenant_id).all()
-    
-    # For super admin, ensure they have an Enterprise tenant
-    if current_user.is_superadmin and not current_user.tenant:
-        # Create Enterprise tenant for super admin if doesn't exist
-        tenant = Tenant(
-            name="System Admin",
-            subscription_plan="enterprise",
-            support_email=current_app.config.get('SUPPORT_EMAIL'),
-            cloudmailin_address=current_app.config.get('CLOUDMAILIN_ADDRESS')
-        )
-        db.session.add(tenant)
-        db.session.flush()  # Get tenant ID
-        
-        # Associate super admin with this tenant
-        current_user.tenant_id = tenant.id
-        db.session.commit()
-    
     tenant = current_user.tenant
+    
+    # Show success message for completed upgrade
+    if request.args.get('upgrade') == 'success':
+        flash('Your subscription has been successfully upgraded to Pro!')
+    
     return render_template('admin/index.html', users=users, tenant=tenant)
 
 @admin.route('/users/create', methods=['GET', 'POST'])

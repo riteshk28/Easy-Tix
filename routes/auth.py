@@ -13,35 +13,32 @@ logger = logging.getLogger(__name__)
 def register():
     stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
     
-    # Get pre-selected plan from URL parameter
-    plan = request.args.get('plan', 'free')
-    
     if request.method == 'POST':
         plan = request.form.get('subscription_plan', 'free')
         form_data = request.form
-        current_app.logger.info(f"Creating checkout session with data: {form_data}")
+        current_app.logger.info(f"Registration attempt with plan: {plan}")
         
         if plan != 'free':
             try:
-                # Get price ID from the STRIPE_PRICE_IDS dictionary
                 price_id = current_app.config['STRIPE_PRICE_IDS'].get(plan)
                 if not price_id:
                     current_app.logger.error(f"No price ID configured for plan: {plan}")
                     flash('Invalid subscription plan selected.')
                     return redirect(url_for('auth.register'))
 
+                # Create checkout session with complete metadata
                 checkout_session = stripe.checkout.Session.create(
                     payment_method_types=['card'],
                     line_items=[{
-                        'price': price_id,  # Use the price ID from the dictionary
+                        'price': price_id,
                         'quantity': 1,
                     }],
                     mode='subscription',
-                    success_url=url_for('auth.login', _external=True),
+                    success_url=url_for('auth.login', _external=True) + "?registration=success",
                     cancel_url=url_for('auth.register', _external=True),
                     metadata={
-                        'company_name': form_data['company_name'],
                         'email': form_data['email'],
+                        'company_name': form_data['company_name'],
                         'first_name': form_data['first_name'],
                         'last_name': form_data['last_name'],
                         'password': form_data['password'],
@@ -57,7 +54,7 @@ def register():
         else:
             return create_tenant_and_admin(request.form)
             
-    return render_template('auth/register.html', plan=plan)
+    return render_template('auth/register.html', plan=request.args.get('plan', 'free'))
 
 @auth.route('/complete-registration')
 def complete_registration():
@@ -92,6 +89,10 @@ def login():
             return redirect(url_for('dashboard.index'))
         
         flash('Invalid email or password')
+    else:
+        # Show success message for completed registration
+        if request.args.get('registration') == 'success':
+            flash('Registration successful! Please log in with your credentials.')
     
     return render_template('auth/login.html')
 
