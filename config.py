@@ -32,11 +32,9 @@ class Config:
 
     
 
-    # Database configuration
+    # Database configuration with better connection handling
 
     database_url = os.environ.get('DATABASE_URL', 'sqlite:///servicedesk.db')
-
-    # Ensure we're using the correct protocol for PostgreSQL
 
     if database_url and 'neon.tech' in database_url:
 
@@ -44,15 +42,49 @@ class Config:
 
             database_url = database_url.replace("postgres://", "postgresql://", 1)
 
-        # Add SSL mode if not present
+        
 
-        if 'sslmode=' not in database_url:
+        # Add connection pooling and retry settings
 
-            database_url += '?sslmode=require'
+        if '?' in database_url:
+
+            database_url += '&'
+
+        else:
+
+            database_url += '?'
+
+        database_url += 'sslmode=require&pool_size=30&max_overflow=0&pool_recycle=1800&pool_pre_ping=true&pool_timeout=30'
 
     SQLALCHEMY_DATABASE_URI = database_url
 
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+
+        'pool_pre_ping': True,
+
+        'pool_recycle': 1800,
+
+        'pool_timeout': 30,
+
+        'pool_size': 30,
+
+        'max_overflow': 0,
+
+        'connect_args': {
+
+            'connect_timeout': 10,
+
+            'keepalives': 1,
+
+            'keepalives_idle': 30,
+
+            'keepalives_interval': 10,
+
+            'keepalives_count': 5
+
+        }
+
+    }
 
     
 

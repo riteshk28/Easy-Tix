@@ -2,6 +2,9 @@ from flask import Flask
 from extensions import db, login_manager, migrate
 from models import User
 from config import Config
+from sqlalchemy import exc
+from functools import wraps
+import time
 
 from werkzeug.serving import is_running_from_reloader
 import os
@@ -37,7 +40,28 @@ def create_app(config_class=Config):
     app.register_blueprint(public, url_prefix='/public')
     app.register_blueprint(webhooks, url_prefix='/webhooks')
 
+    def retry_on_connection_error(max_retries=3, delay=1):
+        def decorator(f):
+            @wraps(f)
+            def wrapper(*args, **kwargs):
+                retries = 0
+                while retries < max_retries:
+                    try:
+                        return f(*args, **kwargs)
+                    except exc.OperationalError as e:
+                        if "SSL connection has been closed unexpectedly" in str(e):
+                            retries += 1
+                            if retries == max_retries:
+                                raise
+                            time.sleep(delay)
+                            continue
+                        raise
+                return f(*args, **kwargs)
+            return wrapper
+        return decorator
+
     @login_manager.user_loader
+    @retry_on_connection_error()
     def load_user(user_id):
         return User.query.get(int(user_id))
 
