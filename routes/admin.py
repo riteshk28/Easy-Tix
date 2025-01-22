@@ -269,3 +269,12 @@ def update_email_settings():
             current_app.logger.error(f"Error updating support email: {str(e)}")
     
     return redirect(url_for('admin.index')) 
+
+@admin.route('/toggle-auto-renew', methods=['POST'])
+@admin_required
+def toggle_auto_renew():
+    tenant = current_user.tenant
+    tenant.auto_renew = not tenant.auto_renew
+    db.session.commit()
+    flash('Auto-renewal settings updated')
+    return redirect(url_for('admin.index')) 

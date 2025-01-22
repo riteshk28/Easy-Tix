@@ -23,6 +23,11 @@ class Tenant(db.Model):
     support_email = db.Column(db.String(255), unique=True)  # The tenant's support email
     support_alias = db.Column(db.String(255), unique=True)
     cloudmailin_address = db.Column(db.String(255), unique=True)
+    subscription_starts_at = db.Column(db.DateTime)
+    subscription_ends_at = db.Column(db.DateTime)
+    trial_ends_at = db.Column(db.DateTime)
+    auto_renew = db.Column(db.Boolean, default=False)
+    subscription_status = db.Column(db.String(20), default='inactive')
     
     def get_ticket_quota(self):
         quotas = {
@@ -95,6 +100,28 @@ class Tenant(db.Model):
             self.cloudmailin_address = CloudMailinService.create_address(self.id)
             db.session.commit()
         return self.cloudmailin_address
+
+    @property
+    def is_trial(self):
+        return (
+            self.trial_ends_at and 
+            self.trial_ends_at > datetime.utcnow()
+        )
+    
+    @property
+    def subscription_active(self):
+        return (
+            self.subscription_status == 'active' and
+            (self.subscription_ends_at is None or 
+             self.subscription_ends_at > datetime.utcnow())
+        )
+    
+    @property
+    def days_until_expiration(self):
+        if not self.subscription_ends_at:
+            return None
+        delta = self.subscription_ends_at - datetime.utcnow()
+        return max(0, delta.days)
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
