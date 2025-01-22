@@ -128,23 +128,56 @@ def delete_user(user_id):
 def update_subscription():
     plan = request.form.get('subscription_plan')
     tenant = current_user.tenant
+    current_plan = tenant.subscription_plan
     
-    if plan in ['free', 'pro', 'enterprise']:
-        tenant.subscription_plan = plan
-        tenant.subscription_status = 'active'  # Set status to active
-        tenant.subscription_starts_at = datetime.utcnow()
-        
-        # Set subscription end date based on plan
-        if plan == 'pro':
-            tenant.subscription_ends_at = datetime.utcnow() + timedelta(days=30)
-        else:
-            tenant.subscription_ends_at = None  # Free and Enterprise plans don't expire
-            
+    # If downgrading to free
+    if plan == 'free':
+        if current_plan in ['pro', 'enterprise']:
+            flash('Please contact support to downgrade your plan')
+            return redirect(url_for('admin.index'))
+        tenant.subscription_plan = 'free'
+        tenant.subscription_status = 'active'
+        tenant.subscription_ends_at = None
         db.session.commit()
-        flash(f'Successfully updated to {plan.title()} plan')
-    else:
-        flash('Invalid subscription plan selected')
-        
+        flash('Successfully updated to Free plan')
+        return redirect(url_for('admin.index'))
+    
+    # If upgrading to pro
+    if plan == 'pro':
+        # Check if already on pro with active subscription
+        if current_plan == 'pro' and tenant.subscription_active:
+            flash('You already have an active Pro subscription')
+            return redirect(url_for('admin.index'))
+            
+        # Create Stripe checkout session for upgrade
+        stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
+        try:
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price': current_app.config['STRIPE_PRICE_IDS']['pro'],
+                    'quantity': 1,
+                }],
+                mode='subscription',
+                success_url=url_for('admin.index', _external=True),
+                cancel_url=url_for('admin.index', _external=True),
+                metadata={
+                    'tenant_id': tenant.id,
+                    'plan': 'pro'
+                }
+            )
+            return redirect(checkout_session.url)
+        except Exception as e:
+            current_app.logger.error(f"Stripe error: {str(e)}")
+            flash('Payment processing error. Please try again.')
+            return redirect(url_for('admin.index'))
+    
+    # If enterprise plan
+    if plan == 'enterprise':
+        flash('Please contact sales for Enterprise plan upgrade')
+        return redirect(url_for('admin.index'))
+    
+    flash('Invalid subscription plan selected')
     return redirect(url_for('admin.index'))
 
 @admin.route('/subscription/update', methods=['POST'])
