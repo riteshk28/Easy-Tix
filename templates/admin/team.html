@@ -7,4 +7,15 @@
             </div>
         {% endfor %}
     {% endif %}
-{% endwith %} 
+{% endwith %}
+
+{% if users|length >= tenant.get_team_quota() %}
+<div class="alert alert-warning">
+    You've reached your team member limit ({{ tenant.get_team_quota() }} members).
+    {% if tenant.subscription_plan == 'free' %}
+    Upgrade to Pro for up to 10 team members.
+    {% elif tenant.subscription_plan == 'pro' %}
+    Contact us about our Enterprise plan for unlimited team members.
+    {% endif %}
+</div>
+{% endif %} 

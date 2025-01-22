@@ -30,20 +30,22 @@ class Tenant(db.Model):
     subscription_status = db.Column(db.String(20), default='inactive')
     
     def get_ticket_quota(self):
+        """Return the maximum number of tickets allowed per month"""
         quotas = {
-            'free': 100,
-            'pro': float('inf'),
-            'enterprise': float('inf')
+            'free': 1000,       # Changed from 100 to 1000
+            'pro': 999999,      # Unlimited
+            'enterprise': 999999 # Unlimited (unchanged)
         }
-        return quotas.get(self.subscription_plan, 0)
+        return quotas.get(self.subscription_plan, 100)
     
     def get_team_quota(self):
+        """Return the maximum number of team members allowed for the subscription plan"""
         quotas = {
-            'free': 1,
-            'pro': 3,
-            'enterprise': float('inf')
+            'free': 3,          # Changed from 1 to 3
+            'pro': 10,          # Changed from 3 to 10
+            'enterprise': 999999 # Unlimited (unchanged)
         }
-        return quotas.get(self.subscription_plan, 0)
+        return quotas.get(self.subscription_plan, 1)
 
     @property
     def ticket_count(self):

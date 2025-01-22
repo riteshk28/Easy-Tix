@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand brand-logo" href="{{ url_for('landing.index') }}">
+            <div class="logo-squares">
+                <div class="logo-square"></div>
+                <div class="logo-square"></div>
+                <div class="logo-square"></div>
+            </div>
+            <div class="d-flex flex-column">
+                <span class="brand-text">Easy-Tix</span>
+                <small class="brand-tagline">HelpDesk Made Easy</small>
+            </div>
+        </a>
+    </div>
+</nav>
+{% endblock %} 

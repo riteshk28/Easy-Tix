@@ -42,10 +42,10 @@
                             <label class="form-label">Current Plan: <strong>{{ tenant.subscription_plan|title }}</strong></label>
                             <select name="subscription_plan" class="form-select">
                                 <option value="free" {% if tenant.subscription_plan == 'free' %}selected{% endif %}>
-                                    Free Plan (1 team member, 100 tickets/month)
+                                    Free Plan (3 team members, 1,000 tickets/month)
                                 </option>
                                 <option value="pro" {% if tenant.subscription_plan == 'pro' %}selected{% endif %}>
-                                    Pro Plan ($49/month - 3 team members, unlimited tickets)
+                                    Pro Plan ($49/month - 10 team members, unlimited tickets)
                                 </option>
                                 <option value="enterprise" {% if tenant.subscription_plan == 'enterprise' %}selected{% endif %}>
                                     Enterprise Plan (Custom pricing - unlimited everything)
