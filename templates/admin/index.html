@@ -116,19 +116,17 @@
                 <!-- Usage Info -->
                 <h6>Current Usage:</h6>
                 <p><strong>Team Members:</strong> {{ users|length }} / 
-                    {% set quota = tenant.get_team_quota() %}
-                    {% if quota > 999999 %}
+                    {% if tenant.get_team_quota() > 999998 %}
                         Unlimited
                     {% else %}
-                        {{ quota }}
+                        {{ tenant.get_team_quota() }}
                     {% endif %}
                 </p>
                 <p><strong>Tickets:</strong>
-                    {% set ticket_quota = tenant.get_ticket_quota() %}
-                    {% if ticket_quota > 999999 %}
+                    {% if tenant.get_ticket_quota() > 999998 %}
                         Unlimited
                     {% else %}
-                        {{ ticket_quota }} per month
+                        {{ tenant.get_ticket_quota() }} per month
                     {% endif %}
                 </p>
 
