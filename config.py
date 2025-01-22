@@ -44,17 +44,17 @@ class Config:
 
         
 
-        # Add connection pooling and retry settings
+        # Only add sslmode to URL
 
-        if '?' in database_url:
+        if '?' not in database_url:
 
-            database_url += '&'
+            database_url += '?sslmode=require'
 
-        else:
+        elif 'sslmode=' not in database_url:
 
-            database_url += '?'
+            database_url += '&sslmode=require'
 
-        database_url += 'sslmode=require&pool_size=30&max_overflow=0&pool_recycle=1800&pool_pre_ping=true&pool_timeout=30'
+
 
     SQLALCHEMY_DATABASE_URI = database_url
 
@@ -68,9 +68,17 @@ class Config:
 
         'pool_size': 30,
 
-        'max_overflow': 0,
+        'max_overflow': 0
 
-        'connect_args': {
+    }
+
+    
+
+    # PostgreSQL specific connect args
+
+    if 'neon.tech' in database_url:
+
+        SQLALCHEMY_ENGINE_OPTIONS['connect_args'] = {
 
             'connect_timeout': 10,
 
@@ -83,8 +91,6 @@ class Config:
             'keepalives_count': 5
 
         }
-
-    }
 
     
 
