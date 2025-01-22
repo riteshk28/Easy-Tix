@@ -4,6 +4,7 @@ from models import db, User, Tenant
 import stripe  # Add stripe for payments
 from utils import get_stripe_price_id, get_plan_amount
 import logging
+from datetime import datetime, timedelta
 
 auth = Blueprint('auth', __name__)
 logger = logging.getLogger(__name__)
@@ -100,7 +101,7 @@ def logout():
     logout_user()
     return redirect(url_for('auth.login')) 
 
-def create_tenant_and_admin(form_data, subscription_id=None):
+def create_tenant_and_admin(form_data):
     """Create a new tenant and admin user"""
     # Check if email already exists
     if User.query.filter_by(email=form_data['email']).first():
@@ -110,8 +111,16 @@ def create_tenant_and_admin(form_data, subscription_id=None):
     # Create new tenant
     tenant = Tenant(
         name=form_data['company_name'],
-        subscription_plan=form_data.get('subscription_plan', 'free')
+        subscription_plan=form_data.get('subscription_plan', 'free'),
+        subscription_status='active',
+        subscription_starts_at=datetime.utcnow(),
+        trial_ends_at=datetime.utcnow() + timedelta(days=14)  # 14-day trial
     )
+    
+    # Set subscription_ends_at based on plan
+    if tenant.subscription_plan == 'pro':
+        tenant.subscription_ends_at = datetime.utcnow() + timedelta(days=30)
+    
     db.session.add(tenant)
     db.session.flush()  # Get tenant ID without committing
     

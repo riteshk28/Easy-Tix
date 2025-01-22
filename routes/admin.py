@@ -6,7 +6,7 @@ from functools import wraps
 import stripe  # Add stripe for payments
 from utils import get_stripe_price_id, get_plan_amount, can_downgrade_to_free, cancel_subscription
 from sqlalchemy.exc import IntegrityError
-from datetime import datetime  # Add this import if not present
+from datetime import datetime, timedelta  # Add this import if not present
 import logging
 
 # Set up logger
@@ -123,9 +123,33 @@ def delete_user(user_id):
     flash('User deleted successfully')
     return redirect(url_for('admin.index'))
 
-@admin.route('/subscription/update', methods=['POST'])
+@admin.route('/update-subscription', methods=['POST'])
 @admin_required
 def update_subscription():
+    plan = request.form.get('subscription_plan')
+    tenant = current_user.tenant
+    
+    if plan in ['free', 'pro', 'enterprise']:
+        tenant.subscription_plan = plan
+        tenant.subscription_status = 'active'  # Set status to active
+        tenant.subscription_starts_at = datetime.utcnow()
+        
+        # Set subscription end date based on plan
+        if plan == 'pro':
+            tenant.subscription_ends_at = datetime.utcnow() + timedelta(days=30)
+        else:
+            tenant.subscription_ends_at = None  # Free and Enterprise plans don't expire
+            
+        db.session.commit()
+        flash(f'Successfully updated to {plan.title()} plan')
+    else:
+        flash('Invalid subscription plan selected')
+        
+    return redirect(url_for('admin.index'))
+
+@admin.route('/subscription/update', methods=['POST'])
+@admin_required
+def update_subscription_old():
     # Set stripe API key at the start of the function
     stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
     
