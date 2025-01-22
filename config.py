@@ -8,7 +8,7 @@ class Config:
 
     # Use test keys during development
 
-    STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
+    STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_51PjB1DCAG2id8PGup8xoSmRpDVzeVdk6BqlDJ0RtXhTOGASgXmZGv6Axhcqw9pLLsauS2zir5FV0eVixeKkiuscq004ZzZVvIE')
 
     STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY', 'pk_test_51PjB1DCAG2id8PGuLWS21ps83GNrfJAFON5BCnUFW5C4AFuCdGqBsP5KzAJDrr0hTAnrIfDsqAw2Z9BhA1Kayaai005XOGltGF')
 
@@ -20,7 +20,7 @@ class Config:
 
     STRIPE_PRICE_IDS = {
 
-        'pro': os.environ.get('STRIPE_PRO_PRICE_ID')
+        'pro': os.environ.get('STRIPE_PRO_PRICE_ID', 'price_1Qf6ZeCAG2id8PGuxsKmTMSm')
 
     }
 
@@ -128,7 +128,7 @@ class Config:
 
     SUPERADMIN_PASSWORD = os.getenv('SUPERADMIN_PASSWORD')
 
-    # In development, allow webhook without signature verification
+    # Skip webhook verification in development
     if os.environ.get('FLASK_ENV') == 'development':
         STRIPE_WEBHOOK_SECRET = None
 

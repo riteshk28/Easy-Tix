@@ -21,12 +21,14 @@ def register():
         if plan != 'free':
             try:
                 price_id = current_app.config['STRIPE_PRICE_IDS'].get(plan)
+                current_app.logger.info(f"Looking up price ID for plan {plan}: {price_id}")
+                
                 if not price_id:
                     current_app.logger.error(f"No price ID configured for plan: {plan}")
                     flash('Invalid subscription plan selected.')
                     return redirect(url_for('auth.register'))
 
-                # Create checkout session with complete metadata
+                # Create checkout session
                 checkout_session = stripe.checkout.Session.create(
                     payment_method_types=['card'],
                     line_items=[{
@@ -49,7 +51,7 @@ def register():
                 return redirect(checkout_session.url)
             except Exception as e:
                 current_app.logger.error(f"Error creating checkout session: {str(e)}")
-                flash('An error occurred during registration.')
+                flash('An error occurred during registration. Please try again.')
                 return redirect(url_for('auth.register'))
         else:
             return create_tenant_and_admin(request.form)
