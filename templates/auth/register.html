@@ -2,64 +2,89 @@
 
 {% block title %}Register{% endblock %}
 
-{% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">
-                    {% if plan == 'pro' %}
-                    Register for Pro Plan
-                    {% else %}
-                    Register for Free Plan
-                    {% endif %}
-                </h4>
+{% block left_panel_content %}
+<div class="feature-highlights mt-5">
+    {% if plan == 'pro' %}
+    <h2 class="h3 mb-4">Upgrade to Pro</h2>
+    <div class="mb-4">
+        <i class="bi bi-infinity fs-1 mb-3 d-block"></i>
+        <h3 class="h5">Unlimited Tickets</h3>
+        <p class="text-light-50">Handle all your support requests</p>
+    </div>
+    <div class="mb-4">
+        <i class="bi bi-people-fill fs-1 mb-3 d-block"></i>
+        <h3 class="h5">10 Team Members</h3>
+        <p class="text-light-50">Collaborate with your entire team</p>
+    </div>
+    {% else %}
+    <h2 class="h3 mb-4">Get Started Free</h2>
+    <div class="mb-4">
+        <i class="bi bi-rocket-takeoff fs-1 mb-3 d-block"></i>
+        <h3 class="h5">Quick Setup</h3>
+        <p class="text-light-50">Be up and running in minutes</p>
+    </div>
+    <div class="mb-4">
+        <i class="bi bi-graph-up-arrow fs-1 mb-3 d-block"></i>
+        <h3 class="h5">Scale as You Grow</h3>
+        <p class="text-light-50">1,000 tickets/month, 3 team members</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block auth_content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+        <h4 class="card-title mb-4">
+            {% if plan == 'pro' %}
+            Create Pro Account
+            {% else %}
+            Create Free Account
+            {% endif %}
+        </h4>
+        <form method="POST">
+            <div class="mb-3">
+                <label for="company_name" class="form-label">Company Name</label>
+                <input type="text" class="form-control" id="company_name" name="company_name" required>
             </div>
-            <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label for="company_name" class="form-label">Company Name</label>
-                        <input type="text" class="form-control" id="company_name" name="company_name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="first_name" class="form-label">First Name</label>
-                        <input type="text" class="form-control" id="first_name" name="first_name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="last_name" class="form-label">Last Name</label>
-                        <input type="text" class="form-control" id="last_name" name="last_name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email address</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div>
-                    
-                    <!-- Hidden input for plan -->
-                    <input type="hidden" name="subscription_plan" value="{{ plan }}">
-                    
-                    <button type="submit" class="btn btn-primary w-100">
-                        {% if plan == 'pro' %}
-                        Continue to Payment
-                        {% else %}
-                        Create Free Account
-                        {% endif %}
-                    </button>
-                </form>
-                <hr>
-                <p class="text-center">
-                    Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a>
-                </p>
+            <div class="mb-3">
+                <label for="first_name" class="form-label">First Name</label>
+                <input type="text" class="form-control" id="first_name" name="first_name" required>
+            </div>
+            <div class="mb-3">
+                <label for="last_name" class="form-label">Last Name</label>
+                <input type="text" class="form-control" id="last_name" name="last_name" required>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email address</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            
+            <!-- Hidden input for plan -->
+            <input type="hidden" name="subscription_plan" value="{{ plan }}">
+            
+            <button type="submit" class="btn btn-primary w-100">
                 {% if plan == 'pro' %}
-                <p class="text-center text-muted small">
-                    You'll be redirected to our secure payment page after submitting this form.
-                </p>
+                Continue to Payment
+                {% else %}
+                Create Account
                 {% endif %}
-            </div>
-        </div>
+            </button>
+        </form>
+        <hr>
+        <p class="text-center">
+            Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a>
+        </p>
+        {% if plan == 'pro' %}
+        <p class="text-center text-muted small mt-3">
+            Secure payment powered by Stripe
+            <i class="bi bi-shield-check text-success"></i>
+        </p>
+        {% endif %}
     </div>
 </div>
 {% endblock %} 

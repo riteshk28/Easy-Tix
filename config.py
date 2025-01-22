@@ -170,4 +170,7 @@ class Config:
     if os.environ.get('FLASK_ENV') == 'development':
         STRIPE_WEBHOOK_SECRET = None
 
+    # SuperAdmin Support Portal URL
+    SUPERADMIN_PORTAL_URL = 'https://easy-tix-gold.vercel.app/public/e9d78280-f5cb-47f3-8b3d-6a99ce658767/submit'
+
 
