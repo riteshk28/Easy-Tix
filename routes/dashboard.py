@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, flash
 from flask_login import login_required, current_user
 from models import Ticket
 
@@ -7,6 +7,12 @@ dashboard = Blueprint('dashboard', __name__)
 @dashboard.route('/')
 @login_required
 def index():
+    tenant = current_user.tenant
+    
+    # Check for subscription expiry
+    if tenant.handle_subscription_expiry():
+        flash('Your paid subscription has expired. Your account has been switched to the Free plan.')
+    
     # Get ticket counts for different statuses
     open_tickets = Ticket.query.filter_by(
         tenant_id=current_user.tenant_id,

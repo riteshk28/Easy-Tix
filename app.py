@@ -8,9 +8,9 @@ import os
 
 
 
-def create_app():
+def create_app(config_class=Config):
     app = Flask(__name__)
-    app.config.from_object(Config)  # Load configuration
+    app.config.from_object(config_class)  # Load configuration
 
     # Initialize extensions
     db.init_app(app)
@@ -25,7 +25,7 @@ def create_app():
     from routes.superadmin import superadmin
     from routes.public import public
     from routes.landing import landing
-    from routes.webhook import webhook
+    from routes.webhooks import webhooks
 
     # Register blueprints
     app.register_blueprint(landing, url_prefix='/')
@@ -35,7 +35,7 @@ def create_app():
     app.register_blueprint(admin, url_prefix='/admin')
     app.register_blueprint(superadmin, url_prefix='/superadmin')
     app.register_blueprint(public, url_prefix='/public')
-    app.register_blueprint(webhook)
+    app.register_blueprint(webhooks, url_prefix='/webhooks')
 
     @login_manager.user_loader
     def load_user(user_id):

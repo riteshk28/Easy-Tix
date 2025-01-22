@@ -132,8 +132,11 @@ def update_subscription():
     
     # If downgrading to free
     if plan == 'free':
-        if current_plan in ['pro', 'enterprise']:
-            flash('Please contact support to downgrade your plan')
+        if tenant.subscription_active and current_plan in ['pro', 'enterprise']:
+            days_left = tenant.days_until_expiration
+            flash(f'You have an active {current_plan.title()} subscription with {days_left} days remaining. '
+                  f'Your plan will automatically switch to Free when it expires on '
+                  f'{tenant.subscription_ends_at.strftime("%Y-%m-%d")}.')
             return redirect(url_for('admin.index'))
         tenant.subscription_plan = 'free'
         tenant.subscription_status = 'active'
@@ -145,8 +148,18 @@ def update_subscription():
     # If upgrading to pro
     if plan == 'pro':
         # Check if already on pro with active subscription
-        if current_plan == 'pro' and tenant.subscription_active:
+        if tenant.subscription_active and current_plan == 'pro':
             flash('You already have an active Pro subscription')
+            return redirect(url_for('admin.index'))
+            
+        # If they had a previous pro subscription that hasn't expired
+        if (tenant.subscription_ends_at and 
+            tenant.subscription_ends_at > datetime.utcnow() and 
+            tenant.subscription_plan == 'pro'):
+            # Reactivate their subscription
+            tenant.subscription_status = 'active'
+            db.session.commit()
+            flash('Your Pro subscription has been reactivated')
             return redirect(url_for('admin.index'))
             
         # Create Stripe checkout session for upgrade
@@ -162,7 +175,7 @@ def update_subscription():
                 success_url=url_for('admin.index', _external=True),
                 cancel_url=url_for('admin.index', _external=True),
                 metadata={
-                    'tenant_id': tenant.id,
+                    'tenant_id': str(tenant.id),  # Convert to string
                     'plan': 'pro'
                 }
             )

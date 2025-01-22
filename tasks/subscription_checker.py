@@ -40,4 +40,15 @@ def handle_expired_subscriptions():
         else:
             tenant.subscription_status = 'expired'
             tenant.subscription_plan = 'free'
-        db.session.commit() 
+        db.session.commit()
+
+def check_expired_subscriptions():
+    """Check and handle expired subscriptions"""
+    tenants = Tenant.query.filter(
+        Tenant.subscription_ends_at <= datetime.utcnow(),
+        Tenant.subscription_status == 'active',
+        Tenant.subscription_plan != 'free'
+    ).all()
+    
+    for tenant in tenants:
+        tenant.handle_subscription_expiry() 

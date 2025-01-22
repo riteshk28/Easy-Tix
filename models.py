@@ -123,6 +123,28 @@ class Tenant(db.Model):
         delta = self.subscription_ends_at - datetime.utcnow()
         return max(0, delta.days)
 
+    def handle_subscription_expiry(self):
+        """Check and handle subscription expiration"""
+        if (self.subscription_ends_at and 
+            self.subscription_ends_at <= datetime.utcnow() and 
+            self.subscription_status == 'active' and
+            self.subscription_plan != 'free'):
+            
+            # Downgrade to free plan
+            self.subscription_plan = 'free'
+            self.subscription_status = 'expired'
+            self.subscription_ends_at = None
+            db.session.commit()
+            
+            # Send notification to admin users
+            admin_users = [u for u in self.users if u.is_admin]
+            for admin in admin_users:
+                # You can implement email notification here
+                pass
+            
+            return True
+        return False
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
