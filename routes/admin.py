@@ -31,11 +31,27 @@ def index():
     users = User.query.filter_by(tenant_id=current_user.tenant_id).all()
     tenant = current_user.tenant
     
+    # Get SLA configurations
+    sla_configs = {
+        config.priority: config 
+        for config in SLAConfig.query.filter_by(tenant_id=current_user.tenant_id).all()
+    }
+    
+    # Format for template
+    sla_config = {
+        'high': sla_configs.get('high', {}),
+        'medium': sla_configs.get('medium', {}),
+        'low': sla_configs.get('low', {})
+    }
+    
     # Show success message for completed upgrade
     if request.args.get('upgrade') == 'success':
         flash('Your subscription has been successfully upgraded to Pro!')
     
-    return render_template('admin/index.html', users=users, tenant=tenant)
+    return render_template('admin/index.html', 
+                         users=users, 
+                         tenant=tenant,
+                         sla_config=sla_config)
 
 @admin.route('/users/create', methods=['GET', 'POST'])
 @admin_required

@@ -289,14 +289,14 @@
                                             <div class="input-group mb-2">
                                                 <input type="number" class="form-control" 
                                                        name="high_response_hours" 
-                                                       value="{{ (sla_config.high.response_time|default(4)|int // 60) }}"
+                                                       value="{{ (sla_config.high.response_time|default(240) // 60) if sla_config.high else 4 }}"
                                                        min="0" max="999">
                                                 <span class="input-group-text">hours</span>
                                             </div>
                                             <div class="input-group">
                                                 <input type="number" class="form-control" 
                                                        name="high_response_minutes" 
-                                                       value="{{ (sla_config.high.response_time|default(4)|int % 60) }}"
+                                                       value="{{ (sla_config.high.response_time|default(240) % 60) if sla_config.high else 0 }}"
                                                        min="0" max="59">
                                                 <span class="input-group-text">minutes</span>
                                             </div>
@@ -315,14 +315,14 @@
                                             <div class="input-group mb-2">
                                                 <input type="number" class="form-control" 
                                                        name="high_resolution_days" 
-                                                       value="{{ (sla_config.high.resolution_time|default(1440)|int // 1440) }}"
+                                                       value="{{ (sla_config.high.resolution_time|default(1440) // 1440) if sla_config.high else 1 }}"
                                                        min="0" max="365">
                                                 <span class="input-group-text">days</span>
                                             </div>
                                             <div class="input-group mb-2">
                                                 <input type="number" class="form-control" 
                                                        name="high_resolution_hours" 
-                                                       value="{{ ((sla_config.high.resolution_time|default(1440)|int % 1440) // 60) }}"
+                                                       value="{{ ((sla_config.high.resolution_time|default(1440) % 1440) // 60) if sla_config.high else 0 }}"
                                                        min="0" max="23">
                                                 <span class="input-group-text">hours</span>
                                             </div>
@@ -356,14 +356,14 @@
                                             <div class="input-group mb-2">
                                                 <input type="number" class="form-control" 
                                                        name="medium_response_hours" 
-                                                       value="{{ (sla_config.medium.response_time|default(4)|int // 60) }}"
+                                                       value="{{ (sla_config.medium.response_time|default(480) // 60) if sla_config.medium else 8 }}"
                                                        min="0" max="999">
                                                 <span class="input-group-text">hours</span>
                                             </div>
                                             <div class="input-group">
                                                 <input type="number" class="form-control" 
                                                        name="medium_response_minutes" 
-                                                       value="{{ (sla_config.medium.response_time|default(4)|int % 60) }}"
+                                                       value="{{ (sla_config.medium.response_time|default(480) % 60) if sla_config.medium else 0 }}"
                                                        min="0" max="59">
                                                 <span class="input-group-text">minutes</span>
                                             </div>
@@ -382,14 +382,14 @@
                                             <div class="input-group mb-2">
                                                 <input type="number" class="form-control" 
                                                        name="medium_resolution_days" 
-                                                       value="{{ (sla_config.medium.resolution_time|default(2880)|int // 1440) }}"
+                                                       value="{{ (sla_config.medium.resolution_time|default(2880) // 1440) if sla_config.medium else 2 }}"
                                                        min="0" max="365">
                                                 <span class="input-group-text">days</span>
                                             </div>
                                             <div class="input-group mb-2">
                                                 <input type="number" class="form-control" 
                                                        name="medium_resolution_hours" 
-                                                       value="{{ ((sla_config.medium.resolution_time|default(2880)|int % 1440) // 60) }}"
+                                                       value="{{ ((sla_config.medium.resolution_time|default(2880) % 1440) // 60) if sla_config.medium else 0 }}"
                                                        min="0" max="23">
                                                 <span class="input-group-text">hours</span>
                                             </div>
@@ -423,14 +423,14 @@
                                             <div class="input-group mb-2">
                                                 <input type="number" class="form-control" 
                                                        name="low_response_hours" 
-                                                       value="{{ (sla_config.low.response_time|default(1440)|int // 60) }}"
+                                                       value="{{ (sla_config.low.response_time|default(1440) // 60) if sla_config.low else 24 }}"
                                                        min="0" max="999">
                                                 <span class="input-group-text">hours</span>
                                             </div>
                                             <div class="input-group">
                                                 <input type="number" class="form-control" 
                                                        name="low_response_minutes" 
-                                                       value="{{ (sla_config.low.response_time|default(1440)|int % 60) }}"
+                                                       value="{{ (sla_config.low.response_time|default(1440) % 60) if sla_config.low else 0 }}"
                                                        min="0" max="59">
                                                 <span class="input-group-text">minutes</span>
                                             </div>
@@ -449,14 +449,14 @@
                                             <div class="input-group mb-2">
                                                 <input type="number" class="form-control" 
                                                        name="low_resolution_days" 
-                                                       value="{{ (sla_config.low.resolution_time|default(4320)|int // 1440) }}"
+                                                       value="{{ (sla_config.low.resolution_time|default(4320) // 1440) if sla_config.low else 3 }}"
                                                        min="0" max="365">
                                                 <span class="input-group-text">days</span>
                                             </div>
                                             <div class="input-group mb-2">
                                                 <input type="number" class="form-control" 
                                                        name="low_resolution_hours" 
-                                                       value="{{ ((sla_config.low.resolution_time|default(4320)|int % 1440) // 60) }}"
+                                                       value="{{ ((sla_config.low.resolution_time|default(4320) % 1440) // 60) if sla_config.low else 0 }}"
                                                        min="0" max="23">
                                                 <span class="input-group-text">hours</span>
                                             </div>
