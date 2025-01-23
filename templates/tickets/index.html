@@ -74,11 +74,13 @@
                                     {% if not ticket.first_response_at and ticket.sla_response_due_at %}
                                         {% set response_remaining = (ticket.sla_response_due_at - now).total_seconds() / 3600 %}
                                         {% if response_remaining < 0 %}
-                                            <span class="badge bg-danger" data-bs-toggle="tooltip" title="Response Overdue by {{ format_duration(response_remaining|abs * 60) }}">
+                                            <span class="badge bg-danger" data-bs-toggle="tooltip" 
+                                                  title="Response Overdue by {% if format_duration is defined %}{{ format_duration((response_remaining|abs * 60)|int) }}{% else %}{{ (response_remaining|abs)|int }} hours{% endif %}">
                                                 <i class="fas fa-clock"></i> Response Overdue
                                             </span>
                                         {% elif response_remaining < 2 %}
-                                            <span class="badge bg-warning" data-bs-toggle="tooltip" title="Response due in {{ format_duration(response_remaining * 60) }}">
+                                            <span class="badge bg-warning" data-bs-toggle="tooltip" 
+                                                  title="Response due in {% if format_duration is defined %}{{ format_duration((response_remaining * 60)|int) }}{% else %}{{ response_remaining|int }} hours{% endif %}">
                                                 <i class="fas fa-clock"></i> Response Due Soon
                                             </span>
                                         {% endif %}
@@ -87,11 +89,13 @@
                                     {% if not ticket.resolved_at and ticket.sla_resolution_due_at %}
                                         {% set resolution_remaining = (ticket.sla_resolution_due_at - now).total_seconds() / 3600 %}
                                         {% if resolution_remaining < 0 %}
-                                            <span class="badge bg-danger" data-bs-toggle="tooltip" title="Resolution Overdue by {{ format_duration(resolution_remaining|abs * 60) }}">
+                                            <span class="badge bg-danger" data-bs-toggle="tooltip" 
+                                                  title="Resolution Overdue by {% if format_duration is defined %}{{ format_duration((resolution_remaining|abs * 60)|int) }}{% else %}{{ (resolution_remaining|abs)|int }} hours{% endif %}">
                                                 <i class="fas fa-exclamation-circle"></i> Resolution Overdue
                                             </span>
                                         {% elif resolution_remaining < 4 %}
-                                            <span class="badge bg-warning" data-bs-toggle="tooltip" title="Resolution due in {{ format_duration(resolution_remaining * 60) }}">
+                                            <span class="badge bg-warning" data-bs-toggle="tooltip" 
+                                                  title="Resolution due in {% if format_duration is defined %}{{ format_duration((resolution_remaining * 60)|int) }}{% else %}{{ resolution_remaining|int }} hours{% endif %}">
                                                 <i class="fas fa-clock"></i> Due Soon
                                             </span>
                                         {% endif %}

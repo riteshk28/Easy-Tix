@@ -166,7 +166,7 @@
                                     </div>
                                 </div>
                                 <small class="text-muted">
-                                    Due in {{ format_duration(response_remaining * 60) }}
+                                    Due in {% if format_duration is defined %}{{ format_duration((response_remaining * 60)|int) }}{% else %}{{ response_remaining|int }} hours{% endif %}
                                 </small>
                             {% else %}
                                 <span class="text-muted">No SLA set</span>
@@ -195,7 +195,7 @@
                                     </div>
                                 </div>
                                 <small class="text-muted">
-                                    Due in {{ format_duration(resolution_remaining * 60) }}
+                                    Due in {% if format_duration is defined %}{{ format_duration((resolution_remaining * 60)|int) }}{% else %}{{ resolution_remaining|int }} hours{% endif %}
                                 </small>
                             {% else %}
                                 <span class="text-muted">No SLA set</span>
