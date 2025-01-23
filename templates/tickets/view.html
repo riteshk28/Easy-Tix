@@ -162,7 +162,7 @@
                                 <div class="progress">
                                     <div class="progress-bar {% if response_remaining < 2 %}bg-warning{% else %}bg-info{% endif %}" 
                                          role="progressbar" 
-                                         style="width: {{ (response_remaining / 24 * 100)|min(100) }}%">
+                                         style="width: {% if response_remaining > 24 %}100{% else %}{{ (response_remaining / 24 * 100) }}{% endif %}%">
                                     </div>
                                 </div>
                                 <small class="text-muted">
@@ -191,7 +191,7 @@
                                 <div class="progress">
                                     <div class="progress-bar {% if resolution_remaining < 4 %}bg-warning{% else %}bg-info{% endif %}" 
                                          role="progressbar" 
-                                         style="width: {{ (resolution_remaining / 72 * 100)|min(100) }}%">
+                                         style="width: {% if resolution_remaining > 72 %}100{% else %}{{ (resolution_remaining / 72 * 100) }}{% endif %}%">
                                     </div>
                                 </div>
                                 <small class="text-muted">
