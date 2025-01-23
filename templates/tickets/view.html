@@ -55,6 +55,8 @@
                                         {% if ticket.sla_response_met %}Met{% else %}Breached{% endif %}
                                         <small>({{ ticket.first_response_at.strftime('%H:%M %d/%m') }})</small>
                                     </span>
+                                {% elif ticket.status in ['resolved', 'closed'] %}
+                                    <span class="badge bg-danger">Breached</span>
                                 {% elif ticket.sla_response_due_at %}
                                     {% set response_remaining = (ticket.sla_response_due_at - now).total_seconds() / 3600 %}
                                     <span class="badge {% if response_remaining < 2 %}bg-warning{% else %}bg-info{% endif %}">
@@ -66,10 +68,10 @@
                             </div>
                             <div class="d-flex justify-content-between align-items-center">
                                 <small class="text-muted">Resolution SLA:</small>
-                                {% if ticket.resolved_at %}
+                                {% if ticket.resolved_at or ticket.status == 'closed' %}
                                     <span class="badge {% if ticket.sla_resolution_met %}bg-success{% else %}bg-danger{% endif %}">
                                         {% if ticket.sla_resolution_met %}Met{% else %}Breached{% endif %}
-                                        <small>({{ ticket.resolved_at.strftime('%H:%M %d/%m') }})</small>
+                                        <small>({{ (ticket.resolved_at or ticket.updated_at).strftime('%H:%M %d/%m') }})</small>
                                     </span>
                                 {% elif ticket.status == 'on_hold' %}
                                     <span class="badge bg-warning">Paused</span>
@@ -101,6 +103,16 @@
 
                         <!-- Metadata -->
                         <div class="text-muted small">
+                            <div class="mb-2">
+                                {% if ticket.created_by %}
+                                    <div>Created by: {{ ticket.created_by.first_name }} {{ ticket.created_by.last_name }}</div>
+                                {% elif ticket.contact_email %}
+                                    <div>Created by: {{ ticket.contact_email }}</div>
+                                {% endif %}
+                                {% if ticket.contact_name and not ticket.created_by %}
+                                    <div>Customer: {{ ticket.contact_name }}</div>
+                                {% endif %}
+                            </div>
                             <div>Created: {{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
                             {% if ticket.updated_at %}
                             <div>Updated: {{ ticket.updated_at.strftime('%Y-%m-%d %H:%M') }}</div>
