@@ -87,14 +87,40 @@ def update(ticket_id):
         tenant_id=current_user.tenant_id
     ).first_or_404()
     
+    # Track old status for SLA calculations
+    old_status = ticket.status
+    old_assigned_to = ticket.assigned_to_id
+    
+    # Update ticket fields
     if 'status' in request.form:
         ticket.status = request.form['status']
     if 'priority' in request.form:
         ticket.priority = request.form['priority']
     if 'assigned_to_id' in request.form:
         ticket.assigned_to_id = request.form['assigned_to_id'] or None
-        
-    ticket.updated_at = datetime.utcnow()
+    
+    # Handle SLA timing
+    now = datetime.utcnow()
+    
+    # First response time - when ticket is first assigned or first comment added
+    if not ticket.first_response_at and (
+        (old_assigned_to is None and ticket.assigned_to_id is not None) or
+        (old_status == 'open' and ticket.status in ['in_progress', 'resolved', 'closed'])
+    ):
+        ticket.first_response_at = now
+        ticket.sla_response_met = now <= ticket.sla_response_due_at if ticket.sla_response_due_at else True
+    
+    # Resolution time - when ticket is marked as resolved or closed
+    if not ticket.resolved_at and ticket.status in ['resolved', 'closed']:
+        ticket.resolved_at = now
+        ticket.sla_resolution_met = now <= ticket.sla_resolution_due_at if ticket.sla_resolution_due_at else True
+    
+    # If ticket is reopened, reset resolution time
+    if old_status in ['resolved', 'closed'] and ticket.status not in ['resolved', 'closed']:
+        ticket.resolved_at = None
+        ticket.sla_resolution_met = None
+    
+    ticket.updated_at = now
     db.session.commit()
     
     flash('Ticket updated successfully')
@@ -112,16 +138,21 @@ def add_comment(ticket_id):
         ticket_id=ticket.id,
         content=request.form['content'],
         user_id=current_user.id,
-        is_internal=is_internal  # Now properly converted to boolean
+        is_internal=is_internal
     )
     
     db.session.add(comment)
+    
+    # Update first response time if this is the first non-internal comment
+    if not ticket.first_response_at and not is_internal:
+        now = datetime.utcnow()
+        ticket.first_response_at = now
+        ticket.sla_response_met = now <= ticket.sla_response_due_at if ticket.sla_response_due_at else True
+    
     db.session.commit()
     
-    # Only send email if:
-    # 1. Comment is not internal
-    # 2. Ticket has a contact_email
-    if not comment.is_internal and ticket.contact_email:
+    # Only send email if comment is not internal and ticket has contact email
+    if not is_internal and ticket.contact_email:
         mailer = MailerSendService()
         mailer.send_ticket_notification(ticket, comment)
     
