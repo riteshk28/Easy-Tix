@@ -50,7 +50,8 @@
                         <th>Priority</th>
                         <th>Assigned To</th>
                         <th>Created</th>
-                        <th>SLA</th>
+                        <th>Response SLA</th>
+                        <th>Resolution SLA</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -68,39 +69,42 @@
                             {% endif %}
                         </td>
                         <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td class="text-center">
-                            {% if ticket.sla_response_due_at or ticket.sla_resolution_due_at %}
-                                <div class="sla-indicator">
-                                    {% if not ticket.first_response_at and ticket.sla_response_due_at %}
-                                        {% set response_remaining = (ticket.sla_response_due_at - now).total_seconds() / 3600 %}
-                                        {% if response_remaining < 0 %}
-                                            <span class="badge bg-danger" data-bs-toggle="tooltip" 
-                                                  title="Response Overdue by {% if format_duration is defined %}{{ format_duration((response_remaining|abs * 60)|int) }}{% else %}{{ (response_remaining|abs)|int }} hours{% endif %}">
-                                                <i class="fas fa-clock"></i> Response Overdue
-                                            </span>
-                                        {% elif response_remaining < 2 %}
-                                            <span class="badge bg-warning" data-bs-toggle="tooltip" 
-                                                  title="Response due in {% if format_duration is defined %}{{ format_duration((response_remaining * 60)|int) }}{% else %}{{ response_remaining|int }} hours{% endif %}">
-                                                <i class="fas fa-clock"></i> Response Due Soon
-                                            </span>
-                                        {% endif %}
-                                    {% endif %}
-                                    
-                                    {% if not ticket.resolved_at and ticket.sla_resolution_due_at %}
-                                        {% set resolution_remaining = (ticket.sla_resolution_due_at - now).total_seconds() / 3600 %}
-                                        {% if resolution_remaining < 0 %}
-                                            <span class="badge bg-danger" data-bs-toggle="tooltip" 
-                                                  title="Resolution Overdue by {% if format_duration is defined %}{{ format_duration((resolution_remaining|abs * 60)|int) }}{% else %}{{ (resolution_remaining|abs)|int }} hours{% endif %}">
-                                                <i class="fas fa-exclamation-circle"></i> Resolution Overdue
-                                            </span>
-                                        {% elif resolution_remaining < 4 %}
-                                            <span class="badge bg-warning" data-bs-toggle="tooltip" 
-                                                  title="Resolution due in {% if format_duration is defined %}{{ format_duration((resolution_remaining * 60)|int) }}{% else %}{{ resolution_remaining|int }} hours{% endif %}">
-                                                <i class="fas fa-clock"></i> Due Soon
-                                            </span>
-                                        {% endif %}
-                                    {% endif %}
-                                </div>
+                        <td>
+                            {% if ticket.first_response_at %}
+                                {% if ticket.sla_response_met %}
+                                    <span class="badge bg-success">SLA Met</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Breached</span>
+                                {% endif %}
+                            {% elif ticket.sla_response_due_at %}
+                                {% set response_remaining = (ticket.sla_response_due_at - now).total_seconds() / 3600 %}
+                                {% if response_remaining < 0 %}
+                                    <span class="badge bg-danger">Breached</span>
+                                {% else %}
+                                    <span class="badge bg-info">In Progress</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary">Not Set</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if ticket.resolved_at %}
+                                {% if ticket.sla_resolution_met %}
+                                    <span class="badge bg-success">SLA Met</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Breached</span>
+                                {% endif %}
+                            {% elif ticket.status == 'on_hold' %}
+                                <span class="badge bg-warning">Paused</span>
+                            {% elif ticket.sla_resolution_due_at %}
+                                {% set resolution_remaining = (ticket.sla_resolution_due_at - now).total_seconds() / 3600 %}
+                                {% if resolution_remaining < 0 %}
+                                    <span class="badge bg-danger">Breached</span>
+                                {% else %}
+                                    <span class="badge bg-info">In Progress</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="badge bg-secondary">Not Set</span>
                             {% endif %}
                         </td>
                     </tr>

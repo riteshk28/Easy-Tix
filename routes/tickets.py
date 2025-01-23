@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from models import db, Ticket, TicketComment, User, Tenant, EmailConfig
-from datetime import datetime
+from models import db, Ticket, TicketComment, User, Tenant, EmailConfig, SLAConfig
+from datetime import datetime, timedelta
 from services.email_service import EmailService
 from services.mailersend_service import MailerSendService
 
@@ -109,15 +109,32 @@ def update(ticket_id):
         ticket.first_response_at = now
         ticket.sla_response_met = now <= ticket.sla_response_due_at if ticket.sla_response_due_at else True
     
+    # Resolution time handling
+    if ticket.status == 'on_hold' and old_status != 'on_hold':
+        # Store current time when putting on hold
+        ticket.on_hold_at = now
+    elif old_status == 'on_hold' and ticket.status != 'on_hold':
+        # Adjust SLA deadlines when taking off hold
+        hold_duration = (now - ticket.on_hold_at).total_seconds() if ticket.on_hold_at else 0
+        if ticket.sla_resolution_due_at:
+            ticket.sla_resolution_due_at = ticket.sla_resolution_due_at + timedelta(seconds=hold_duration)
+    
     # Resolution time - when ticket is marked as resolved or closed
     if not ticket.resolved_at and ticket.status in ['resolved', 'closed']:
         ticket.resolved_at = now
         ticket.sla_resolution_met = now <= ticket.sla_resolution_due_at if ticket.sla_resolution_due_at else True
     
-    # If ticket is reopened, reset resolution time
+    # If ticket is reopened, recalculate resolution time
     if old_status in ['resolved', 'closed'] and ticket.status not in ['resolved', 'closed']:
         ticket.resolved_at = None
         ticket.sla_resolution_met = None
+        # Set new resolution deadline based on current SLA config
+        sla_config = SLAConfig.query.filter_by(
+            tenant_id=ticket.tenant_id,
+            priority=ticket.priority
+        ).first()
+        if sla_config:
+            ticket.sla_resolution_due_at = now + timedelta(minutes=sla_config.resolution_time)
     
     ticket.updated_at = now
     db.session.commit()
