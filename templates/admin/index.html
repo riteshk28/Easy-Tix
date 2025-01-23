@@ -301,7 +301,9 @@
                                                 <span class="input-group-text">minutes</span>
                                             </div>
                                         </div>
-                                        <div class="form-text">Currently: {{ format_duration(sla_config.high.response_time|default(240)) }}</div>
+                                        <div class="form-text">
+                                            Currently: {{ format_duration(sla_config.high.response_time) if sla_config.high else format_duration(240) }}
+                                        </div>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label d-flex justify-content-between">
@@ -327,7 +329,9 @@
                                                 <span class="input-group-text">hours</span>
                                             </div>
                                         </div>
-                                        <div class="form-text">Currently: {{ format_duration(sla_config.high.resolution_time|default(1440)) }}</div>
+                                        <div class="form-text">
+                                            Currently: {{ format_duration(sla_config.high.resolution_time) if sla_config.high else format_duration(1440) }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -368,7 +372,9 @@
                                                 <span class="input-group-text">minutes</span>
                                             </div>
                                         </div>
-                                        <div class="form-text">Currently: {{ format_duration(sla_config.medium.response_time|default(480)) }}</div>
+                                        <div class="form-text">
+                                            Currently: {{ format_duration(sla_config.medium.response_time) if sla_config.medium else format_duration(480) }}
+                                        </div>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label d-flex justify-content-between">
@@ -394,7 +400,9 @@
                                                 <span class="input-group-text">hours</span>
                                             </div>
                                         </div>
-                                        <div class="form-text">Currently: {{ format_duration(sla_config.medium.resolution_time|default(2880)) }}</div>
+                                        <div class="form-text">
+                                            Currently: {{ format_duration(sla_config.medium.resolution_time) if sla_config.medium else format_duration(2880) }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -435,7 +443,9 @@
                                                 <span class="input-group-text">minutes</span>
                                             </div>
                                         </div>
-                                        <div class="form-text">Currently: {{ format_duration(sla_config.low.response_time|default(1440)) }}</div>
+                                        <div class="form-text">
+                                            Currently: {{ format_duration(sla_config.low.response_time) if sla_config.low else format_duration(1440) }}
+                                        </div>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label d-flex justify-content-between">
@@ -461,7 +471,9 @@
                                                 <span class="input-group-text">hours</span>
                                             </div>
                                         </div>
-                                        <div class="form-text">Currently: {{ format_duration(sla_config.low.resolution_time|default(4320)) }}</div>
+                                        <div class="form-text">
+                                            Currently: {{ format_duration(sla_config.low.resolution_time) if sla_config.low else format_duration(4320) }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

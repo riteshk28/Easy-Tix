@@ -15,6 +15,29 @@ logging.basicConfig(level=logging.INFO)
 
 admin = Blueprint('admin', __name__)
 
+def format_duration(minutes):
+    """Format minutes into a human-readable duration."""
+    if not minutes:
+        return "Not set"
+    
+    days = minutes // 1440  # minutes in a day
+    remaining_minutes = minutes % 1440
+    hours = remaining_minutes // 60
+    mins = remaining_minutes % 60
+    
+    parts = []
+    if days > 0:
+        parts.append(f"{days} day{'s' if days != 1 else ''}")
+    if hours > 0:
+        parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+    if mins > 0:
+        parts.append(f"{mins} minute{'s' if mins != 1 else ''}")
+    
+    return ", ".join(parts) if parts else "0 minutes"
+
+# Register the template filter right after creating the Blueprint
+admin.add_app_template_filter(format_duration)
+
 def admin_required(f):
     @wraps(f)
     @login_required
@@ -352,29 +375,6 @@ def toggle_auto_renew():
     db.session.commit()
     flash('Auto-renewal settings updated')
     return redirect(url_for('admin.index')) 
-
-def format_duration(minutes):
-    """Format minutes into a human-readable duration."""
-    if not minutes:
-        return "Not set"
-    
-    days = minutes // 1440  # minutes in a day
-    remaining_minutes = minutes % 1440
-    hours = remaining_minutes // 60
-    mins = remaining_minutes % 60
-    
-    parts = []
-    if days > 0:
-        parts.append(f"{days} day{'s' if days != 1 else ''}")
-    if hours > 0:
-        parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
-    if mins > 0:
-        parts.append(f"{mins} minute{'s' if mins != 1 else ''}")
-    
-    return ", ".join(parts)
-
-# Register the template filter
-admin.add_app_template_filter(format_duration)
 
 @admin.route('/update-sla-config', methods=['POST'])
 @admin_required
