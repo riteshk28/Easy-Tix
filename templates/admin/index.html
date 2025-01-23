@@ -302,7 +302,16 @@
                                             </div>
                                         </div>
                                         <div class="form-text">
-                                            Currently: {{ format_duration(sla_config.high.response_time) if sla_config.high else format_duration(240) }}
+                                            Currently: 
+                                            {% if sla_config.high and sla_config.high.response_time %}
+                                                {% if format_duration is defined %}
+                                                    {{ format_duration(sla_config.high.response_time) }}
+                                                {% else %}
+                                                    {{ sla_config.high.response_time }} minutes
+                                                {% endif %}
+                                            {% else %}
+                                                4 hours
+                                            {% endif %}
                                         </div>
                                     </div>
                                     <div class="mb-3">
