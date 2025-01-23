@@ -28,7 +28,8 @@ def index():
                          tickets=tickets,
                          agents=agents,
                          status_filter=status_filter,
-                         priority_filter=priority_filter)
+                         priority_filter=priority_filter,
+                         now=datetime.utcnow())
 
 @tickets.route('/create', methods=['GET', 'POST'])
 @login_required
@@ -50,6 +51,10 @@ def create():
             ticket.assigned_to_id = request.form['assigned_to_id']
             
         db.session.add(ticket)
+        db.session.commit()
+        
+        # Calculate SLA deadlines
+        ticket.calculate_sla_deadlines()
         db.session.commit()
         
         flash('Ticket created successfully')
