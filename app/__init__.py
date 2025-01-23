@@ -17,15 +17,17 @@ def create_app():
     login_manager.init_app(app)
     migrate.init_app(app, db)
     
-    # Template filters
-    @app.template_filter('datetime')
-    def format_datetime(value):
-        if value is None:
-            return ""
-        return value.strftime('%Y-%m-%d %H:%M')
+    # Register blueprints
+    app.register_blueprint(auth)
+    app.register_blueprint(dashboard)
+    app.register_blueprint(admin, url_prefix='/admin')
+    app.register_blueprint(tickets, url_prefix='/tickets')
+    app.register_blueprint(public)
+    app.register_blueprint(webhooks)
     
-    @app.template_filter('format_duration')
+    # Template filters
     def format_duration(minutes):
+        """Format minutes into a human-readable duration."""
         if not minutes:
             return "Not set"
         
@@ -44,13 +46,13 @@ def create_app():
         
         return ", ".join(parts) if parts else "0 minutes"
     
-    # Register blueprints
-    app.register_blueprint(auth)
-    app.register_blueprint(dashboard)
-    app.register_blueprint(admin, url_prefix='/admin')
-    app.register_blueprint(tickets, url_prefix='/tickets')
-    app.register_blueprint(public)
-    app.register_blueprint(webhooks)
+    app.jinja_env.filters['format_duration'] = format_duration
+    
+    @app.template_filter('datetime')
+    def format_datetime(value):
+        if value is None:
+            return ""
+        return value.strftime('%Y-%m-%d %H:%M')
     
     # Context processor for template globals
     @app.context_processor
