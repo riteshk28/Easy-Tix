@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from models import db, User, Tenant, SubscriptionPayment, SLAConfig
+from models import db, User, Tenant, SubscriptionPayment, SLAConfig, Ticket
 from werkzeug.security import generate_password_hash
 from functools import wraps
 import stripe  # Add stripe for payments
@@ -394,5 +394,23 @@ def update_sla_config():
         db.session.rollback()
         flash('Error updating SLA configuration', 'error')
         current_app.logger.error(f"Error updating SLA config: {str(e)}")
+    
+    return redirect(url_for('admin.index')) 
+
+@admin.route('/recalculate-sla', methods=['POST'])
+@admin_required
+def recalculate_sla():
+    """Admin route to recalculate SLA for all tenant's tickets."""
+    try:
+        # Only recalculate for tickets in the current tenant
+        tickets = Ticket.query.filter_by(tenant_id=current_user.tenant_id).all()
+        for ticket in tickets:
+            ticket.calculate_sla_deadlines()
+        db.session.commit()
+        flash(f'Successfully recalculated SLA for {len(tickets)} tickets', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error recalculating SLA settings', 'error')
+        current_app.logger.error(f"Error in recalculate_sla: {str(e)}")
     
     return redirect(url_for('admin.index')) 

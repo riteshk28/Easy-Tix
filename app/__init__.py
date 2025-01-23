@@ -7,6 +7,7 @@ from routes.tickets import tickets
 from routes.public import public
 from routes.webhooks import webhooks
 from datetime import datetime
+from commands.recalculate_sla import recalculate_sla
 
 def create_app():
     app = Flask(__name__)
@@ -62,5 +63,7 @@ def create_app():
     @app.context_processor
     def utility_processor():
         return {'now': datetime.utcnow}
+    
+    app.cli.add_command(recalculate_sla)
     
     return app 

@@ -543,6 +543,18 @@
                         </small>
                     </div>
                 </form>
+
+                <!-- Add this right after the SLA configuration form -->
+                <div class="mt-3">
+                    <form method="POST" action="{{ url_for('admin.recalculate_sla') }}" class="d-inline">
+                        <button type="submit" class="btn btn-secondary">
+                            <i class="fas fa-sync"></i> Recalculate SLA for Existing Tickets
+                        </button>
+                        <small class="text-muted ms-2">
+                            <i class="fas fa-info-circle"></i> Use this if you want to apply new SLA settings to existing tickets
+                        </small>
+                    </form>
+                </div>
             </div>
         </div>
 

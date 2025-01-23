@@ -20,7 +20,6 @@ def index():
     if priority_filter:
         query = query.filter_by(priority=priority_filter)
         
-    # Always order by created_at descending (newest first)
     tickets = query.order_by(Ticket.created_at.desc()).all()
     agents = User.query.filter_by(tenant_id=current_user.tenant_id).all()
     
@@ -51,15 +50,15 @@ def create():
             ticket.assigned_to_id = request.form['assigned_to_id']
             
         db.session.add(ticket)
-        db.session.commit()
+        db.session.commit()  # Commit first to get the ticket ID
         
         # Calculate SLA deadlines
         ticket.calculate_sla_deadlines()
-        db.session.commit()
+        db.session.commit()  # Commit again to save SLA deadlines
         
         flash('Ticket created successfully')
         return redirect(url_for('tickets.view', ticket_id=ticket.id))
-        
+    
     agents = User.query.filter_by(tenant_id=current_user.tenant_id).all()
     return render_template('tickets/create.html', agents=agents)
 
@@ -72,11 +71,13 @@ def view(ticket_id):
     ).first_or_404()
     
     agents = User.query.filter_by(tenant_id=current_user.tenant_id).all()
-    
-    # Get comments in reverse chronological order using the query interface
     comments = ticket.comments.order_by(TicketComment.created_at.desc()).all()
     
-    return render_template('tickets/view.html', ticket=ticket, agents=agents, comments=comments)
+    return render_template('tickets/view.html', 
+                         ticket=ticket, 
+                         agents=agents, 
+                         comments=comments,
+                         now=datetime.utcnow())
 
 @tickets.route('/<int:ticket_id>/update', methods=['POST'])
 @login_required
