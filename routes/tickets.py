@@ -102,10 +102,9 @@ def update(ticket_id):
     # Handle SLA timing
     now = datetime.utcnow()
     
-    # First response time - when ticket is first assigned or first comment added
+    # First response time - when ticket is assigned AND moved to in_progress
     if not ticket.first_response_at and (
-        (old_assigned_to is None and ticket.assigned_to_id is not None) or
-        (old_status == 'open' and ticket.status in ['in_progress', 'resolved', 'closed'])
+        ticket.status == 'in_progress' and ticket.assigned_to_id is not None
     ):
         ticket.first_response_at = now
         ticket.sla_response_met = now <= ticket.sla_response_due_at if ticket.sla_response_due_at else True

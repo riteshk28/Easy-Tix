@@ -151,7 +151,7 @@
                                 <div class="d-flex align-items-center">
                                     <span class="badge {% if ticket.sla_response_met %}bg-success{% else %}bg-danger{% endif %} me-2">
                                         <i class="fas {% if ticket.sla_response_met %}fa-check{% else %}fa-times{% endif %}"></i>
-                                        First Response: {{ ticket.first_response_at|datetime }}
+                                        First Response: {% if datetime is defined %}{{ ticket.first_response_at|datetime }}{% else %}{{ ticket.first_response_at.strftime('%Y-%m-%d %H:%M') }}{% endif %}
                                     </span>
                                     {% if not ticket.sla_response_met %}
                                         <span class="text-danger">(SLA Breached)</span>
@@ -180,7 +180,7 @@
                                 <div class="d-flex align-items-center">
                                     <span class="badge {% if ticket.sla_resolution_met %}bg-success{% else %}bg-danger{% endif %} me-2">
                                         <i class="fas {% if ticket.sla_resolution_met %}fa-check{% else %}fa-times{% endif %}"></i>
-                                        Resolution: {{ ticket.resolved_at|datetime }}
+                                        Resolution: {% if datetime is defined %}{{ ticket.resolved_at|datetime }}{% else %}{{ ticket.resolved_at.strftime('%Y-%m-%d %H:%M') }}{% endif %}
                                     </span>
                                     {% if not ticket.sla_resolution_met %}
                                         <span class="text-danger">(SLA Breached)</span>

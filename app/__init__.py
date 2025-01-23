@@ -18,7 +18,14 @@ def create_app():
     login_manager.init_app(app)
     migrate.init_app(app, db)
     
-    # Register filters FIRST
+    # Register filters FIRST - before any template rendering
+    @app.template_filter()
+    def datetime(value):
+        """Format a datetime object."""
+        if value is None:
+            return ""
+        return value.strftime('%Y-%m-%d %H:%M')
+
     def format_duration(minutes):
         """Format minutes into a human-readable duration."""
         if not minutes:
@@ -43,13 +50,7 @@ def create_app():
     
     # Register both ways to be safe
     app.jinja_env.filters['format_duration'] = format_duration
-    app.template_filter('format_duration')(format_duration)
-    
-    @app.template_filter('datetime')
-    def format_datetime(value):
-        if value is None:
-            return ""
-        return value.strftime('%Y-%m-%d %H:%M')
+    app.jinja_env.filters['datetime'] = datetime
     
     # Then register blueprints
     app.register_blueprint(auth)
