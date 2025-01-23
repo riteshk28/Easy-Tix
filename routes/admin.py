@@ -35,9 +35,6 @@ def format_duration(minutes):
     
     return ", ".join(parts) if parts else "0 minutes"
 
-# Register the template filter right after creating the Blueprint
-admin.add_app_template_filter(format_duration)
-
 def admin_required(f):
     @wraps(f)
     @login_required
