@@ -323,4 +323,29 @@
     color: #6c757d;
     letter-spacing: 2px;
     text-transform: uppercase;
+}
+
+.sla-indicator {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.sla-indicator .badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.sla-progress-item {
+    margin-bottom: 1rem;
+}
+
+.sla-progress-item label {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.sla-progress-item .progress {
+    height: 0.5rem;
+    margin-bottom: 0.25rem;
 } 

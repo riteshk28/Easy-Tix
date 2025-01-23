@@ -137,6 +137,74 @@
                 </form>
             </div>
         </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-stopwatch"></i> SLA Status</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="sla-progress-item">
+                            <label>First Response</label>
+                            {% if ticket.first_response_at %}
+                                <div class="d-flex align-items-center">
+                                    <span class="badge {% if ticket.sla_response_met %}bg-success{% else %}bg-danger{% endif %} me-2">
+                                        <i class="fas {% if ticket.sla_response_met %}fa-check{% else %}fa-times{% endif %}"></i>
+                                    </span>
+                                    {{ ticket.first_response_at|datetime }}
+                                    {% if not ticket.sla_response_met %}
+                                        <span class="text-danger ms-2">(Overdue)</span>
+                                    {% endif %}
+                                </div>
+                            {% elif ticket.sla_response_due_at %}
+                                {% set response_remaining = (ticket.sla_response_due_at - now).total_seconds() / 3600 %}
+                                <div class="progress">
+                                    <div class="progress-bar {% if response_remaining < 2 %}bg-warning{% else %}bg-info{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ (response_remaining / 24 * 100)|min(100) }}%">
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    Due in {{ format_duration(response_remaining * 60) }}
+                                </small>
+                            {% else %}
+                                <span class="text-muted">No SLA set</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="sla-progress-item">
+                            <label>Resolution</label>
+                            {% if ticket.resolved_at %}
+                                <div class="d-flex align-items-center">
+                                    <span class="badge {% if ticket.sla_resolution_met %}bg-success{% else %}bg-danger{% endif %} me-2">
+                                        <i class="fas {% if ticket.sla_resolution_met %}fa-check{% else %}fa-times{% endif %}"></i>
+                                    </span>
+                                    {{ ticket.resolved_at|datetime }}
+                                    {% if not ticket.sla_resolution_met %}
+                                        <span class="text-danger ms-2">(Overdue)</span>
+                                    {% endif %}
+                                </div>
+                            {% elif ticket.sla_resolution_due_at %}
+                                {% set resolution_remaining = (ticket.sla_resolution_due_at - now).total_seconds() / 3600 %}
+                                <div class="progress">
+                                    <div class="progress-bar {% if resolution_remaining < 4 %}bg-warning{% else %}bg-info{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ (resolution_remaining / 72 * 100)|min(100) }}%">
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    Due in {{ format_duration(resolution_remaining * 60) }}
+                                </small>
+                            {% else %}
+                                <span class="text-muted">No SLA set</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

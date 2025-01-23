@@ -240,6 +240,246 @@
 
     <!-- Settings & Integration Tab -->
     <div class="tab-pane fade" id="settings" role="tabpanel">
+        <!-- SLA Configuration Section -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">SLA Configuration</h5>
+                <button type="button" class="btn btn-link" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="left" 
+                        title="SLA (Service Level Agreement) defines response and resolution time commitments for your support tickets.<br><br>
+                        • Response Time: Maximum time to first reply<br>
+                        • Resolution Time: Maximum time to resolve<br><br>
+                        Times are measured during business hours.">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <!-- Add alert with general guidance -->
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-lightbulb"></i>
+                    <strong>Pro Tips:</strong>
+                    <ul class="mb-0">
+                        <li>Set realistic SLAs that your team can consistently meet</li>
+                        <li>Consider your business hours when setting timeframes</li>
+                        <li>Higher priority tickets should have shorter response times</li>
+                    </ul>
+                </div>
+
+                <form method="POST" action="{{ url_for('admin.update_sla_config') }}">
+                    <div class="row">
+                        <!-- High Priority SLA -->
+                        <div class="col-md-4">
+                            <div class="card border-danger">
+                                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-exclamation-circle"></i> High Priority</span>
+                                    <button type="button" class="btn btn-link text-white p-0" data-bs-toggle="tooltip" 
+                                            title="Use for urgent issues that severely impact business operations">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label d-flex justify-content-between">
+                                            First Response Time
+                                            <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="tooltip"
+                                                    title="Maximum time to send first response to the customer">
+                                                <i class="fas fa-question-circle"></i>
+                                            </button>
+                                        </label>
+                                        <div class="time-input-group">
+                                            <div class="input-group mb-2">
+                                                <input type="number" class="form-control" 
+                                                       name="high_response_hours" 
+                                                       value="{{ (sla_config.high.response_time|default(4)|int // 60) }}"
+                                                       min="0" max="999">
+                                                <span class="input-group-text">hours</span>
+                                            </div>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" 
+                                                       name="high_response_minutes" 
+                                                       value="{{ (sla_config.high.response_time|default(4)|int % 60) }}"
+                                                       min="0" max="59">
+                                                <span class="input-group-text">minutes</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-text">Currently: {{ format_duration(sla_config.high.response_time|default(240)) }}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label d-flex justify-content-between">
+                                            Resolution Time
+                                            <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="tooltip"
+                                                    title="Maximum time to completely resolve the ticket">
+                                                <i class="fas fa-question-circle"></i>
+                                            </button>
+                                        </label>
+                                        <div class="time-input-group">
+                                            <div class="input-group mb-2">
+                                                <input type="number" class="form-control" 
+                                                       name="high_resolution_days" 
+                                                       value="{{ (sla_config.high.resolution_time|default(1440)|int // 1440) }}"
+                                                       min="0" max="365">
+                                                <span class="input-group-text">days</span>
+                                            </div>
+                                            <div class="input-group mb-2">
+                                                <input type="number" class="form-control" 
+                                                       name="high_resolution_hours" 
+                                                       value="{{ ((sla_config.high.resolution_time|default(1440)|int % 1440) // 60) }}"
+                                                       min="0" max="23">
+                                                <span class="input-group-text">hours</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-text">Currently: {{ format_duration(sla_config.high.resolution_time|default(1440)) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Medium Priority SLA -->
+                        <div class="col-md-4">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-exclamation-triangle"></i> Medium Priority</span>
+                                    <button type="button" class="btn btn-link text-dark p-0" data-bs-toggle="tooltip" 
+                                            title="Use for important issues that affect work but have workarounds">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label d-flex justify-content-between">
+                                            First Response Time
+                                            <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="tooltip"
+                                                    title="Maximum time to send first response to the customer">
+                                                <i class="fas fa-question-circle"></i>
+                                            </button>
+                                        </label>
+                                        <div class="time-input-group">
+                                            <div class="input-group mb-2">
+                                                <input type="number" class="form-control" 
+                                                       name="medium_response_hours" 
+                                                       value="{{ (sla_config.medium.response_time|default(4)|int // 60) }}"
+                                                       min="0" max="999">
+                                                <span class="input-group-text">hours</span>
+                                            </div>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" 
+                                                       name="medium_response_minutes" 
+                                                       value="{{ (sla_config.medium.response_time|default(4)|int % 60) }}"
+                                                       min="0" max="59">
+                                                <span class="input-group-text">minutes</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-text">Currently: {{ format_duration(sla_config.medium.response_time|default(480)) }}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label d-flex justify-content-between">
+                                            Resolution Time
+                                            <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="tooltip"
+                                                    title="Maximum time to completely resolve the ticket">
+                                                <i class="fas fa-question-circle"></i>
+                                            </button>
+                                        </label>
+                                        <div class="time-input-group">
+                                            <div class="input-group mb-2">
+                                                <input type="number" class="form-control" 
+                                                       name="medium_resolution_days" 
+                                                       value="{{ (sla_config.medium.resolution_time|default(2880)|int // 1440) }}"
+                                                       min="0" max="365">
+                                                <span class="input-group-text">days</span>
+                                            </div>
+                                            <div class="input-group mb-2">
+                                                <input type="number" class="form-control" 
+                                                       name="medium_resolution_hours" 
+                                                       value="{{ ((sla_config.medium.resolution_time|default(2880)|int % 1440) // 60) }}"
+                                                       min="0" max="23">
+                                                <span class="input-group-text">hours</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-text">Currently: {{ format_duration(sla_config.medium.resolution_time|default(2880)) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Low Priority SLA -->
+                        <div class="col-md-4">
+                            <div class="card border-success">
+                                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                    <span><i class="fas fa-info-circle"></i> Low Priority</span>
+                                    <button type="button" class="btn btn-link text-white p-0" data-bs-toggle="tooltip" 
+                                            title="Use for minor issues or enhancement requests">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label d-flex justify-content-between">
+                                            First Response Time
+                                            <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="tooltip"
+                                                    title="Maximum time to send first response to the customer">
+                                                <i class="fas fa-question-circle"></i>
+                                            </button>
+                                        </label>
+                                        <div class="time-input-group">
+                                            <div class="input-group mb-2">
+                                                <input type="number" class="form-control" 
+                                                       name="low_response_hours" 
+                                                       value="{{ (sla_config.low.response_time|default(1440)|int // 60) }}"
+                                                       min="0" max="999">
+                                                <span class="input-group-text">hours</span>
+                                            </div>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" 
+                                                       name="low_response_minutes" 
+                                                       value="{{ (sla_config.low.response_time|default(1440)|int % 60) }}"
+                                                       min="0" max="59">
+                                                <span class="input-group-text">minutes</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-text">Currently: {{ format_duration(sla_config.low.response_time|default(1440)) }}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label d-flex justify-content-between">
+                                            Resolution Time
+                                            <button type="button" class="btn btn-link btn-sm p-0" data-bs-toggle="tooltip"
+                                                    title="Maximum time to completely resolve the ticket">
+                                                <i class="fas fa-question-circle"></i>
+                                            </button>
+                                        </label>
+                                        <div class="time-input-group">
+                                            <div class="input-group mb-2">
+                                                <input type="number" class="form-control" 
+                                                       name="low_resolution_days" 
+                                                       value="{{ (sla_config.low.resolution_time|default(4320)|int // 1440) }}"
+                                                       min="0" max="365">
+                                                <span class="input-group-text">days</span>
+                                            </div>
+                                            <div class="input-group mb-2">
+                                                <input type="number" class="form-control" 
+                                                       name="low_resolution_hours" 
+                                                       value="{{ ((sla_config.low.resolution_time|default(4320)|int % 1440) // 60) }}"
+                                                       min="0" max="23">
+                                                <span class="input-group-text">hours</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-text">Currently: {{ format_duration(sla_config.low.resolution_time|default(4320)) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save SLA Configuration
+                        </button>
+                        <small class="text-muted ms-2">
+                            <i class="fas fa-clock"></i> Changes will apply to new tickets only
+                        </small>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Support Email Configuration -->
         <div class="card mb-4">
             <div class="card-header">
@@ -317,6 +557,17 @@
 </div>
 {% endif %}
 
+<!-- Initialize tooltips -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            html: true
+        })
+    })
+});
+</script>
 {% endblock %}
 
 {% block scripts %}

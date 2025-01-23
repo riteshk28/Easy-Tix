@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from models import db, User, Tenant, SubscriptionPayment
+from models import db, User, Tenant, SubscriptionPayment, SLAConfig
 from werkzeug.security import generate_password_hash
 from functools import wraps
 import stripe  # Add stripe for payments
@@ -335,4 +335,71 @@ def toggle_auto_renew():
     tenant.auto_renew = not tenant.auto_renew
     db.session.commit()
     flash('Auto-renewal settings updated')
+    return redirect(url_for('admin.index')) 
+
+def format_duration(minutes):
+    """Format minutes into a human-readable duration."""
+    if not minutes:
+        return "Not set"
+    
+    days = minutes // 1440  # minutes in a day
+    remaining_minutes = minutes % 1440
+    hours = remaining_minutes // 60
+    mins = remaining_minutes % 60
+    
+    parts = []
+    if days > 0:
+        parts.append(f"{days} day{'s' if days != 1 else ''}")
+    if hours > 0:
+        parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+    if mins > 0:
+        parts.append(f"{mins} minute{'s' if mins != 1 else ''}")
+    
+    return ", ".join(parts)
+
+# Register the template filter
+admin.add_app_template_filter(format_duration)
+
+@admin.route('/update-sla-config', methods=['POST'])
+@admin_required
+def update_sla_config():
+    try:
+        priorities = ['high', 'medium', 'low']
+        
+        for priority in priorities:
+            # Convert days/hours/minutes to total minutes
+            days = int(request.form.get(f'{priority}_resolution_days', 0))
+            hours = int(request.form.get(f'{priority}_resolution_hours', 0))
+            response_hours = int(request.form.get(f'{priority}_response_hours', 0))
+            response_minutes = int(request.form.get(f'{priority}_response_minutes', 0))
+            
+            resolution_time = (days * 1440) + (hours * 60)  # Convert to minutes
+            response_time = (response_hours * 60) + response_minutes
+            
+            # Update or create SLA config
+            sla_config = db.session.query(SLAConfig).filter_by(
+                tenant_id=current_user.tenant_id,
+                priority=priority
+            ).first()
+            
+            if sla_config:
+                sla_config.response_time = response_time
+                sla_config.resolution_time = resolution_time
+            else:
+                sla_config = SLAConfig(
+                    tenant_id=current_user.tenant_id,
+                    priority=priority,
+                    response_time=response_time,
+                    resolution_time=resolution_time
+                )
+                db.session.add(sla_config)
+        
+        db.session.commit()
+        flash('SLA configuration updated successfully', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Error updating SLA configuration', 'error')
+        current_app.logger.error(f"Error updating SLA config: {str(e)}")
+    
     return redirect(url_for('admin.index')) 

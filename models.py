@@ -1,6 +1,6 @@
 from extensions import db
 from flask_login import UserMixin
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
 from sqlalchemy import select, func
@@ -196,6 +196,12 @@ class Ticket(db.Model):
     contact_name = db.Column(db.String(100))
     contact_email = db.Column(db.String(100))
     source = db.Column(db.String(20), default='portal')  # portal, email, chat
+    first_response_at = db.Column(db.DateTime)
+    resolved_at = db.Column(db.DateTime)
+    sla_response_due_at = db.Column(db.DateTime)
+    sla_resolution_due_at = db.Column(db.DateTime)
+    sla_response_met = db.Column(db.Boolean, default=None)
+    sla_resolution_met = db.Column(db.Boolean, default=None)
     
     @staticmethod
     def generate_ticket_number(tenant_id):
@@ -233,6 +239,30 @@ class Ticket(db.Model):
             
         return new_ticket_number
 
+    def calculate_sla_deadlines(self):
+        """Calculate SLA deadlines based on priority"""
+        sla_config = SLAConfig.query.filter_by(
+            tenant_id=self.tenant_id,
+            priority=self.priority.lower()
+        ).first()
+        
+        if sla_config:
+            # Set response deadline
+            if not self.first_response_at:
+                self.sla_response_due_at = self.created_at + timedelta(minutes=sla_config.response_time)
+            
+            # Set resolution deadline
+            if not self.resolved_at:
+                self.sla_resolution_due_at = self.created_at + timedelta(minutes=sla_config.resolution_time)
+    
+    def update_sla_status(self):
+        """Update SLA met/missed status"""
+        if self.first_response_at and self.sla_response_due_at:
+            self.sla_response_met = self.first_response_at <= self.sla_response_due_at
+        
+        if self.resolved_at and self.sla_resolution_due_at:
+            self.sla_resolution_met = self.resolved_at <= self.sla_resolution_due_at
+
 class TicketComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
@@ -268,3 +298,18 @@ class EmailConfig(db.Model):
     last_check = db.Column(db.DateTime)
     
     tenant = db.relationship('Tenant', backref='email_config') 
+
+class SLAConfig(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenant.id'), nullable=False)
+    priority = db.Column(db.String(20), nullable=False)
+    response_time = db.Column(db.Integer, nullable=False)  # in minutes
+    resolution_time = db.Column(db.Integer, nullable=False)  # in minutes
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    tenant = db.relationship('Tenant', backref='sla_configs')
+    
+    __table_args__ = (
+        db.UniqueConstraint('tenant_id', 'priority', name='uq_tenant_priority_sla'),
+    ) 
