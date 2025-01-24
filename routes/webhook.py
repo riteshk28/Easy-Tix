@@ -509,9 +509,10 @@ def stripe_webhook():
     except Exception as e:
         current_app.logger.error(f"Webhook error: {str(e)}")
         return jsonify({'error': str(e)}), 400 
+        
 
 @webhook.route('/api/email/incoming', methods=['POST'])
-def cloudmailin_webhook():
+def email_webhook():
     try:
         # Check content type and get data accordingly
         if request.is_json:
