@@ -514,9 +514,30 @@ def stripe_webhook():
 @webhook.route('/api/email/incoming', methods=['POST'])
 def email_webhook():
     try:
-        data = request.get_json()
+        # Check content type and get data accordingly
+        if request.is_json:
+            data = request.get_json()
+        else:
+            # Handle form data
+            data = {
+                'envelope': {
+                    'from': request.form.get('envelope[from]'),
+                    'to': request.form.get('envelope[to]')
+                },
+                'headers': {
+                    'subject': request.form.get('headers[subject]', 'No Subject'),
+                    'from': request.form.get('headers[from]')
+                },
+                'body': {
+                    'html': request.form.get('html'),
+                    'plain': request.form.get('plain')
+                },
+                'attachments': request.form.getlist('attachments[]')
+            }
         
-        # Get envelope data
+        current_app.logger.info("Received email webhook data")
+        
+        # Get envelope data (SMTP level information)
         envelope = data.get('envelope', {})
         envelope_from = envelope.get('from')
         envelope_to = envelope.get('to')
@@ -524,76 +545,60 @@ def email_webhook():
         # Get header information
         headers = data.get('headers', {})
         subject = headers.get('subject', 'No Subject')
-        from_email = None
+        header_from = headers.get('from')
         
-        # Try multiple possible header fields for sender
-        possible_headers = ['from', 'From', 'Reply-To', 'reply-to', 'Return-Path', 'return-path']
-        for header in possible_headers:
-            if header in headers:
-                from_header = headers[header]
-                email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', from_header)
-                if email_match:
-                    from_email = email_match.group(0)
-                    break
-                    
-        if not from_email:
-            # Try to find email in forwarded message
-            email_pattern = r'From:.*?<([\w\.-]+@[\w\.-]+\.\w+)>'
-            forwarded_match = re.search(email_pattern, data.get('html', ''), re.IGNORECASE | re.DOTALL)
-            if forwarded_match:
-                from_email = forwarded_match.group(1)
-                
-        if not from_email:
-            current_app.logger.error("Could not find original sender")
-            return jsonify({'error': 'Could not determine sender'}), 400
+        # Get message body
+        body = data.get('body', {})
+        html_content = body.get('html')
+        text_content = body.get('plain')
+        content = html_content if html_content else text_content
+        
+        current_app.logger.info(f"Processing email from {envelope_from} to {envelope_to}")
+        current_app.logger.info(f"Subject: {subject}")
+        
+        # Extract sender information
+        sender_info = extract_original_sender(
+            text_content,
+            html_content,
+            envelope_from,
+            envelope_to
+        )
 
-        # Find tenant based on multiple email fields
+        # Find tenant based on forwarding email
         tenant = Tenant.query.filter(
             db.or_(
-                Tenant.support_email == envelope_to,
-                Tenant.support_alias == envelope_to,
-                Tenant.cloudmailin_address == envelope_to
+                Tenant.support_email == sender_info['tenant_email'],
+                Tenant.support_alias == sender_info['tenant_email'],
+                Tenant.cloudmailin_address == sender_info['tenant_email']
             )
         ).first()
 
         if not tenant:
-            current_app.logger.error(f"No tenant found for email: {envelope_to}")
+            current_app.logger.error(f"No tenant found for email: {sender_info['tenant_email']}")
             return jsonify({'error': 'Invalid tenant email'}), 400
 
-        # Extract and clean content
-        html_content = data.get('html')
-        text_content = data.get('plain')
-        
-        # Use extract_email_content for both routes
-        cleaned_content = extract_email_content(text_content, html_content)
-        
-        # Format the content for better display
-        formatted_content = format_email_content(cleaned_content)
+        # Extract clean content
+        content = extract_email_content(text_content, html_content)
 
-        # Create ticket with formatted content
+        # Create ticket
         ticket = Ticket(
             title=subject,
-            description=formatted_content,  # Use formatted content
+            description=content,
             status='open',
             tenant_id=tenant.id,
-            contact_email=from_email,
+            contact_email=sender_info['original_sender'],
             source='email',
             ticket_number=Ticket.generate_ticket_number(tenant.id)
         )
 
         db.session.add(ticket)
         db.session.commit()
-        
-        # Calculate SLA deadlines
-        ticket.calculate_sla_deadlines()
-        db.session.commit()
 
         return jsonify({'message': 'Ticket created successfully', 'ticket_id': ticket.id}), 201
 
     except Exception as e:
-        db.session.rollback()
         current_app.logger.error(f"Error processing email: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500 
 
 @webhook.route('/api/email/test', methods=['GET'])
 def test_webhook():
@@ -643,38 +648,47 @@ def handle_email():
         text_body = data.get('plain', '')
         headers = data.get('headers', {})
         
-        # Get sender information using same logic as above
+        # Get sender information - try multiple possible header fields
         from_email = None
         possible_headers = ['from', 'From', 'Reply-To', 'reply-to', 'Return-Path', 'return-path']
         
         for header in possible_headers:
             if header in headers:
                 from_header = headers[header]
+                # Extract email from various formats:
+                # "John Doe <john@example.com>" or just "john@example.com"
                 email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', from_header)
                 if email_match:
                     from_email = email_match.group(0)
                     break
         
         if not from_email:
+            # Try to find email in the forwarded message
             email_pattern = r'From:.*?<([\w\.-]+@[\w\.-]+\.\w+)>'
             forwarded_match = re.search(email_pattern, html_body, re.IGNORECASE | re.DOTALL)
             if forwarded_match:
                 from_email = forwarded_match.group(1)
         
         if not from_email:
+            # Log the full email content for debugging
             current_app.logger.error("Could not find original sender")
+            current_app.logger.error("Email headers:")
+            current_app.logger.error(headers)
+            current_app.logger.error("Email content:")
+            current_app.logger.error(html_body)
             return jsonify({'error': 'Could not determine sender'}), 400
         
         # Extract subject
         subject = headers.get('subject', '').strip()
         if not subject:
+            # Try to extract subject from forwarded message
             subject_match = re.search(r'Subject: (.*?)\n', html_body, re.IGNORECASE)
             if subject_match:
                 subject = subject_match.group(1).strip()
             else:
                 subject = "Email Ticket"
         
-        # Get tenant based on support email
+        # Get the tenant based on the support email
         to_email = headers.get('to', '').lower()
         tenant = Tenant.query.filter(
             db.or_(
@@ -687,15 +701,11 @@ def handle_email():
         if not tenant:
             current_app.logger.error(f"No tenant found for support email: {to_email}")
             return jsonify({'error': 'Invalid support email'}), 400
-        
-        # Use the same content cleaning and formatting as the other route
-        cleaned_content = extract_email_content(text_body, html_body)
-        formatted_content = format_email_content(cleaned_content)
             
-        # Create ticket with formatted content
+        # Create the ticket
         ticket = Ticket(
             title=subject,
-            description=formatted_content,  # Use formatted content
+            description=html_body or text_body,
             tenant_id=tenant.id,
             contact_email=from_email,
             source='email',
@@ -705,13 +715,8 @@ def handle_email():
         db.session.add(ticket)
         db.session.commit()
         
-        # Calculate SLA deadlines
-        ticket.calculate_sla_deadlines()
-        db.session.commit()
-        
         return jsonify({'message': 'Ticket created successfully', 'ticket_id': ticket.id}), 201
         
     except Exception as e:
-        db.session.rollback()
         current_app.logger.error(f"Error processing email: {str(e)}")
         return jsonify({'error': str(e)}), 500 
