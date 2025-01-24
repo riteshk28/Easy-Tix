@@ -264,6 +264,10 @@ class Ticket(db.Model):
         """Check and update SLA status"""
         now = datetime.utcnow()
         
+        # Calculate SLA deadlines if they're not set (handles email tickets)
+        if not self.sla_response_due_at or not self.sla_resolution_due_at:
+            self.calculate_sla_deadlines()
+        
         # Response SLA is met when ticket is assigned AND status changed from open
         # OR when first staff comment is made
         if not self.first_response_at and (
@@ -274,12 +278,14 @@ class Ticket(db.Model):
             ).first()
         ):
             self.first_response_at = now
-            self.sla_response_met = now <= self.sla_response_due_at
+            # Safely check SLA met status
+            self.sla_response_met = bool(self.sla_response_due_at and now <= self.sla_response_due_at)
         
         # Resolution SLA
         if self.status == 'resolved' and not self.resolved_at:
             self.resolved_at = now
-            self.sla_resolution_met = now <= self.sla_resolution_due_at
+            # Safely check resolution SLA
+            self.sla_resolution_met = bool(self.sla_resolution_due_at and now <= self.sla_resolution_due_at)
 
 class TicketComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)

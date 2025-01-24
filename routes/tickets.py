@@ -84,20 +84,26 @@ def view(ticket_id):
 def update_ticket(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
     
-    # Update ticket fields
-    if 'status' in request.form:
-        ticket.status = request.form['status']
-    if 'assigned_to_id' in request.form:
-        ticket.assigned_to_id = request.form['assigned_to_id'] or None
-        
-    # Check SLA status after updates
-    ticket.check_sla_status()
-    
     try:
+        # Update ticket fields
+        if 'status' in request.form:
+            ticket.status = request.form['status']
+        if 'assigned_to_id' in request.form:
+            ticket.assigned_to_id = request.form['assigned_to_id'] or None
+            
+        # Ensure SLA deadlines exist
+        if not ticket.sla_response_due_at or not ticket.sla_resolution_due_at:
+            ticket.calculate_sla_deadlines()
+            
+        # Check SLA status after updates
+        ticket.check_sla_status()
+        
         db.session.commit()
         flash('Ticket updated successfully')
+        
     except Exception as e:
         db.session.rollback()
+        current_app.logger.error(f"Error updating ticket: {str(e)}")
         flash('Error updating ticket', 'error')
         
     return redirect(url_for('tickets.view', ticket_id=ticket_id))
