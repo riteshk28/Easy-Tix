@@ -355,8 +355,14 @@ def toggle_auto_renew():
     tenant = current_user.tenant
     tenant.auto_renew = not tenant.auto_renew
     db.session.commit()
-    flash('Auto-renewal settings updated')
-    return redirect(url_for('admin.index')) 
+    
+    # Add message based on new auto_renew status
+    if tenant.auto_renew:
+        flash(f'Auto-renewal enabled. Your subscription will automatically renew on {tenant.subscription_ends_at.strftime("%Y-%m-%d")}.')
+    else:
+        flash(f'Auto-renewal disabled. Your plan will automatically switch to Free when it expires on {tenant.subscription_ends_at.strftime("%Y-%m-%d")}.')
+    
+    return redirect(url_for('admin.index'))
 
 @admin.route('/update-sla-config', methods=['POST'])
 @admin_required
