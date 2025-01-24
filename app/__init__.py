@@ -53,11 +53,11 @@ def create_app():
     app.jinja_env.filters['datetime'] = datetime
     
     # Then register blueprints
-    app.register_blueprint(auth)
-    app.register_blueprint(dashboard)
+    app.register_blueprint(auth, url_prefix='/auth')
+    app.register_blueprint(dashboard, url_prefix='/dashboard')
     app.register_blueprint(admin, url_prefix='/admin')
     app.register_blueprint(tickets, url_prefix='/tickets')
-    app.register_blueprint(public)
+    app.register_blueprint(public, url_prefix='/public')
     app.register_blueprint(webhooks)
     
     # Context processor for template globals
@@ -66,5 +66,9 @@ def create_app():
         return {'now': datetime.utcnow}
     
     app.cli.add_command(recalculate_sla)
+    
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
     
     return app 
