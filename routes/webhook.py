@@ -439,7 +439,6 @@ def extract_original_sender(plain_text, html_content, envelope_from, envelope_to
             'original_sender': envelope_from,
             'tenant_email': envelope_from
         }
-
 @webhook.route('/webhook', methods=['POST'])
 def stripe_webhook():
     payload = request.get_data()
@@ -510,7 +509,6 @@ def stripe_webhook():
         current_app.logger.error(f"Webhook error: {str(e)}")
         return jsonify({'error': str(e)}), 400 
         
-
 @webhook.route('/api/email/incoming', methods=['POST'])
 def email_webhook():
     try:
