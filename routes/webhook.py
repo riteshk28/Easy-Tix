@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 import stripe
 from models import db, Tenant, SubscriptionPayment, User, Ticket, TicketComment
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
 import logging
 import re
@@ -439,6 +439,7 @@ def extract_original_sender(plain_text, html_content, envelope_from, envelope_to
             'original_sender': envelope_from,
             'tenant_email': envelope_from
         }
+
 @webhook.route('/webhooks', methods=['POST'])
 def stripe_webhook():
     payload = request.get_data()
@@ -452,57 +453,37 @@ def stripe_webhook():
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
             
-            # Log the session details
-            current_app.logger.info(f"Processing checkout session: {session.id}")
-            current_app.logger.info(f"Metadata: {session.metadata}")
-            
-            # Check if this is a new registration or upgrade
-            if 'company_name' in session.metadata:
-                # This is a new registration
-                try:
-                    # Create the tenant
-                    tenant = Tenant(
-                        name=session.metadata['company_name'],
-                        subscription_plan=session.metadata['plan']
-                    )
-                    db.session.add(tenant)
-                    db.session.flush()  # Get tenant ID
-                    
-                    # Create the user
-                    user = User(
-                        email=session.metadata['email'],
-                        first_name=session.metadata['first_name'],
-                        last_name=session.metadata['last_name'],
-                        role='admin',
-                        tenant_id=tenant.id
-                    )
-                    user.set_password(session.metadata['password'])
-                    
-                    db.session.add(user)
-                    db.session.commit()
-                    
-                    current_app.logger.info(f"Created new tenant {tenant.id} with plan {tenant.subscription_plan}")
-                    
-                except Exception as e:
-                    current_app.logger.error(f"Error creating tenant: {str(e)}")
-                    db.session.rollback()
-                    raise
-                    
-            elif 'tenant_id' in session.metadata:
-                # This is an upgrade
+            if 'tenant_id' in session.metadata:
                 tenant_id = session.metadata['tenant_id']
                 plan = session.metadata['plan']
                 
                 tenant = Tenant.query.get(tenant_id)
                 if tenant:
+                    # Update all subscription fields
                     tenant.subscription_plan = plan
+                    tenant.subscription_status = 'active'
+                    tenant.subscription_ends_at = datetime.utcnow() + timedelta(days=30)  # Or get from Stripe
+                    tenant.stripe_subscription_id = session.subscription  # Store Stripe subscription ID
+                    
+                    # Create payment record
+                    payment = SubscriptionPayment(
+                        tenant_id=tenant.id,
+                        plan=plan,
+                        amount=get_plan_amount(plan),
+                        status='completed',
+                        payment_id=session.subscription,
+                        completed_at=datetime.utcnow()
+                    )
+                    
+                    db.session.add(payment)
                     db.session.commit()
+                    
                     current_app.logger.info(f"Successfully upgraded tenant {tenant_id} to {plan}")
                 else:
                     current_app.logger.error(f"Tenant not found: {tenant_id}")
             else:
                 current_app.logger.error("Invalid metadata in session")
-                
+            
         return jsonify({'status': 'success'})
         
     except Exception as e:
