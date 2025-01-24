@@ -440,7 +440,7 @@ def extract_original_sender(plain_text, html_content, envelope_from, envelope_to
             'tenant_email': envelope_from
         }
 
-@webhook.route('/webhooks', methods=['POST'])
+@webhook.route('/webhook', methods=['POST'])
 def stripe_webhook():
     payload = request.get_data()
     sig_header = request.headers.get('Stripe-Signature')
