@@ -468,10 +468,25 @@ def stripe_webhook():
                     # Create the tenant
                     tenant = Tenant(
                         name=session.metadata['company_name'],
-                        subscription_plan=session.metadata['plan']
+                        subscription_plan=session.metadata['plan'],
+                        subscription_status='active',
+                        subscription_starts_at=datetime.utcnow(),
+                        subscription_ends_at=datetime.utcnow() + timedelta(days=30),
+                        auto_renew=False  # Default to off
                     )
                     db.session.add(tenant)
                     db.session.flush()  # Get tenant ID
+                    
+                    # Create payment record for new registration too
+                    payment = SubscriptionPayment(
+                        tenant_id=tenant.id,
+                        plan=session.metadata['plan'],
+                        amount=get_plan_amount(session.metadata['plan']),
+                        status='completed',
+                        payment_id=session.subscription,
+                        completed_at=datetime.utcnow()
+                    )
+                    db.session.add(payment)
                     
                     # Create the user
                     user = User(
@@ -505,7 +520,7 @@ def stripe_webhook():
                     tenant.subscription_status = 'active'
                     tenant.subscription_starts_at = datetime.utcnow()
                     tenant.subscription_ends_at = datetime.utcnow() + timedelta(days=30)
-                    tenant.auto_renew = True
+                    # Remove auto_renew setting - keep existing value
                     
                     # Create payment record
                     payment = SubscriptionPayment(
