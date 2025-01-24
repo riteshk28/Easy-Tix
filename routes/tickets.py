@@ -81,98 +81,62 @@ def view(ticket_id):
 
 @tickets.route('/<int:ticket_id>/update', methods=['POST'])
 @login_required
-def update(ticket_id):
-    ticket = Ticket.query.filter_by(
-        id=ticket_id,
-        tenant_id=current_user.tenant_id
-    ).first_or_404()
-    
-    # Track old status for SLA calculations
-    old_status = ticket.status
-    old_assigned_to = ticket.assigned_to_id
+def update_ticket(ticket_id):
+    ticket = Ticket.query.get_or_404(ticket_id)
     
     # Update ticket fields
     if 'status' in request.form:
         ticket.status = request.form['status']
-    if 'priority' in request.form:
-        ticket.priority = request.form['priority']
     if 'assigned_to_id' in request.form:
         ticket.assigned_to_id = request.form['assigned_to_id'] or None
+        
+    # Check SLA status after updates
+    ticket.check_sla_status()
     
-    # Handle SLA timing
-    now = datetime.utcnow()
-    
-    # First response time - when ticket is assigned AND moved to in_progress
-    if not ticket.first_response_at and (
-        ticket.status == 'in_progress' and ticket.assigned_to_id is not None
-    ):
-        ticket.first_response_at = now
-        ticket.sla_response_met = now <= ticket.sla_response_due_at if ticket.sla_response_due_at else True
-    
-    # Resolution time handling
-    if ticket.status == 'on_hold' and old_status != 'on_hold':
-        # Store current time when putting on hold
-        ticket.on_hold_at = now
-    elif old_status == 'on_hold' and ticket.status != 'on_hold':
-        # Adjust SLA deadlines when taking off hold
-        hold_duration = (now - ticket.on_hold_at).total_seconds() if ticket.on_hold_at else 0
-        if ticket.sla_resolution_due_at:
-            ticket.sla_resolution_due_at = ticket.sla_resolution_due_at + timedelta(seconds=hold_duration)
-    
-    # Resolution time - when ticket is marked as resolved or closed
-    if not ticket.resolved_at and ticket.status in ['resolved', 'closed']:
-        ticket.resolved_at = now
-        ticket.sla_resolution_met = now <= ticket.sla_resolution_due_at if ticket.sla_resolution_due_at else True
-    
-    # If ticket is reopened, recalculate resolution time
-    if old_status in ['resolved', 'closed'] and ticket.status not in ['resolved', 'closed']:
-        ticket.resolved_at = None
-        ticket.sla_resolution_met = None
-        # Set new resolution deadline based on current SLA config
-        sla_config = SLAConfig.query.filter_by(
-            tenant_id=ticket.tenant_id,
-            priority=ticket.priority
-        ).first()
-        if sla_config:
-            ticket.sla_resolution_due_at = now + timedelta(minutes=sla_config.resolution_time)
-    
-    ticket.updated_at = now
-    db.session.commit()
-    
-    flash('Ticket updated successfully')
-    return redirect(url_for('tickets.view', ticket_id=ticket.id))
+    try:
+        db.session.commit()
+        flash('Ticket updated successfully')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error updating ticket', 'error')
+        
+    return redirect(url_for('tickets.view', ticket_id=ticket_id))
 
 @tickets.route('/<int:ticket_id>/comment', methods=['POST'])
 @login_required
 def add_comment(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
     
-    # Convert checkbox 'on' to boolean True
-    is_internal = request.form.get('is_internal', 'off') == 'on'
+    # Get form data
+    is_internal = bool(request.form.get('is_internal', False))
+    send_email = bool(request.form.get('send_email', False))
     
     comment = TicketComment(
-        ticket_id=ticket.id,
-        content=request.form['content'],
+        ticket_id=ticket_id,
         user_id=current_user.id,
+        content=request.form['content'],
         is_internal=is_internal
     )
     
     db.session.add(comment)
     
-    # Update first response time if this is the first non-internal comment
-    if not ticket.first_response_at and not is_internal:
-        now = datetime.utcnow()
-        ticket.first_response_at = now
-        ticket.sla_response_met = now <= ticket.sla_response_due_at if ticket.sla_response_due_at else True
+    # Check SLA status after adding comment
+    ticket.check_sla_status()
     
-    db.session.commit()
-    
-    # Only send email if comment is not internal and ticket has contact email
-    if not is_internal and ticket.contact_email:
-        mailer = MailerSendService()
-        mailer.send_ticket_notification(ticket, comment)
-    
-    return redirect(url_for('tickets.view', ticket_id=ticket.id))
+    try:
+        db.session.commit()
+        
+        # Only send email if requested and comment is not internal
+        if send_email and not is_internal and ticket.contact_email:
+            mailer = MailerSendService()
+            mailer.send_ticket_notification(ticket, comment)
+            
+        flash('Comment added successfully')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error adding comment', 'error')
+        
+    return redirect(url_for('tickets.view', ticket_id=ticket_id))
 
 @tickets.route('/track/<portal_key>/<ticket_id>', methods=['GET', 'POST'])
 def track(portal_key, ticket_id):

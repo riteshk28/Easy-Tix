@@ -155,14 +155,19 @@
         {% endif %}
 
         <form method="POST" action="{{ url_for('tickets.add_comment', ticket_id=ticket.id) }}">
-            <div class="mb-3">
-                <label for="content" class="form-label">Add Comment</label>
-                <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
+            <div class="form-group">
+                <textarea class="form-control" name="content" rows="3" required></textarea>
             </div>
             <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" id="is_internal" name="is_internal">
+                <input class="form-check-input" type="checkbox" name="is_internal" id="is_internal">
                 <label class="form-check-label" for="is_internal">
-                    Internal Comment (not visible to customer)
+                    Internal Note
+                </label>
+            </div>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="send_email" id="send_email" checked>
+                <label class="form-check-label" for="send_email">
+                    Send Email Notification
                 </label>
             </div>
             <button type="submit" class="btn btn-primary">Add Comment</button>

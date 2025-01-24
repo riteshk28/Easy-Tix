@@ -241,27 +241,45 @@ class Ticket(db.Model):
 
     def calculate_sla_deadlines(self):
         """Calculate SLA deadlines based on priority"""
-        sla_config = SLAConfig.query.filter_by(
-            tenant_id=self.tenant_id,
-            priority=self.priority.lower()
-        ).first()
+        if not self.priority:
+            self.priority = 'medium'  # Default priority
         
-        if sla_config:
-            # Set response deadline
-            if not self.first_response_at:
-                self.sla_response_due_at = self.created_at + timedelta(minutes=sla_config.response_time)
-            
-            # Set resolution deadline
-            if not self.resolved_at:
-                self.sla_resolution_due_at = self.created_at + timedelta(minutes=sla_config.resolution_time)
-    
-    def update_sla_status(self):
-        """Update SLA met/missed status"""
-        if self.first_response_at and self.sla_response_due_at:
-            self.sla_response_met = self.first_response_at <= self.sla_response_due_at
+        # Get SLA hours based on priority
+        sla_hours = {
+            'low': {'response': 24, 'resolution': 72},
+            'medium': {'response': 12, 'resolution': 48},
+            'high': {'response': 4, 'resolution': 24},
+            'urgent': {'response': 1, 'resolution': 8}
+        }
         
-        if self.resolved_at and self.sla_resolution_due_at:
-            self.sla_resolution_met = self.resolved_at <= self.sla_resolution_due_at
+        # Calculate deadlines from ticket creation time
+        hours = sla_hours.get(self.priority, sla_hours['medium'])
+        
+        if not self.sla_response_due_at:
+            self.sla_response_due_at = self.created_at + timedelta(hours=hours['response'])
+        if not self.sla_resolution_due_at:
+            self.sla_resolution_due_at = self.created_at + timedelta(hours=hours['resolution'])
+
+    def check_sla_status(self):
+        """Check and update SLA status"""
+        now = datetime.utcnow()
+        
+        # Response SLA is met when ticket is assigned AND status changed from open
+        # OR when first staff comment is made
+        if not self.first_response_at and (
+            (self.assigned_to_id and self.status != 'open') or
+            TicketComment.query.filter_by(
+                ticket_id=self.id, 
+                is_internal=True
+            ).first()
+        ):
+            self.first_response_at = now
+            self.sla_response_met = now <= self.sla_response_due_at
+        
+        # Resolution SLA
+        if self.status == 'resolved' and not self.resolved_at:
+            self.resolved_at = now
+            self.sla_resolution_met = now <= self.sla_resolution_due_at
 
 class TicketComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
