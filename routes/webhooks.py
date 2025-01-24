@@ -4,7 +4,7 @@ import stripe
 from datetime import datetime, timedelta
 import json
 
-webhooks = Blueprint('webhooks', __name__, url_prefix='/api')
+webhooks = Blueprint('webhooks', __name__)
 
 @webhooks.route('/stripe-webhook', methods=['POST'])
 def stripe_webhook():
@@ -127,7 +127,7 @@ def test_webhook():
         current_app.logger.error(f"Test webhook error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@webhooks.route('/email/incoming', methods=['POST'])
+@webhooks.route('/api/email/incoming', methods=['POST'])
 def email_webhook():
     try:
         data = request.get_json()
