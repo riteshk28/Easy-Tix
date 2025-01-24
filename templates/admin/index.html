@@ -79,7 +79,11 @@
                                         Expires: {{ tenant.subscription_ends_at.strftime('%Y-%m-%d') }}
                                         {% if tenant.subscription_plan != 'free' %}
                                             <br>
-                                            Will automatically switch to Free plan upon expiration
+                                            {% if tenant.auto_renew %}
+                                                Will automatically renew subscription on expiration date
+                                            {% else %}
+                                                Will automatically switch to Free plan upon expiration
+                                            {% endif %}
                                         {% endif %}
                                     </small>
                                 {% endif %}
