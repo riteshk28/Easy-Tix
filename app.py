@@ -28,7 +28,7 @@ def create_app(config_class=Config):
     from routes.superadmin import superadmin
     from routes.public import public
     from routes.landing import landing
-    from routes.webhooks import webhooks
+    from routes.webhook import webhook
 
     # Register blueprints
     app.register_blueprint(landing, url_prefix='/')
@@ -38,7 +38,7 @@ def create_app(config_class=Config):
     app.register_blueprint(admin, url_prefix='/admin')
     app.register_blueprint(superadmin, url_prefix='/superadmin')
     app.register_blueprint(public, url_prefix='/public')
-    app.register_blueprint(webhooks, url_prefix='/webhooks')
+    app.register_blueprint(webhook)
 
     def retry_on_connection_error(max_retries=3, delay=1):
         def decorator(f):
