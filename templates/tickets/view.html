@@ -34,7 +34,7 @@
                     <div class="card-body p-0">
                         <!-- Status and Assignment -->
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <form method="POST" action="{{ url_for('tickets.update', ticket_id=ticket.id) }}" class="d-flex gap-2">
+                            <form method="POST" action="{{ url_for('tickets.update_ticket', ticket_id=ticket.id) }}" class="d-flex gap-2">
                                 <select name="status" class="form-select form-select-sm" style="width: auto">
                                     <option value="open" {% if ticket.status == 'open' %}selected{% endif %}>Open</option>
                                     <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>In Progress</option>
@@ -88,7 +88,7 @@
 
                         <!-- Assignment -->
                         <div class="mb-3">
-                            <form method="POST" action="{{ url_for('tickets.update', ticket_id=ticket.id) }}" class="d-flex gap-2">
+                            <form method="POST" action="{{ url_for('tickets.update_ticket', ticket_id=ticket.id) }}" class="d-flex gap-2">
                                 <select name="assigned_to_id" class="form-select form-select-sm">
                                     <option value="">Unassigned</option>
                                     {% for agent in agents %}
