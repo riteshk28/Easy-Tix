@@ -457,12 +457,12 @@ def stripe_webhook():
             current_app.logger.info(f"Metadata: {session.metadata}")
             
             # Check if this is a new registration or upgrade
-            if 'subscription' in session.metadata:
+            if 'company_name' in session.metadata:
                 # This is a new registration
                 try:
                     # Create the tenant
                     tenant = Tenant(
-                        name=session.metadata['subscription'],
+                        name=session.metadata['company_name'],
                         subscription_plan=session.metadata['plan']
                     )
                     db.session.add(tenant)

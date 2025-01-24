@@ -138,9 +138,10 @@ def update_subscription():
     if plan == 'free':
         if tenant.subscription_active and current_plan in ['pro', 'enterprise']:
             days_left = tenant.days_until_expiration
-            flash(f'You have an active {current_plan.title()} subscription with {days_left} days remaining. '
-                  f'Your plan will automatically switch to Free when it expires on '
-                  f'{tenant.subscription_ends_at.strftime("%Y-%m-%d")}.')
+            message = f'You have an active {current_plan.title()} subscription'
+            if tenant.subscription_ends_at:  # Add this check
+                message += f' with {days_left} days remaining. Your plan will automatically switch to Free when it expires on {tenant.subscription_ends_at.strftime("%Y-%m-%d")}'
+            flash(message + '.')
             return redirect(url_for('admin.index'))
         tenant.subscription_plan = 'free'
         tenant.subscription_status = 'active'
@@ -176,10 +177,10 @@ def update_subscription():
                     'quantity': 1,
                 }],
                 mode='subscription',
-                success_url=url_for('admin.index', _external=True),
+                success_url=url_for('admin.index', _external=True) + '?upgrade=success',
                 cancel_url=url_for('admin.index', _external=True),
                 metadata={
-                    'tenant_id': str(tenant.id),  # Convert to string
+                    'tenant_id': str(tenant.id),
                     'plan': 'pro'
                 }
             )
