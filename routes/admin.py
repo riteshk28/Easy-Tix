@@ -45,7 +45,7 @@ def index():
     }
     
     # Show success message for completed upgrade
-    if request.args.get('upgrade') == 'success':
+    if request.args.get('upgrade') == 'success' and tenant.subscription_status == 'active':
         flash('Your subscription has been successfully upgraded to Pro!')
     
     return render_template('admin/index.html', 

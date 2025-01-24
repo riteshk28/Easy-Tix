@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 import stripe
 from models import db, Tenant, SubscriptionPayment, User, Ticket, TicketComment
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
 import logging
 import re
@@ -456,7 +456,11 @@ def stripe_webhook():
             current_app.logger.info(f"Processing checkout session: {session.id}")
             current_app.logger.info(f"Metadata: {session.metadata}")
             
-            # Check if this is a new registration or upgrade
+            # Add this check to verify payment status
+            if session.payment_status != 'paid':
+                current_app.logger.error(f"Payment not completed. Status: {session.payment_status}")
+                return jsonify({'error': 'Payment not completed'}), 400
+
             if 'company_name' in session.metadata:
                 # This is a new registration
                 try:
@@ -496,7 +500,23 @@ def stripe_webhook():
                 tenant = Tenant.query.get(tenant_id)
                 if tenant:
                     tenant.subscription_plan = plan
+                    tenant.subscription_status = 'active'
+                    tenant.subscription_ends_at = datetime.utcnow() + timedelta(days=30)  # Set 30 days expiry
+                    tenant.auto_renew = True  # Default to auto-renew enabled
+                    
+                    # Create payment record
+                    payment = SubscriptionPayment(
+                        tenant_id=tenant.id,
+                        plan=plan,
+                        amount=get_plan_amount(plan),
+                        status='completed',
+                        payment_id=session.subscription,
+                        completed_at=datetime.utcnow()
+                    )
+                    
+                    db.session.add(payment)
                     db.session.commit()
+                    
                     current_app.logger.info(f"Successfully upgraded tenant {tenant_id} to {plan}")
                 else:
                     current_app.logger.error(f"Tenant not found: {tenant_id}")
