@@ -63,7 +63,7 @@
                                         Due {{ ticket.sla_response_due_at.strftime('%H:%M %d/%m') }}
                                     </span>
                                 {% else %}
-                                    <span class="badge bg-secondary">Not Set</span>
+                                    <span class="badge bg-info">In Progress</span>
                                 {% endif %}
                             </div>
                             <div class="d-flex justify-content-between align-items-center">
@@ -81,7 +81,7 @@
                                         Due {{ ticket.sla_resolution_due_at.strftime('%H:%M %d/%m') }}
                                     </span>
                                 {% else %}
-                                    <span class="badge bg-secondary">Not Set</span>
+                                    <span class="badge bg-info">In Progress</span>
                                 {% endif %}
                             </div>
                         </div>

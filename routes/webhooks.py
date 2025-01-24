@@ -1,10 +1,10 @@
 from flask import Blueprint, request, jsonify, current_app
-from models import db, Tenant, User
+from models import db, Tenant, User, Ticket, TicketComment
 import stripe
 from datetime import datetime, timedelta
 import json
 
-webhooks = Blueprint('webhooks', __name__)
+webhooks = Blueprint('webhooks', __name__, url_prefix='/api')
 
 @webhooks.route('/stripe-webhook', methods=['POST'])
 def stripe_webhook():
@@ -125,4 +125,40 @@ def test_webhook():
         })
     except Exception as e:
         current_app.logger.error(f"Test webhook error: {str(e)}")
-        return jsonify({'error': str(e)}), 500 
+        return jsonify({'error': str(e)}), 500
+
+@webhooks.route('/email/incoming', methods=['POST'])
+def email_webhook():
+    try:
+        data = request.get_json()
+        
+        # Extract email data
+        from_email = data.get('from')
+        subject = data.get('subject', 'No Subject')
+        text_body = data.get('plain', '')
+        
+        # Create ticket
+        ticket = Ticket(
+            title=subject,
+            description=text_body,
+            status='open',
+            priority='medium',  # Default priority
+            contact_email=from_email,
+            tenant_id=1  # Need to determine tenant from support email
+        )
+        
+        # Generate ticket number
+        ticket.ticket_number = Ticket.generate_ticket_number(ticket.tenant_id)
+        
+        db.session.add(ticket)
+        db.session.commit()
+        
+        # Calculate SLA deadlines
+        ticket.calculate_sla_deadlines()
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'ticket_id': ticket.id}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500 

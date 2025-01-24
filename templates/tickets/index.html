@@ -76,6 +76,8 @@
                                 {% else %}
                                     <span class="badge bg-danger">Breached</span>
                                 {% endif %}
+                            {% elif ticket.status in ['resolved', 'closed'] %}
+                                <span class="badge bg-danger">Breached</span>
                             {% elif ticket.sla_response_due_at %}
                                 {% set response_remaining = (ticket.sla_response_due_at - now).total_seconds() / 3600 %}
                                 {% if response_remaining < 0 %}
@@ -84,11 +86,11 @@
                                     <span class="badge bg-info">In Progress</span>
                                 {% endif %}
                             {% else %}
-                                <span class="badge bg-secondary">Not Set</span>
+                                <span class="badge bg-info">In Progress</span>
                             {% endif %}
                         </td>
                         <td>
-                            {% if ticket.resolved_at %}
+                            {% if ticket.resolved_at or ticket.status == 'closed' %}
                                 {% if ticket.sla_resolution_met %}
                                     <span class="badge bg-success">SLA Met</span>
                                 {% else %}
@@ -104,7 +106,7 @@
                                     <span class="badge bg-info">In Progress</span>
                                 {% endif %}
                             {% else %}
-                                <span class="badge bg-secondary">Not Set</span>
+                                <span class="badge bg-info">In Progress</span>
                             {% endif %}
                         </td>
                     </tr>
