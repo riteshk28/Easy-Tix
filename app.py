@@ -14,6 +14,7 @@ import os
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)  # Load configuration
+    app.secret_key = config_class.SECRET_KEY  # Make sure SECRET_KEY is in your Config
 
     # Initialize extensions
     db.init_app(app)

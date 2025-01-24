@@ -462,7 +462,7 @@ def stripe_webhook():
                 try:
                     # Create the tenant
                     tenant = Tenant(
-                        name=session.metadata['company_name'],
+                        name=session.metadata['subscription'],
                         subscription_plan=session.metadata['plan']
                     )
                     db.session.add(tenant)
