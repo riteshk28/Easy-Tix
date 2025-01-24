@@ -3,6 +3,7 @@ import stripe
 from models import db, Tenant, SubscriptionPayment, User, Ticket, TicketComment
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash
+from utils import get_plan_amount  # Add this import
 import logging
 import re
 from email import message_from_string, policy
@@ -499,10 +500,12 @@ def stripe_webhook():
                 
                 tenant = Tenant.query.get(tenant_id)
                 if tenant:
+                    # Update all subscription fields
                     tenant.subscription_plan = plan
                     tenant.subscription_status = 'active'
-                    tenant.subscription_ends_at = datetime.utcnow() + timedelta(days=30)  # Set 30 days expiry
-                    tenant.auto_renew = True  # Default to auto-renew enabled
+                    tenant.subscription_starts_at = datetime.utcnow()
+                    tenant.subscription_ends_at = datetime.utcnow() + timedelta(days=30)
+                    tenant.auto_renew = True
                     
                     # Create payment record
                     payment = SubscriptionPayment(
