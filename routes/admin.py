@@ -345,9 +345,9 @@ def update_user_role(user_id):
     flash(f'Role updated for {user.email}', 'success')
     return redirect(url_for('admin.team'))
 
-@admin.route('/team/<int:user_id>', methods=['DELETE'])
+@admin.route('/team/member/<int:user_id>', methods=['DELETE'])
 @login_required
-def delete_user(user_id):
+def delete_team_member(user_id):
     if not current_user.is_admin:
         return jsonify({'error': 'Permission denied'}), 403
         

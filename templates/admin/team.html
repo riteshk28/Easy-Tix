@@ -97,7 +97,7 @@ function confirmDelete(userId) {
 function deleteUser() {
     if (!userToDelete) return;
     
-    fetch(`/admin/team/${userToDelete}`, {
+    fetch(`/admin/team/member/${userToDelete}`, {
         method: 'DELETE',
         headers: {
             'X-CSRFToken': '{{ csrf_token() }}'
