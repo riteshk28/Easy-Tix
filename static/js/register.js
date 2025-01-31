@@ -1,19 +1,27 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Register.js loaded');
+    console.log('Register.js: Script started');
     const emailInput = document.getElementById('email');
     const verifyEmailBtn = document.getElementById('verifyEmailBtn');
-    console.log('Verify button:', verifyEmailBtn);
     const verificationSection = document.getElementById('verificationSection');
     const otpInput = document.getElementById('otp');
     const verifyOtpBtn = document.getElementById('verifyOtpBtn');
     const emailVerifiedBadge = document.getElementById('emailVerifiedBadge');
     const submitBtn = document.querySelector('button[type="submit"]');
     
+    // Check if we're on the registration page
+    if (!emailInput || !verifyEmailBtn) {
+        console.log('Not on registration page, skipping email verification setup');
+        return;
+    }
+    
     // Initially disable submit button
     submitBtn.disabled = true;
     
-    verifyEmailBtn.addEventListener('click', async function() {
-        console.log('Verify button clicked');
+    console.log('Register.js: Setting up click handler for verify button');
+    
+    verifyEmailBtn.addEventListener('click', async function(e) {
+        e.preventDefault(); // Prevent any default button behavior
+        console.log('Register.js: Verify button clicked');
         const email = emailInput.value;
         if (!email) {
             alert('Please enter an email address');

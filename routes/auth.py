@@ -298,15 +298,21 @@ def create_tenant_and_admin(form_data):
 @auth.route('/verify-email', methods=['POST'])
 def verify_email():
     try:
+        current_app.logger.info("Verify email endpoint hit")
+        current_app.logger.info(f"Request headers: {dict(request.headers)}")
+        current_app.logger.info(f"Request body: {request.get_data(as_text=True)}")
         data = request.get_json()
+        current_app.logger.info(f"Received data: {data}")
         email = data.get('email')
         
         # Check if email already exists
         if User.query.filter_by(email=email).first():
+            current_app.logger.info(f"Email {email} already exists")
             return jsonify({'message': 'Email already registered'}), 400
         
         # Generate OTP
         otp = ''.join(random.SystemRandom().choices('0123456789', k=6))
+        current_app.logger.info(f"Generated OTP for {email}")
         
         # Store OTP in session with timestamp
         session['email_verification'] = {
@@ -318,12 +324,13 @@ def verify_email():
         # Send OTP email
         mailer = MailerSendService()
         mailer.send_email_verification_otp(email, otp)
+        current_app.logger.info(f"OTP sent to {email}")
         
         return jsonify({'message': 'OTP sent successfully'}), 200
         
     except Exception as e:
         current_app.logger.error(f"Error in email verification: {str(e)}", exc_info=True)
-        return jsonify({'message': 'Error sending OTP'}), 500
+        return jsonify({'message': f'Error: {str(e)}'}), 500
 
 @auth.route('/verify-email-otp', methods=['POST'])
 def verify_email_otp():

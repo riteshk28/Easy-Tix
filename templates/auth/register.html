@@ -60,7 +60,7 @@
                 <label class="form-label">Email address</label>
                 <div class="input-group">
                     <input type="email" class="form-control" name="email" id="email" required>
-                    <button type="button" class="btn btn-outline-secondary" id="verifyEmailBtn">
+                    <button type="button" class="btn btn-outline-primary" id="verifyEmailBtn" onclick="console.log('Button clicked via onclick')">
                         Verify Email
                     </button>
                 </div>
@@ -111,4 +111,10 @@
 
 {% block extra_scripts %}
 <script src="{{ url_for('static', filename='js/register.js') }}"></script>
+<script>
+    // Debug check
+    console.log('Template loaded, checking elements:');
+    console.log('Verify button:', document.getElementById('verifyEmailBtn'));
+    console.log('Email input:', document.getElementById('email'));
+</script>
 {% endblock %} 
