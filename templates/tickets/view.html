@@ -43,10 +43,9 @@
                                     <option value="closed" {% if ticket.status == 'closed' %}selected{% endif %}>Closed</option>
                                 </select>
                                 <select name="priority" class="form-select form-select-sm" style="width: auto">
-                                    <option value="low" {% if ticket.priority == 'low' %}selected{% endif %}>Low Priority</option>
-                                    <option value="medium" {% if ticket.priority == 'medium' %}selected{% endif %}>Medium Priority</option>
-                                    <option value="high" {% if ticket.priority == 'high' %}selected{% endif %}>High Priority</option>
-                                    <option value="urgent" {% if ticket.priority == 'urgent' %}selected{% endif %}>Urgent Priority</option>
+                                    <option value="low" {% if ticket.priority == 'low' %}selected{% endif %}>Low</option>
+                                    <option value="medium" {% if ticket.priority == 'medium' %}selected{% endif %}>Medium</option>
+                                    <option value="high" {% if ticket.priority == 'high' %}selected{% endif %}>High</option>
                                 </select>
                                 <select name="assigned_to_id" class="form-select form-select-sm">
                                     <option value="">Unassigned</option>
@@ -69,12 +68,14 @@
                                         {% if ticket.sla_response_met %}Met{% else %}Breached{% endif %}
                                         <small>({{ ticket.first_response_at.strftime('%H:%M %d/%m') }})</small>
                                     </span>
-                                {% elif ticket.status in ['resolved', 'closed'] %}
-                                    <span class="badge bg-danger">Breached</span>
                                 {% elif ticket.sla_response_due_at %}
                                     {% set response_remaining = (ticket.sla_response_due_at - now).total_seconds() / 3600 %}
-                                    <span class="badge {% if response_remaining < 2 %}bg-warning{% else %}bg-info{% endif %}">
-                                        Due {{ ticket.sla_response_due_at.strftime('%H:%M %d/%m') }}
+                                    <span class="badge {% if response_remaining < 0 %}bg-danger{% elif response_remaining < 2 %}bg-warning{% else %}bg-info{% endif %}">
+                                        {% if response_remaining < 0 %}
+                                            Breached
+                                        {% else %}
+                                            Due {{ ticket.sla_response_due_at.strftime('%H:%M %d/%m') }}
+                                        {% endif %}
                                     </span>
                                 {% else %}
                                     <span class="badge bg-info">In Progress</span>
@@ -91,8 +92,12 @@
                                     <span class="badge bg-warning">Paused</span>
                                 {% elif ticket.sla_resolution_due_at %}
                                     {% set resolution_remaining = (ticket.sla_resolution_due_at - now).total_seconds() / 3600 %}
-                                    <span class="badge {% if resolution_remaining < 4 %}bg-warning{% else %}bg-info{% endif %}">
-                                        Due {{ ticket.sla_resolution_due_at.strftime('%H:%M %d/%m') }}
+                                    <span class="badge {% if resolution_remaining < 0 %}bg-danger{% elif resolution_remaining < 4 %}bg-warning{% else %}bg-info{% endif %}">
+                                        {% if resolution_remaining < 0 %}
+                                            Breached
+                                        {% else %}
+                                            Due {{ ticket.sla_resolution_due_at.strftime('%H:%M %d/%m') }}
+                                        {% endif %}
                                     </span>
                                 {% else %}
                                     <span class="badge bg-info">In Progress</span>

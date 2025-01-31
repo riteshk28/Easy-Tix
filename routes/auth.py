@@ -1,10 +1,12 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
-from flask_login import login_user, logout_user, login_required
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session
+from flask_login import login_user, logout_user, login_required, current_user
 from models import db, User, Tenant
 import stripe  # Add stripe for payments
 from utils import get_stripe_price_id, get_plan_amount
 import logging
 from datetime import datetime, timedelta
+import random
+from services.mailersend_service import MailerSendService
 
 auth = Blueprint('auth', __name__)
 logger = logging.getLogger(__name__)
@@ -103,6 +105,83 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('auth.login')) 
+
+@auth.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
+        
+        # Validate email not taken by another user
+        if email != current_user.email:
+            existing_user = User.query.filter_by(email=email).first()
+            if existing_user:
+                flash('Email already in use', 'error')
+                return redirect(url_for('auth.profile'))
+        
+        current_user.email = email
+        current_user.first_name = first_name
+        current_user.last_name = last_name
+        db.session.commit()
+        flash('Profile updated successfully', 'success')
+        
+    return render_template('auth/profile.html')
+
+@auth.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'send_otp':
+            # Generate a more secure OTP
+            otp = ''.join(random.SystemRandom().choices('0123456789', k=6))
+            # Store OTP in session with timestamp and track failed attempts
+            session['password_change_otp'] = {
+                'code': otp,
+                'expires_at': (datetime.utcnow() + timedelta(minutes=10)).timestamp(),
+                'attempts': 0  # Track failed attempts
+            }
+            
+            # Send OTP email using MailerSend
+            try:
+                mailer = MailerSendService()
+                mailer.send_password_change_otp(current_user.email, otp)
+                flash('OTP sent to your email', 'success')
+            except Exception as e:
+                flash('Error sending OTP email', 'error')
+                
+        elif action == 'verify_otp':
+            otp = request.form.get('otp')
+            new_password = request.form.get('new_password')
+            confirm_password = request.form.get('confirm_password')
+            
+            if new_password != confirm_password:
+                flash('Passwords do not match', 'error')
+                return redirect(url_for('auth.change_password'))
+                
+            stored_otp = session.get('password_change_otp')
+            if not stored_otp or stored_otp['expires_at'] < datetime.utcnow().timestamp():
+                flash('OTP expired', 'error')
+                return redirect(url_for('auth.change_password'))
+                
+            if otp != stored_otp['code']:
+                flash('Invalid OTP', 'error')
+                return redirect(url_for('auth.change_password'))
+                
+            # Change password
+            current_user.set_password(new_password)
+            db.session.commit()
+            
+            # Clear OTP from session
+            session.pop('password_change_otp', None)
+            
+            flash('Password changed successfully', 'success')
+            return redirect(url_for('auth.profile'))
+            
+    return render_template('auth/change_password.html')
 
 def create_tenant_and_admin(form_data):
     """Create a new tenant and admin user"""

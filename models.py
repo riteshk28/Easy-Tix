@@ -240,25 +240,35 @@ class Ticket(db.Model):
         return new_ticket_number
 
     def calculate_sla_deadlines(self):
-        """Calculate SLA deadlines based on priority"""
-        if not self.priority:
-            self.priority = 'medium'  # Default priority
+        """Calculate SLA deadlines based on priority and tenant configuration"""
+        # Get tenant's SLA config for this priority
+        sla_config = SLAConfig.query.filter_by(
+            tenant_id=self.tenant_id,
+            priority=self.priority
+        ).first()
         
-        # Get SLA hours based on priority
-        sla_hours = {
-            'low': {'response': 24, 'resolution': 72},
-            'medium': {'response': 12, 'resolution': 48},
-            'high': {'response': 4, 'resolution': 24},
-            'urgent': {'response': 1, 'resolution': 8}
-        }
+        if not sla_config:
+            # If no specific config found, use default values
+            response_time = {
+                'low': 24 * 60,     # 24 hours in minutes
+                'medium': 12 * 60,  # 12 hours in minutes
+                'high': 4 * 60      # 4 hours in minutes
+            }.get(self.priority, 24 * 60)  # Default to 24 hours
+            
+            resolution_time = {
+                'low': 72 * 60,     # 72 hours in minutes
+                'medium': 48 * 60,  # 48 hours in minutes
+                'high': 24 * 60     # 24 hours in minutes
+            }.get(self.priority, 72 * 60)  # Default to 72 hours
+        else:
+            response_time = sla_config.response_time
+            resolution_time = sla_config.resolution_time
         
         # Calculate deadlines from ticket creation time
-        hours = sla_hours.get(self.priority, sla_hours['medium'])
-        
         if not self.sla_response_due_at:
-            self.sla_response_due_at = self.created_at + timedelta(hours=hours['response'])
+            self.sla_response_due_at = self.created_at + timedelta(minutes=response_time)
         if not self.sla_resolution_due_at:
-            self.sla_resolution_due_at = self.created_at + timedelta(hours=hours['resolution'])
+            self.sla_resolution_due_at = self.created_at + timedelta(minutes=resolution_time)
 
     def check_sla_status(self):
         """Check and update SLA status"""
