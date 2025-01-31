@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from flask_login import login_required, current_user
 from models import db, User, Tenant, SubscriptionPayment, SLAConfig, Ticket
 from werkzeug.security import generate_password_hash
@@ -298,35 +298,87 @@ def contact_sales():
     flash('Thank you for your interest! Our sales team will contact you soon.')
     return redirect(url_for('admin.index'))
 
-@admin.route('/team/add', methods=['POST'])
+@admin.route('/team')
 @login_required
-@admin_required
-def add_team_member():
-    email = request.form.get('email')
-    
-    # Check if email already exists
-    if User.query.filter_by(email=email).first():
-        flash('A user with this email already exists', 'error')
+def team():
+    if not current_user.is_admin:
+        flash('Permission denied', 'error')
+        return redirect(url_for('dashboard.index'))
+        
+    users = User.query.filter_by(tenant_id=current_user.tenant_id).all()
+    return render_template('admin/team.html', users=users)
+
+@admin.route('/team/<int:user_id>/role', methods=['POST'])
+@login_required
+def update_user_role(user_id):
+    if not current_user.is_admin:
+        flash('Permission denied', 'error')
         return redirect(url_for('admin.team'))
+        
+    user = User.query.get_or_404(user_id)
+    new_role = request.form.get('role')
+    
+    # Security checks
+    if user.tenant_id != current_user.tenant_id:
+        flash('Cannot modify users from other tenants', 'error')
+        return redirect(url_for('admin.team'))
+        
+    # Prevent changing superadmin roles
+    if user.is_superadmin or new_role == 'superadmin':
+        flash('Cannot modify superadmin roles', 'error')
+        return redirect(url_for('admin.team'))
+        
+    # Ensure at least one admin remains
+    if user.role == 'admin' and new_role != 'admin':
+        admin_count = User.query.filter_by(
+            tenant_id=current_user.tenant_id, 
+            role='admin'
+        ).count()
+        if admin_count <= 1:
+            flash('Cannot remove the last admin', 'error')
+            return redirect(url_for('admin.team'))
+    
+    # Update role
+    user.role = new_role
+    db.session.commit()
+    
+    flash(f'Role updated for {user.email}', 'success')
+    return redirect(url_for('admin.team'))
+
+@admin.route('/team/<int:user_id>', methods=['DELETE'])
+@login_required
+def delete_user(user_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Permission denied'}), 403
+        
+    if user_id == current_user.id:
+        return jsonify({'error': 'Cannot delete yourself'}), 400
+        
+    user = User.query.get_or_404(user_id)
+    
+    if user.tenant_id != current_user.tenant_id:
+        return jsonify({'error': 'Cannot delete users from other tenants'}), 403
+        
+    if user.is_superadmin:
+        return jsonify({'error': 'Cannot delete superadmin'}), 403
+        
+    # Check if this is the last admin
+    if user.role == 'admin':
+        admin_count = User.query.filter_by(
+            tenant_id=current_user.tenant_id, 
+            role='admin'
+        ).count()
+        if admin_count <= 1:
+            return jsonify({'error': 'Cannot delete the last admin'}), 400
     
     try:
-        user = User(
-            email=email,
-            first_name=request.form.get('first_name'),
-            last_name=request.form.get('last_name'),
-            role=request.form.get('role'),
-            tenant_id=current_user.tenant_id
-        )
-        user.set_password(request.form.get('password'))
-        db.session.add(user)
+        db.session.delete(user)
         db.session.commit()
-        flash('Team member added successfully')
-        
-    except IntegrityError:
+        return jsonify({'message': 'User deleted successfully'})
+    except Exception as e:
         db.session.rollback()
-        flash('A user with this email already exists', 'error')
-    
-    return redirect(url_for('admin.team')) 
+        current_app.logger.error(f"Error deleting user: {str(e)}")
+        return jsonify({'error': 'Error deleting user'}), 500
 
 @admin.route('/update-email-settings', methods=['POST'])
 @admin_required
