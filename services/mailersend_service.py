@@ -5,6 +5,7 @@ import logging
 from flask_login import current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
+from mailersend import MailerSend
 
 logger = logging.getLogger(__name__)
 db = SQLAlchemy()
@@ -12,6 +13,7 @@ db = SQLAlchemy()
 class MailerSendService:
     def __init__(self):
         self.api_key = current_app.config['MAILERSEND_API_KEY']
+        self.client = MailerSend(self.api_key)
     
     def send_ticket_notification(self, ticket, comment):
         """Send email notification for ticket updates"""
@@ -182,3 +184,31 @@ class MailerSendService:
         except Exception as e:
             current_app.logger.error(f"Error sending verification email: {str(e)}", exc_info=True)
             raise 
+
+    def send_password_reset(self, user, token):
+        """Send password reset email"""
+        reset_link = url_for('auth.reset_password', 
+                           token=token, 
+                           _external=True)
+        
+        variables = [
+            {
+                "email": user.email,
+                "substitutions": [
+                    {"var": "first_name", "value": user.first_name},
+                    {"var": "reset_link", "value": reset_link},
+                ],
+            }
+        ]
+        
+        try:
+            self.client.email.send({
+                "from": {"email": "support@easy-tix.com", "name": "Easy-Tix Support"},
+                "to": [{"email": user.email}],
+                "subject": "Password Reset Instructions",
+                "template_id": current_app.config['MAILERSEND_PASSWORD_RESET_TEMPLATE_ID'],
+                "variables": variables
+            })
+        except Exception as e:
+            current_app.logger.error(f"MailerSend Error: {str(e)}")
+            raise

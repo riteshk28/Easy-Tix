@@ -192,52 +192,43 @@ def change_password():
 
 @auth.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
-    if request.method == 'POST':
+    try:
+        current_app.logger.info("Forgot password endpoint hit")
         email = request.form.get('email')
-        user = User.query.filter_by(email=email).first()
+        current_app.logger.info(f"Processing reset request for email: {email}")
         
-        if user:
-            # Generate reset token
-            reset_token = ''.join(random.SystemRandom().choices('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', k=32))
-            # Store token in session with expiry
-            session['password_reset'] = {
-                'token': reset_token,
-                'user_id': user.id,
-                'expires_at': (datetime.utcnow() + timedelta(hours=1)).timestamp()
-            }
-            
-            try:
-                # Send reset email
-                mailer = MailerSendService()
-                mailer.send_password_reset_link(user.email, reset_token)
-                flash('Password reset instructions sent to your email', 'success')
-            except Exception as e:
-                flash('Error sending reset email', 'error')
-        else:
-            # Still show success to prevent email enumeration
-            flash('If an account exists with this email, reset instructions have been sent', 'info')
-            
-    return render_template('auth/forgot_password.html')
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            current_app.logger.warning(f"No user found with email: {email}")
+            flash('If an account exists with this email, you will receive reset instructions.', 'info')
+            return redirect(url_for('auth.login'))
+
+        # Generate reset token
+        token = generate_reset_token()  # You'll need to implement this
+        current_app.logger.info("Generated reset token")
+
+        try:
+            # Send reset email
+            current_app.logger.info("Attempting to send reset email")
+            mailer = MailerSendService()
+            mailer.send_password_reset(user, token)
+            current_app.logger.info("Reset email sent successfully")
+        except Exception as e:
+            current_app.logger.error(f"Error sending reset email: {str(e)}", exc_info=True)
+            flash('Error sending reset instructions', 'error')
+            return redirect(url_for('auth.forgot_password'))
+
+        flash('Reset instructions have been sent to your email', 'success')
+        return redirect(url_for('auth.login'))
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error in forgot_password: {str(e)}", exc_info=True)
+        flash('Error sending reset instructions', 'error')
+        return redirect(url_for('auth.forgot_password'))
 
 @auth.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
-    # Check token validity
-    reset_data = session.get('password_reset')
-    if not reset_data or reset_data['token'] != token:
-        flash('Invalid or expired reset link', 'error')
-        return redirect(url_for('auth.login'))
-        
-    if reset_data['expires_at'] < datetime.utcnow().timestamp():
-        session.pop('password_reset', None)
-        flash('Reset link has expired', 'error')
-        return redirect(url_for('auth.login'))
-    
-    user = User.query.get(reset_data['user_id'])
-    if not user:
-        flash('User not found', 'error')
-        return redirect(url_for('auth.login'))
-        
     if request.method == 'POST':
+        # Handle password reset form submission
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
         
@@ -245,6 +236,18 @@ def reset_password(token):
             flash('Passwords do not match', 'error')
             return redirect(url_for('auth.reset_password', token=token))
             
+        # Get user from token
+        reset_data = session.get('password_reset')
+        if not reset_data or reset_data['token'] != token:
+            flash('Invalid or expired reset link', 'error')
+            return redirect(url_for('auth.login'))
+        
+        user = User.query.get(reset_data['user_id'])
+        if not user:
+            flash('User not found', 'error')
+            return redirect(url_for('auth.login'))
+            
+        # Update password
         user.set_password(password)
         db.session.commit()
         
@@ -254,7 +257,8 @@ def reset_password(token):
         flash('Password has been reset successfully. Please login with your new password.', 'success')
         return redirect(url_for('auth.login'))
         
-    return render_template('auth/reset_password.html')
+    # Show reset password form
+    return render_template('auth/reset_password.html', token=token)
 
 def create_tenant_and_admin(form_data):
     """Create a new tenant and admin user"""
@@ -360,4 +364,15 @@ def verify_email_otp():
         
     except Exception as e:
         current_app.logger.error(f"Error in OTP verification: {str(e)}", exc_info=True)
-        return jsonify({'message': 'Error verifying OTP'}), 500 
+        return jsonify({'message': 'Error verifying OTP'}), 500
+
+def generate_reset_token():
+    """Generate a secure reset token"""
+    reset_token = ''.join(random.SystemRandom().choices('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', k=32))
+    # Store token in session with expiry
+    session['password_reset'] = {
+        'token': reset_token,
+        'user_id': user.id,  # Add user ID to session
+        'expires_at': (datetime.utcnow() + timedelta(hours=1)).timestamp()
+    }
+    return reset_token 

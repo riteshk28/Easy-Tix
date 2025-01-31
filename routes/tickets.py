@@ -93,13 +93,17 @@ def update_ticket(ticket_id):
     priority = request.form.get('priority')
     assigned_to_id = request.form.get('assigned_to_id')
     
+    # Store old values before update
+    old_status = ticket.status
+    old_priority = ticket.priority
+    old_assignee_id = ticket.assigned_to_id
+    old_assignee_name = ticket.assigned_to.full_name if ticket.assigned_to else 'Unassigned'
+    
     # Update ticket
     if status:
         ticket.status = status
     if priority:
         ticket.priority = priority
-        # Recalculate SLA if priority changes
-        ticket.calculate_sla_deadlines()
     if assigned_to_id:
         ticket.assigned_to_id = int(assigned_to_id) if assigned_to_id != 'none' else None
     
@@ -107,24 +111,23 @@ def update_ticket(ticket_id):
     ticket.check_sla_status()
     
     # Log status change
-    if ticket.status != status:
+    if ticket.status != old_status:
         log_ticket_activity(ticket, 'status_changed', 
-            f'Status changed from {status} to {ticket.status}',
-            status, ticket.status)
+            f'Status changed from {old_status} to {ticket.status}',
+            old_status, ticket.status)
     
     # Log priority change
-    if ticket.priority != priority:
+    if ticket.priority != old_priority:
         log_ticket_activity(ticket, 'priority_changed',
-            f'Priority changed from {priority} to {ticket.priority}',
-            priority, ticket.priority)
+            f'Priority changed from {old_priority} to {ticket.priority}',
+            old_priority, ticket.priority)
     
     # Log assignment change
-    if ticket.assigned_to != assigned_to_id:
-        new_assignee = User.query.get(ticket.assigned_to).full_name if ticket.assigned_to else 'Unassigned'
-        old_assignee_name = User.query.get(assigned_to_id).full_name if assigned_to_id else 'Unassigned'
+    if ticket.assigned_to_id != old_assignee_id:
+        new_assignee_name = ticket.assigned_to.full_name if ticket.assigned_to else 'Unassigned'
         log_ticket_activity(ticket, 'assigned',
-            f'Ticket assigned from {old_assignee_name} to {new_assignee}',
-            old_assignee_name, new_assignee)
+            f'Ticket assigned from {old_assignee_name} to {new_assignee_name}',
+            old_assignee_name, new_assignee_name)
     
     db.session.commit()
     flash('Ticket updated successfully', 'success')
@@ -193,11 +196,14 @@ def track(portal_key, ticket_id):
     return render_template('tickets/track.html', ticket=ticket, comments=comments)
 
 def log_ticket_activity(ticket, activity_type, description, old_value=None, new_value=None):
+    # Get current user
+    user = current_user if not current_user.is_anonymous else None
+    
     activity = TicketActivity(
         ticket_id=ticket.id,
-        user_id=current_user.id if not current_user.is_anonymous else None,
+        user_id=user.id if user else None,
         activity_type=activity_type,
-        description=description,
+        description=description if user else f"System {description}",
         old_value=old_value,
         new_value=new_value
     )

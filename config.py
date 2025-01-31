@@ -100,13 +100,15 @@ class Config:
 
     # MailerSend Configuration
 
-    MAILERSEND_API_KEY = 'mlsn.d42af72d7025054e59908a60bf396c9bc28b6cab4596054e0454becc0000613b'
+    MAILERSEND_API_KEY = os.getenv('MAILERSEND_API_KEY')
 
     MAILERSEND_FROM_EMAIL = 'MS_WiZzl5@trial-jy7zpl9yy25g5vx6.mlsender.net'
 
     MAILERSEND_FROM_NAME = 'ServiceDesk Support'
 
     MAILERSEND_DOMAIN = 'trial-jy7zpl9yy25g5vx6.mlsender.net'
+
+    MAILERSEND_PASSWORD_RESET_TEMPLATE_ID = os.getenv('MAILERSEND_PASSWORD_RESET_TEMPLATE_ID')
 
     
 
