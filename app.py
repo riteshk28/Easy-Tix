@@ -1,10 +1,11 @@
-from flask import Flask
+from flask import Flask, render_template
 from extensions import db, login_manager, migrate
 from models import User
 from config import Config
 from sqlalchemy import exc
 from functools import wraps
 import time
+from datetime import datetime
 
 from werkzeug.serving import is_running_from_reloader
 import os
@@ -20,6 +21,13 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
+
+    # Register template filters
+    def datetime_filter(value):
+        if value is None:
+            return ""
+        return value.strftime('%Y-%m-%d %H:%M')
+    app.jinja_env.filters['datetime'] = datetime_filter
 
     # Import blueprints
     from routes.auth import auth

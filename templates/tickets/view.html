@@ -201,7 +201,7 @@
                                 {% endif %}
                             </strong>
                             <small class="text-muted ms-2">
-                                {{ item.created_at | datetime }}
+                                {{ item.created_at.strftime('%Y-%m-%d %H:%M') }}
                             </small>
                         </div>
                     </div>
@@ -232,7 +232,9 @@
                         </div>
                         <div class="activity-content small text-muted">
                             <span>{{ item.description }}</span>
-                            <small class="ms-2">{{ item.created_at | datetime }}</small>
+                            <small class="ms-2">
+                                {{ item.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </small>
                         </div>
                     </div>
                 </div>
