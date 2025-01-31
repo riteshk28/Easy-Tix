@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, session, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from models import db, User, Tenant
 import stripe  # Add stripe for payments
@@ -16,6 +16,12 @@ def register():
     stripe.api_key = current_app.config['STRIPE_SECRET_KEY']
     
     if request.method == 'POST':
+        # Check if email was verified
+        verified_email = session.get('email_verified')
+        if not verified_email or verified_email != request.form.get('email'):
+            flash('Please verify your email before proceeding')
+            return redirect(url_for('auth.register'))
+        
         plan = request.form.get('subscription_plan', 'free')
         form_data = request.form
         current_app.logger.info(f"Registration attempt with plan: {plan}")
@@ -287,4 +293,64 @@ def create_tenant_and_admin(form_data):
     db.session.commit()
     
     flash('Registration successful')
-    return redirect(url_for('auth.login')) 
+    return redirect(url_for('auth.login'))
+
+@auth.route('/verify-email', methods=['POST'])
+def verify_email():
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        
+        # Check if email already exists
+        if User.query.filter_by(email=email).first():
+            return jsonify({'message': 'Email already registered'}), 400
+        
+        # Generate OTP
+        otp = ''.join(random.SystemRandom().choices('0123456789', k=6))
+        
+        # Store OTP in session with timestamp
+        session['email_verification'] = {
+            'email': email,
+            'otp': otp,
+            'expires_at': (datetime.utcnow() + timedelta(minutes=10)).timestamp()
+        }
+        
+        # Send OTP email
+        mailer = MailerSendService()
+        mailer.send_email_verification_otp(email, otp)
+        
+        return jsonify({'message': 'OTP sent successfully'}), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in email verification: {str(e)}", exc_info=True)
+        return jsonify({'message': 'Error sending OTP'}), 500
+
+@auth.route('/verify-email-otp', methods=['POST'])
+def verify_email_otp():
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        otp = data.get('otp')
+        
+        verification_data = session.get('email_verification')
+        if not verification_data:
+            return jsonify({'message': 'Verification session expired'}), 400
+            
+        if verification_data['email'] != email:
+            return jsonify({'message': 'Email mismatch'}), 400
+            
+        if verification_data['otp'] != otp:
+            return jsonify({'message': 'Invalid OTP'}), 400
+            
+        if verification_data['expires_at'] < datetime.utcnow().timestamp():
+            session.pop('email_verification', None)
+            return jsonify({'message': 'OTP expired'}), 400
+            
+        # Store verification status
+        session['email_verified'] = email
+        
+        return jsonify({'message': 'Email verified successfully'}), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in OTP verification: {str(e)}", exc_info=True)
+        return jsonify({'message': 'Error verifying OTP'}), 500 

@@ -56,8 +56,27 @@
                 <input type="text" class="form-control" id="last_name" name="last_name" required>
             </div>
             <div class="mb-3">
-                <label for="email" class="form-label">Email address</label>
-                <input type="email" class="form-control" id="email" name="email" required>
+                <label class="form-label">Email address</label>
+                <div class="input-group">
+                    <input type="email" class="form-control" name="email" id="email" required>
+                    <button type="button" class="btn btn-outline-secondary" id="verifyEmailBtn">
+                        Verify Email
+                    </button>
+                </div>
+                <div id="verificationSection" class="mt-2 d-none">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="otp" placeholder="Enter OTP">
+                        <button type="button" class="btn btn-primary" id="verifyOtpBtn">
+                            Verify OTP
+                        </button>
+                    </div>
+                    <small class="text-muted">Enter the OTP sent to your email</small>
+                </div>
+                <div id="emailVerifiedBadge" class="mt-2 d-none">
+                    <span class="text-success">
+                        <i class="fas fa-check-circle"></i> Email Verified
+                    </span>
+                </div>
             </div>
             <div class="mb-3">
                 <label for="password" class="form-label">Password</label>

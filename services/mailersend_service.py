@@ -109,27 +109,76 @@ class MailerSendService:
                     }
                 ],
                 "subject": "Easy-Tix: Password Reset Request",
+                "text": f"Click this link to reset your password: {reset_url}",
                 "html": f"""
-                    <div style="font-family: Arial, sans-serif; padding: 20px;">
-                        <h2>Password Reset Request</h2>
-                        <p>Hello,</p>
-                        <p>We received a request to reset your password for your Easy-Tix account.</p>
-                        <p>Click the button below to reset your password:</p>
-                        <p style="margin: 25px 0;">
-                            <a href="{reset_url}" 
-                               style="background-color: #007bff; color: white; padding: 12px 24px; 
-                                      text-decoration: none; border-radius: 4px;">
-                                Reset Password
-                            </a>
-                        </p>
-                        <p>This link will expire in 1 hour.</p>
-                        <p>If you didn't request this change, please ignore this email or contact support.</p>
-                        <br>
-                        <p>Best regards,<br>Easy-Tix Team</p>
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <h1 style="color: #333;">Password Reset</h1>
+                        </div>
+                        <div style="background: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <p>Hello,</p>
+                            <p>We received a request to reset your password for your Easy-Tix account.</p>
+                            <p>Click the button below to reset your password:</p>
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="{reset_url}" 
+                                   style="background-color: #007bff; color: white; padding: 12px 24px; 
+                                          text-decoration: none; border-radius: 4px; display: inline-block;">
+                                    Reset Password
+                                </a>
+                            </div>
+                            <p style="color: #666; font-size: 14px;">This link will expire in 1 hour.</p>
+                            <p style="color: #666; font-size: 14px;">If you didn't request this change, please ignore this email or contact support.</p>
+                            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                            <p style="color: #666; font-size: 14px; text-align: center;">
+                                Best regards,<br>Easy-Tix Team
+                            </p>
+                        </div>
                     </div>
                 """
             })
             return True
         except Exception as e:
-            current_app.logger.error(f"Error sending password reset email: {str(e)}")
+            current_app.logger.error(f"Error sending password reset email: {str(e)}", exc_info=True)
+            raise 
+
+    def send_email_verification_otp(self, email, otp):
+        """Send email verification OTP"""
+        try:
+            mailer = emails.NewEmail(self.api_key)
+            
+            mailer.send({
+                "from": {
+                    "email": current_app.config['MAILERSEND_FROM_EMAIL'],
+                    "name": "Easy-Tix"
+                },
+                "to": [
+                    {
+                        "email": email
+                    }
+                ],
+                "subject": "Easy-Tix: Verify Your Email",
+                "text": f"Your verification code is: {otp}",
+                "html": f"""
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <h1 style="color: #333;">Verify Your Email</h1>
+                        </div>
+                        <div style="background: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <p>Hello,</p>
+                            <p>Your verification code is:</p>
+                            <div style="text-align: center; margin: 30px 0;">
+                                <span style="font-size: 32px; font-weight: bold; color: #007bff;">{otp}</span>
+                            </div>
+                            <p style="color: #666; font-size: 14px;">This code will expire in 10 minutes.</p>
+                            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                            <p style="color: #666; font-size: 14px; text-align: center;">
+                                Best regards,<br>Easy-Tix Team
+                            </p>
+                        </div>
+                    </div>
+                """
+            })
+            return True
+        except Exception as e:
+            current_app.logger.error(f"Error sending verification email: {str(e)}", exc_info=True)
             raise 

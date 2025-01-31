@@ -8,7 +8,7 @@ from routes.public import public
 from routes.webhooks import webhooks
 from datetime import datetime
 from commands.recalculate_sla import recalculate_sla
-from flask_wtf.csrf import generate_csrf, CSRFProtect
+from flask_wtf.csrf import generate_csrf
 
 def create_app():
     app = Flask(__name__)
@@ -69,9 +69,7 @@ def create_app():
     
     @app.context_processor
     def inject_csrf_token():
-        def get_csrf_token():
-            return generate_csrf()
-        return dict(csrf_token=get_csrf_token)
+        return {'csrf_token': generate_csrf()}
     
     app.cli.add_command(recalculate_sla)
     
