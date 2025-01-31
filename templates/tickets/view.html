@@ -179,6 +179,60 @@
     </div>
 </div>
 
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Timeline</h5>
+    </div>
+    <div class="card-body">
+        {% set timeline_items = (ticket.comments + ticket.activities) | sort(attribute='created_at') %}
+        {% for item in timeline_items %}
+            {% if item.__class__.__name__ == 'Comment' %}
+                <!-- Comment -->
+                <div class="comment mb-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ item.user.full_name }}</strong>
+                            <small class="text-muted ms-2">
+                                {{ item.created_at | datetime }}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="comment-content mt-2">
+                        {{ item.content }}
+                    </div>
+                </div>
+            {% else %}
+                <!-- Activity Log -->
+                <div class="activity-log mb-2">
+                    <div class="d-flex align-items-center">
+                        <div class="activity-icon me-2">
+                            {% if item.activity_type == 'created' %}
+                                <i class="fas fa-plus-circle text-success"></i>
+                            {% elif item.activity_type == 'status_changed' %}
+                                <i class="fas fa-exchange-alt text-primary"></i>
+                            {% elif item.activity_type == 'assigned' %}
+                                <i class="fas fa-user-edit text-info"></i>
+                            {% elif item.activity_type == 'priority_changed' %}
+                                <i class="fas fa-flag text-warning"></i>
+                            {% elif item.activity_type == 'sla_started' %}
+                                <i class="fas fa-clock text-info"></i>
+                            {% elif item.activity_type == 'sla_stopped' %}
+                                <i class="fas fa-stop-circle text-danger"></i>
+                            {% else %}
+                                <i class="fas fa-history text-secondary"></i>
+                            {% endif %}
+                        </div>
+                        <div class="activity-content small text-muted">
+                            <span>{{ item.description }}</span>
+                            <small class="ms-2">{{ item.created_at | datetime }}</small>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
 <style>
 .email-content {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;

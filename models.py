@@ -193,6 +193,7 @@ class Ticket(db.Model):
         lazy='dynamic',
         order_by='desc(TicketComment.created_at)'
     )
+    activities = db.relationship('TicketActivity', backref='ticket', lazy=True)
     contact_name = db.Column(db.String(100))
     contact_email = db.Column(db.String(100))
     source = db.Column(db.String(20), default='portal')  # portal, email, chat
@@ -382,3 +383,18 @@ class SLAConfig(db.Model):
     __table_args__ = (
         db.UniqueConstraint('tenant_id', 'priority', name='uq_tenant_priority_sla'),
     ) 
+
+class TicketActivity(db.Model):
+    __tablename__ = 'ticket_activities'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    activity_type = db.Column(db.String(50), nullable=False)  # created, status_changed, assigned, etc.
+    description = db.Column(db.String(255), nullable=False)
+    old_value = db.Column(db.String(255))
+    new_value = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Relationship to user who performed the action
+    user = db.relationship('User', backref='activities') 

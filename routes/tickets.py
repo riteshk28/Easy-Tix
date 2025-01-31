@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from models import db, Ticket, TicketComment, User, Tenant, EmailConfig, SLAConfig
+from models import db, Ticket, TicketComment, User, Tenant, EmailConfig, SLAConfig, TicketActivity
 from datetime import datetime, timedelta
 from services.email_service import EmailService
 from services.mailersend_service import MailerSendService
@@ -56,6 +56,10 @@ def create():
         ticket.calculate_sla_deadlines()
         db.session.commit()  # Commit again to save SLA deadlines
         
+        log_ticket_activity(ticket, 'created', f'Ticket created by {current_user.full_name}')
+        if ticket.sla_start:
+            log_ticket_activity(ticket, 'sla_started', f'SLA timer started')
+        
         flash('Ticket created successfully')
         return redirect(url_for('tickets.view', ticket_id=ticket.id))
     
@@ -101,6 +105,26 @@ def update_ticket(ticket_id):
     
     # Check SLA status after updates
     ticket.check_sla_status()
+    
+    # Log status change
+    if ticket.status != status:
+        log_ticket_activity(ticket, 'status_changed', 
+            f'Status changed from {status} to {ticket.status}',
+            status, ticket.status)
+    
+    # Log priority change
+    if ticket.priority != priority:
+        log_ticket_activity(ticket, 'priority_changed',
+            f'Priority changed from {priority} to {ticket.priority}',
+            priority, ticket.priority)
+    
+    # Log assignment change
+    if ticket.assigned_to != assigned_to_id:
+        new_assignee = User.query.get(ticket.assigned_to).full_name if ticket.assigned_to else 'Unassigned'
+        old_assignee_name = User.query.get(assigned_to_id).full_name if assigned_to_id else 'Unassigned'
+        log_ticket_activity(ticket, 'assigned',
+            f'Ticket assigned from {old_assignee_name} to {new_assignee}',
+            old_assignee_name, new_assignee)
     
     db.session.commit()
     flash('Ticket updated successfully', 'success')
@@ -149,6 +173,7 @@ def track(portal_key, ticket_id):
     
     if request.method == 'POST':
         content = request.form.get('content')
+        
         if content:
             comment = TicketComment(
                 content=content,
@@ -165,4 +190,16 @@ def track(portal_key, ticket_id):
         .order_by(TicketComment.created_at.desc())\
         .all()
     
-    return render_template('tickets/track.html', ticket=ticket, comments=comments) 
+    return render_template('tickets/track.html', ticket=ticket, comments=comments)
+
+def log_ticket_activity(ticket, activity_type, description, old_value=None, new_value=None):
+    activity = TicketActivity(
+        ticket_id=ticket.id,
+        user_id=current_user.id if not current_user.is_anonymous else None,
+        activity_type=activity_type,
+        description=description,
+        old_value=old_value,
+        new_value=new_value
+    )
+    db.session.add(activity)
+    db.session.commit() 

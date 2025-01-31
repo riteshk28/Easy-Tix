@@ -348,4 +348,22 @@
 .sla-progress-item .progress {
     height: 0.5rem;
     margin-bottom: 0.25rem;
+}
+
+/* Activity Log Styles */
+.activity-log {
+    padding: 4px 0;
+    border-left: 2px solid #e9ecef;
+    margin-left: 10px;
+    padding-left: 20px;
+}
+
+.activity-icon {
+    width: 20px;
+    text-align: center;
+}
+
+.activity-content {
+    font-size: 0.85rem;
+    color: #6c757d;
 } 
