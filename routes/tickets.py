@@ -105,7 +105,9 @@ def update_ticket(ticket_id):
         ticket.status = status
     if priority:
         ticket.priority = priority
-    if assigned_to_id:
+    if assigned_to_id == 'none':
+        ticket.assigned_to_id = None
+    elif assigned_to_id:
         ticket.assigned_to_id = int(assigned_to_id) if assigned_to_id != 'none' else None
     
     # Check SLA status after updates
@@ -127,9 +129,13 @@ def update_ticket(ticket_id):
     if ticket.assigned_to_id != old_assignee_id:
         new_assignee = User.query.get(ticket.assigned_to_id) if ticket.assigned_to_id else None
         new_assignee_name = new_assignee.full_name if new_assignee else 'Unassigned'
+        current_app.logger.info(f"Assignment change detected: {old_assignee_name} -> {new_assignee_name}")
         log_ticket_activity(ticket, 'assigned',
             f'Ticket reassigned from {old_assignee_name} to {new_assignee_name}',
             old_assignee_name, new_assignee_name)
+    
+    # Debug logging
+    current_app.logger.info(f"Updating ticket assignment: old={old_assignee_id}, new={ticket.assigned_to_id}")
     
     db.session.commit()
     flash('Ticket updated successfully', 'success')

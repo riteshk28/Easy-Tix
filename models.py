@@ -157,6 +157,8 @@ class User(UserMixin, db.Model):
     tenant_id = db.Column(db.Integer, db.ForeignKey('tenant.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     assigned_tickets = db.relationship('Ticket', backref='assigned_to', foreign_keys='Ticket.assigned_to_id', lazy=True)
+    reset_token = db.Column(db.String(32), unique=True)
+    reset_token_expires_at = db.Column(db.DateTime)
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

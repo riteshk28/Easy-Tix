@@ -48,7 +48,7 @@
                                     <option value="high" {% if ticket.priority == 'high' %}selected{% endif %}>High</option>
                                 </select>
                                 <select name="assigned_to_id" class="form-select form-select-sm">
-                                    <option value="">Unassigned</option>
+                                    <option value="none" {% if not ticket.assigned_to_id %}selected{% endif %}>Unassigned</option>
                                     {% for agent in agents %}
                                     <option value="{{ agent.id }}" {% if ticket.assigned_to_id == agent.id %}selected{% endif %}>
                                         {{ agent.first_name }} {{ agent.last_name }}
