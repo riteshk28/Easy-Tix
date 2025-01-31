@@ -191,10 +191,11 @@ class Ticket(db.Model):
     comments = db.relationship(
         'TicketComment',
         backref='ticket',
-        lazy='dynamic',
+        lazy=True,
         order_by='desc(TicketComment.created_at)'
     )
-    activities = db.relationship('TicketActivity', 
+    activities = db.relationship(
+        'TicketActivity', 
         backref='ticket', 
         lazy=True,
         foreign_keys='TicketActivity.ticket_id'
