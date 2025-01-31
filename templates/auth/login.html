@@ -21,7 +21,7 @@
     <div class="card-body p-4">
         <h4 class="card-title mb-4">Sign In</h4>
         <form method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div class="mb-3">
                 <label class="form-label">Email address</label>
                 <input type="email" class="form-control" name="email" required>
