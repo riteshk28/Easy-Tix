@@ -184,7 +184,9 @@
         <h5 class="mb-0">Timeline</h5>
     </div>
     <div class="card-body">
-        {% set timeline_items = (ticket.comments.all() + ticket.activities) | sort(attribute='created_at') %}
+        {% set comments = ticket.comments.all() %}
+        {% set activities = ticket.activities %}
+        {% set timeline_items = (comments + activities) | sort(attribute='created_at', reverse=True) %}
         {% for item in timeline_items %}
             {% if item.__class__.__name__ == 'Comment' %}
                 <!-- Comment -->
