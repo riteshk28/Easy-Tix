@@ -28,7 +28,11 @@ class Config:
 
     # Other configurations
 
-    SECRET_KEY = 'your-secret-key-here'
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+
+    # CSRF settings
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_SECRET_KEY = os.environ.get('WTF_CSRF_SECRET_KEY', SECRET_KEY)
 
     
 
