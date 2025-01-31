@@ -1,10 +1,13 @@
 from mailersend import emails
-from flask import current_app
+from flask import current_app, url_for
 import json
 import logging
 from flask_login import current_user
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 
 logger = logging.getLogger(__name__)
+db = SQLAlchemy()
 
 class MailerSendService:
     def __init__(self):
@@ -83,4 +86,50 @@ class MailerSendService:
             return True
         except Exception as e:
             current_app.logger.error(f"Error sending password change OTP email: {str(e)}")
+            raise 
+
+    def send_password_reset_link(self, email, token):
+        """Send password reset link email"""
+        try:
+            mailer = emails.NewEmail(self.api_key)
+            # Get user's tenant name
+            user = User.query.filter_by(email=email).first()
+            tenant_name = user.tenant.name if user and user.tenant else "Support"
+            
+            reset_url = url_for('auth.reset_password', token=token, _external=True)
+            
+            mailer.send({
+                "from": {
+                    "email": current_app.config['MAILERSEND_FROM_EMAIL'],
+                    "name": f"Easy-Tix-{tenant_name}"
+                },
+                "to": [
+                    {
+                        "email": email
+                    }
+                ],
+                "subject": "Easy-Tix: Password Reset Request",
+                "html": f"""
+                    <div style="font-family: Arial, sans-serif; padding: 20px;">
+                        <h2>Password Reset Request</h2>
+                        <p>Hello,</p>
+                        <p>We received a request to reset your password for your Easy-Tix account.</p>
+                        <p>Click the button below to reset your password:</p>
+                        <p style="margin: 25px 0;">
+                            <a href="{reset_url}" 
+                               style="background-color: #007bff; color: white; padding: 12px 24px; 
+                                      text-decoration: none; border-radius: 4px;">
+                                Reset Password
+                            </a>
+                        </p>
+                        <p>This link will expire in 1 hour.</p>
+                        <p>If you didn't request this change, please ignore this email or contact support.</p>
+                        <br>
+                        <p>Best regards,<br>Easy-Tix Team</p>
+                    </div>
+                """
+            })
+            return True
+        except Exception as e:
+            current_app.logger.error(f"Error sending password reset email: {str(e)}")
             raise 
