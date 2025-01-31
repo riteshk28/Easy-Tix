@@ -264,28 +264,63 @@ class Ticket(db.Model):
         """Check and update SLA status"""
         now = datetime.utcnow()
         
-        # Calculate SLA deadlines if they're not set (handles email tickets)
+        # Calculate SLA deadlines if they're not set
         if not self.sla_response_due_at or not self.sla_resolution_due_at:
             self.calculate_sla_deadlines()
         
-        # Response SLA is met when ticket is assigned AND status changed from open
-        # OR when first staff comment is made
-        if not self.first_response_at and (
-            (self.assigned_to_id and self.status != 'open') or
-            TicketComment.query.filter_by(
-                ticket_id=self.id, 
-                is_internal=True
-            ).first()
-        ):
-            self.first_response_at = now
-            # Safely check SLA met status
-            self.sla_response_met = bool(self.sla_response_due_at and now <= self.sla_response_due_at)
+        # Response SLA
+        if not self.first_response_at:
+            # Check for first response conditions
+            first_response = (
+                TicketComment.query.filter_by(
+                    ticket_id=self.id,
+                    is_internal=True
+                ).order_by(TicketComment.created_at.asc()).first()
+            )
+            
+            if first_response or (self.assigned_to_id and self.status != 'open'):
+                self.first_response_at = first_response.created_at if first_response else now
+                self.sla_response_met = self.first_response_at <= self.sla_response_due_at
         
         # Resolution SLA
         if self.status == 'resolved' and not self.resolved_at:
             self.resolved_at = now
-            # Safely check resolution SLA
-            self.sla_resolution_met = bool(self.sla_resolution_due_at and now <= self.sla_resolution_due_at)
+            self.sla_resolution_met = now <= self.sla_resolution_due_at
+        elif self.status != 'resolved' and self.resolved_at:
+            # If ticket is reopened, reset resolution fields
+            self.resolved_at = None
+            self.sla_resolution_met = None
+
+    def get_sla_status(self):
+        """Get current SLA status for display"""
+        now = datetime.utcnow()
+        
+        response_status = {
+            'status': 'in_progress',
+            'overdue': False
+        }
+        
+        resolution_status = {
+            'status': 'in_progress',
+            'overdue': False
+        }
+        
+        # Response SLA
+        if self.first_response_at:
+            response_status['status'] = 'met' if self.sla_response_met else 'missed'
+        elif now > self.sla_response_due_at:
+            response_status['overdue'] = True
+            
+        # Resolution SLA
+        if self.resolved_at:
+            resolution_status['status'] = 'met' if self.sla_resolution_met else 'missed'
+        elif self.status != 'resolved' and now > self.sla_resolution_due_at:
+            resolution_status['overdue'] = True
+            
+        return {
+            'response': response_status,
+            'resolution': resolution_status
+        }
 
 class TicketComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from models import db, Ticket, TicketComment, User, Tenant, EmailConfig, SLAConfig
 from datetime import datetime, timedelta
@@ -79,33 +79,36 @@ def view(ticket_id):
                          comments=comments,
                          now=datetime.utcnow())
 
-@tickets.route('/<int:ticket_id>/update', methods=['POST'])
+@tickets.route('/ticket/<int:ticket_id>/update', methods=['POST'])
 @login_required
 def update_ticket(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
     
-    try:
-        # Update ticket fields
-        if 'status' in request.form:
-            ticket.status = request.form['status']
-        if 'assigned_to_id' in request.form:
-            ticket.assigned_to_id = request.form['assigned_to_id'] or None
-            
-        # Ensure SLA deadlines exist
-        if not ticket.sla_response_due_at or not ticket.sla_resolution_due_at:
-            ticket.calculate_sla_deadlines()
-            
-        # Check SLA status after updates
-        ticket.check_sla_status()
-        
-        db.session.commit()
-        flash('Ticket updated successfully')
-        
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error updating ticket: {str(e)}")
-        flash('Error updating ticket', 'error')
-        
+    # Check permissions
+    if not current_user.is_admin and current_user != ticket.assigned_to:
+        flash('You do not have permission to update this ticket.', 'error')
+        return redirect(url_for('tickets.view', ticket_id=ticket_id))
+    
+    # Get form data
+    status = request.form.get('status')
+    priority = request.form.get('priority')
+    assigned_to_id = request.form.get('assigned_to_id')
+    
+    # Update ticket
+    if status:
+        ticket.status = status
+    if priority:
+        ticket.priority = priority
+        # Recalculate SLA if priority changes
+        ticket.calculate_sla_deadlines()
+    if assigned_to_id:
+        ticket.assigned_to_id = int(assigned_to_id) if assigned_to_id != 'none' else None
+    
+    # Check SLA status after updates
+    ticket.check_sla_status()
+    
+    db.session.commit()
+    flash('Ticket updated successfully', 'success')
     return redirect(url_for('tickets.view', ticket_id=ticket_id))
 
 @tickets.route('/<int:ticket_id>/comment', methods=['POST'])
