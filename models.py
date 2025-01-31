@@ -174,6 +174,15 @@ class User(UserMixin, db.Model):
         """Superadmin access only for superadmin role"""
         return self.role == 'superadmin'
 
+    @property
+    def full_name(self):
+        """Return user's full name or email if name not set"""
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        elif self.first_name:
+            return self.first_name
+        return self.email
+
 class Ticket(db.Model):
     __tablename__ = 'ticket'
     id = db.Column(db.Integer, primary_key=True)

@@ -97,7 +97,8 @@ def update_ticket(ticket_id):
     old_status = ticket.status
     old_priority = ticket.priority
     old_assignee_id = ticket.assigned_to_id
-    old_assignee_name = ticket.assigned_to.full_name if ticket.assigned_to else 'Unassigned'
+    old_assignee = User.query.get(old_assignee_id) if old_assignee_id else None
+    old_assignee_name = old_assignee.full_name if old_assignee else 'Unassigned'
     
     # Update ticket
     if status:
@@ -124,9 +125,10 @@ def update_ticket(ticket_id):
     
     # Log assignment change
     if ticket.assigned_to_id != old_assignee_id:
-        new_assignee_name = ticket.assigned_to.full_name if ticket.assigned_to else 'Unassigned'
+        new_assignee = User.query.get(ticket.assigned_to_id) if ticket.assigned_to_id else None
+        new_assignee_name = new_assignee.full_name if new_assignee else 'Unassigned'
         log_ticket_activity(ticket, 'assigned',
-            f'Ticket assigned from {old_assignee_name} to {new_assignee_name}',
+            f'Ticket reassigned from {old_assignee_name} to {new_assignee_name}',
             old_assignee_name, new_assignee_name)
     
     db.session.commit()
