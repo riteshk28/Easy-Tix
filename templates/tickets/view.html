@@ -34,7 +34,7 @@
                     <div class="card-body p-0">
                         <!-- Status and Assignment -->
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <form method="POST" action="{{ url_for('tickets.update_ticket', ticket_id=ticket.id) }}" class="d-flex gap-2">
+                            <form method="POST" action="{{ url_for('tickets.update_ticket', ticket_id=ticket.id) }}" class="d-flex flex-column gap-2">
                                 <select name="status" class="form-select form-select-sm" style="width: auto">
                                     <option value="open" {% if ticket.status == 'open' %}selected{% endif %}>Open</option>
                                     <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>In Progress</option>
@@ -42,7 +42,21 @@
                                     <option value="resolved" {% if ticket.status == 'resolved' %}selected{% endif %}>Resolved</option>
                                     <option value="closed" {% if ticket.status == 'closed' %}selected{% endif %}>Closed</option>
                                 </select>
-                                <button type="submit" class="btn btn-sm btn-primary">Update</button>
+                                <select name="priority" class="form-select form-select-sm" style="width: auto">
+                                    <option value="low" {% if ticket.priority == 'low' %}selected{% endif %}>Low Priority</option>
+                                    <option value="medium" {% if ticket.priority == 'medium' %}selected{% endif %}>Medium Priority</option>
+                                    <option value="high" {% if ticket.priority == 'high' %}selected{% endif %}>High Priority</option>
+                                    <option value="urgent" {% if ticket.priority == 'urgent' %}selected{% endif %}>Urgent Priority</option>
+                                </select>
+                                <select name="assigned_to_id" class="form-select form-select-sm">
+                                    <option value="">Unassigned</option>
+                                    {% for agent in agents %}
+                                    <option value="{{ agent.id }}" {% if ticket.assigned_to_id == agent.id %}selected{% endif %}>
+                                        {{ agent.first_name }} {{ agent.last_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary mt-2">Update Ticket</button>
                             </form>
                         </div>
 
@@ -86,21 +100,6 @@
                             </div>
                         </div>
 
-                        <!-- Assignment -->
-                        <div class="mb-3">
-                            <form method="POST" action="{{ url_for('tickets.update_ticket', ticket_id=ticket.id) }}" class="d-flex gap-2">
-                                <select name="assigned_to_id" class="form-select form-select-sm">
-                                    <option value="">Unassigned</option>
-                                    {% for agent in agents %}
-                                    <option value="{{ agent.id }}" {% if ticket.assigned_to_id == agent.id %}selected{% endif %}>
-                                        {{ agent.first_name }} {{ agent.last_name }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                <button type="submit" class="btn btn-sm btn-primary">Assign</button>
-                            </form>
-                        </div>
-
                         <!-- Metadata -->
                         <div class="text-muted small">
                             <div class="mb-2">
@@ -122,59 +121,6 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
-
-<div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0">Update Ticket</h5>
-    </div>
-    <div class="card-body">
-        <form action="{{ url_for('tickets.update_ticket', ticket_id=ticket.id) }}" method="POST">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select name="status" class="form-control">
-                            <option value="">No Change</option>
-                            <option value="open" {% if ticket.status == 'open' %}selected{% endif %}>Open</option>
-                            <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                            <option value="resolved" {% if ticket.status == 'resolved' %}selected{% endif %}>Resolved</option>
-                            <option value="closed" {% if ticket.status == 'closed' %}selected{% endif %}>Closed</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label>Priority</label>
-                        <select name="priority" class="form-control">
-                            <option value="">No Change</option>
-                            <option value="low" {% if ticket.priority == 'low' %}selected{% endif %}>Low</option>
-                            <option value="medium" {% if ticket.priority == 'medium' %}selected{% endif %}>Medium</option>
-                            <option value="high" {% if ticket.priority == 'high' %}selected{% endif %}>High</option>
-                            <option value="urgent" {% if ticket.priority == 'urgent' %}selected{% endif %}>Urgent</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label>Assign To</label>
-                        <select name="assigned_to_id" class="form-control">
-                            <option value="">No Change</option>
-                            <option value="none">Unassigned</option>
-                            {% for user in tenant_users %}
-                            <option value="{{ user.id }}" {% if ticket.assigned_to_id == user.id %}selected{% endif %}>
-                                {{ user.first_name }} {{ user.last_name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="text-right mt-3">
-                <button type="submit" class="btn btn-primary">Update Ticket</button>
-            </div>
-        </form>
     </div>
 </div>
 

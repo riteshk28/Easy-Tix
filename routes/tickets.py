@@ -84,11 +84,6 @@ def view(ticket_id):
 def update_ticket(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
     
-    # Check permissions
-    if not current_user.is_admin and current_user != ticket.assigned_to:
-        flash('You do not have permission to update this ticket.', 'error')
-        return redirect(url_for('tickets.view', ticket_id=ticket_id))
-    
     # Get form data
     status = request.form.get('status')
     priority = request.form.get('priority')
