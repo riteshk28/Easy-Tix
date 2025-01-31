@@ -1,5 +1,5 @@
 from flask import Flask
-from extensions import db, login_manager, migrate
+from extensions import db, login_manager, migrate, csrf
 from routes.auth import auth
 from routes.dashboard import dashboard
 from routes.admin import admin
@@ -17,6 +17,7 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
+    csrf.init_app(app)
     
     # Register filters FIRST - before any template rendering
     @app.template_filter()

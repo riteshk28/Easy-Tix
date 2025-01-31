@@ -54,7 +54,7 @@
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form action="{{ url_for('auth.logout') }}" method="post">
-                                        {{ csrf_token() }}
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="dropdown-item">Logout</button>
                                     </form>
                                 </li>
