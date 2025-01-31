@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Register.js loaded');
     const emailInput = document.getElementById('email');
     const verifyEmailBtn = document.getElementById('verifyEmailBtn');
+    console.log('Verify button:', verifyEmailBtn);
     const verificationSection = document.getElementById('verificationSection');
     const otpInput = document.getElementById('otp');
     const verifyOtpBtn = document.getElementById('verifyOtpBtn');
@@ -11,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
     submitBtn.disabled = true;
     
     verifyEmailBtn.addEventListener('click', async function() {
+        console.log('Verify button clicked');
         const email = emailInput.value;
         if (!email) {
             alert('Please enter an email address');
