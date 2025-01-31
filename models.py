@@ -175,6 +175,7 @@ class User(UserMixin, db.Model):
         return self.role == 'superadmin'
 
 class Ticket(db.Model):
+    __tablename__ = 'ticket'
     id = db.Column(db.Integer, primary_key=True)
     ticket_number = db.Column(db.String(20), unique=True)  # e.g., TENANT1-001
     title = db.Column(db.String(200), nullable=False)
@@ -193,7 +194,11 @@ class Ticket(db.Model):
         lazy='dynamic',
         order_by='desc(TicketComment.created_at)'
     )
-    activities = db.relationship('TicketActivity', backref='ticket', lazy=True)
+    activities = db.relationship('TicketActivity', 
+        backref='ticket', 
+        lazy=True,
+        foreign_keys='TicketActivity.ticket_id'
+    )
     contact_name = db.Column(db.String(100))
     contact_email = db.Column(db.String(100))
     source = db.Column(db.String(20), default='portal')  # portal, email, chat
@@ -385,16 +390,19 @@ class SLAConfig(db.Model):
     ) 
 
 class TicketActivity(db.Model):
-    __tablename__ = 'ticket_activities'
+    __tablename__ = 'ticket_activity'
     
     id = db.Column(db.Integer, primary_key=True)
-    ticket_id = db.Column(db.Integer, db.ForeignKey('tickets.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    activity_type = db.Column(db.String(50), nullable=False)  # created, status_changed, assigned, etc.
+    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    activity_type = db.Column(db.String(50), nullable=False)
     description = db.Column(db.String(255), nullable=False)
     old_value = db.Column(db.String(255))
     new_value = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     
     # Relationship to user who performed the action
-    user = db.relationship('User', backref='activities') 
+    user = db.relationship('User', 
+        backref='activities',
+        foreign_keys=[user_id]
+    ) 
