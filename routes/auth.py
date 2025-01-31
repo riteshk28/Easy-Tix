@@ -194,34 +194,43 @@ def change_password():
 def forgot_password():
     if request.method == 'POST':
         try:
+            current_app.logger.info("Forgot password POST request received")
             email = request.form.get('email')
+            current_app.logger.info(f"Processing reset request for email: {email}")
             user = User.query.filter_by(email=email).first()
             
             if user:
+                current_app.logger.info(f"User found for email: {email}")
                 # Generate reset token
                 reset_token = ''.join(random.SystemRandom().choices('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ', k=32))
                 
-                # Store token in database instead of session
+                # Store token in database
                 user.reset_token = reset_token
                 user.reset_token_expires_at = datetime.utcnow() + timedelta(hours=1)
                 db.session.commit()
+                current_app.logger.info("Reset token stored in database")
                 
                 # Send reset email
                 try:
                     mailer = MailerSendService()
+                    current_app.logger.info("Attempting to send reset email")
                     mailer.send_password_reset_link(user.email, reset_token)
+                    current_app.logger.info("Reset email sent successfully")
                     flash('Password reset instructions have been sent to your email', 'success')
                 except Exception as e:
-                    current_app.logger.error(f"Error sending reset email: {str(e)}")
+                    current_app.logger.error(f"Error sending reset email: {str(e)}", exc_info=True)
+                    db.session.rollback()  # Rollback the token if email fails
                     flash('Error sending reset instructions', 'error')
+                    return redirect(url_for('auth.forgot_password'))
             else:
+                current_app.logger.info(f"No user found for email: {email}")
                 # Still show success to prevent email enumeration
                 flash('If an account exists with this email, reset instructions have been sent', 'info')
                 
             return redirect(url_for('auth.login'))
             
         except Exception as e:
-            current_app.logger.error(f"Error in forgot password: {str(e)}")
+            current_app.logger.error(f"Error in forgot password: {str(e)}", exc_info=True)
             flash('An error occurred. Please try again.', 'error')
             
     return render_template('auth/forgot_password.html')

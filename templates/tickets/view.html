@@ -201,29 +201,45 @@
     <div class="tab-pane fade" id="timeline" role="tabpanel" aria-labelledby="timeline-tab">
         <div class="card">
             <div class="card-body">
-                {% set comments = ticket.comments.all() %}
-                {% set activities = ticket.activities %}
-                {% set timeline_items = (comments + activities) | sort(attribute='created_at', reverse=True) %}
+                {% set timeline_items = [] %}
+                {% for comment in ticket.comments %}
+                    {% set _ = timeline_items.append({
+                        'type': 'comment',
+                        'data': comment,
+                        'created_at': comment.created_at,
+                        'user': comment.user
+                    }) %}
+                {% endfor %}
+                {% for activity in ticket.activities %}
+                    {% set _ = timeline_items.append({
+                        'type': 'activity',
+                        'data': activity,
+                        'created_at': activity.created_at,
+                        'user': activity.user
+                    }) %}
+                {% endfor %}
+                {% set timeline_items = timeline_items|sort(attribute='created_at', reverse=true) %}
+
                 {% for item in timeline_items %}
-                    {% if item.__class__.__name__ == 'Comment' %}
+                    {% if item.type == 'comment' %}
                         <!-- Comment -->
                         <div class="comment mb-4">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <strong>
-                                        {% if item.user %}
-                                            {{ item.user.full_name }}
+                                        {% if item.data.user %}
+                                            {{ item.data.user.full_name }}
                                         {% else %}
                                             System
                                         {% endif %}
                                     </strong>
                                     <small class="text-muted ms-2">
-                                        {{ item.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                        {{ item.data.created_at|datetime }}
                                     </small>
                                 </div>
                             </div>
                             <div class="comment-content mt-2">
-                                {{ item.content }}
+                                {{ item.data.content }}
                             </div>
                         </div>
                     {% else %}
@@ -231,32 +247,28 @@
                         <div class="activity-log mb-2">
                             <div class="d-flex align-items-center">
                                 <div class="activity-icon me-2">
-                                    {% if item.activity_type == 'created' %}
+                                    {% if item.data.activity_type == 'created' %}
                                         <i class="fas fa-plus-circle text-success"></i>
-                                    {% elif item.activity_type == 'status_changed' %}
+                                    {% elif item.data.activity_type == 'status_changed' %}
                                         <i class="fas fa-exchange-alt text-primary"></i>
-                                    {% elif item.activity_type == 'assigned' %}
+                                    {% elif item.data.activity_type == 'assigned' %}
                                         <i class="fas fa-user-edit text-info"></i>
-                                    {% elif item.activity_type == 'priority_changed' %}
+                                    {% elif item.data.activity_type == 'priority_changed' %}
                                         <i class="fas fa-flag text-warning"></i>
-                                    {% elif item.activity_type == 'sla_started' %}
-                                        <i class="fas fa-clock text-info"></i>
-                                    {% elif item.activity_type == 'sla_stopped' %}
-                                        <i class="fas fa-stop-circle text-danger"></i>
                                     {% else %}
                                         <i class="fas fa-history text-secondary"></i>
                                     {% endif %}
                                 </div>
                                 <div class="activity-content small text-muted">
                                     <span>
-                                        {% if item.user %}
-                                            <strong>{{ item.user.full_name }}</strong>
+                                        {% if item.data.user %}
+                                            <strong>{{ item.data.user.full_name }}</strong>
                                         {% else %}
                                             <strong>System</strong>
                                         {% endif %}
-                                        {{ item.description }}
+                                        {{ item.data.description }}
                                     </span>
-                                    <small class="ms-2">{{ item.created_at | datetime }}</small>
+                                    <small class="ms-2">{{ item.data.created_at | datetime }}</small>
                                 </div>
                             </div>
                         </div>

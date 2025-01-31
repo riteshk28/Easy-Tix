@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_login import login_required, current_user
 from models import db, Ticket, TicketComment, User, Tenant, EmailConfig, SLAConfig, TicketActivity
 from datetime import datetime, timedelta
@@ -129,9 +129,12 @@ def update_ticket(ticket_id):
     if ticket.assigned_to_id != old_assignee_id:
         new_assignee = User.query.get(ticket.assigned_to_id) if ticket.assigned_to_id else None
         new_assignee_name = new_assignee.full_name if new_assignee else 'Unassigned'
-        current_app.logger.info(f"Assignment change detected: {old_assignee_name} -> {new_assignee_name}")
+        activity_description = (
+            f"Ticket reassigned from {old_assignee_name} to {new_assignee_name} "
+            f"by {current_user.full_name}"
+        )
         log_ticket_activity(ticket, 'assigned',
-            f'Ticket reassigned from {old_assignee_name} to {new_assignee_name}',
+            activity_description,
             old_assignee_name, new_assignee_name)
     
     # Debug logging

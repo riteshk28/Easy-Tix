@@ -90,7 +90,7 @@ class MailerSendService:
             self.mailer.send({
                 "from": {
                     "email": current_app.config['MAILERSEND_FROM_EMAIL'],
-                    "name": f"Easy-Tix-{current_user.tenant.name if current_user.tenant else 'Support'}"
+                    "name": "Easy-Tix Support"
                 },
                 "to": [
                     {
@@ -116,7 +116,7 @@ class MailerSendService:
                                 </a>
                             </div>
                             <p style="color: #666; font-size: 14px;">This link will expire in 1 hour.</p>
-                            <p style="color: #666; font-size: 14px;">If you didn't request this change, please ignore this email or contact support.</p>
+                            <p style="color: #666; font-size: 14px;">If you didn't request this change, please ignore this email.</p>
                             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
                             <p style="color: #666; font-size: 14px; text-align: center;">
                                 Best regards,<br>Easy-Tix Team
