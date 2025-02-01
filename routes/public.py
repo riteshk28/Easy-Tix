@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from models import db, Ticket, Tenant, User, TicketComment
 from datetime import datetime
+from services import MailerSendService
+from flask import current_app
 
 public = Blueprint('public', __name__)
 
@@ -24,6 +26,13 @@ def submit_ticket(portal_key):
         
         db.session.add(ticket)
         db.session.commit()
+        
+        # Send confirmation email
+        try:
+            mailer = MailerSendService()
+            mailer.send_ticket_confirmation(ticket)
+        except Exception as e:
+            current_app.logger.error(f"Error sending confirmation: {str(e)}")
         
         flash(f'Ticket submitted successfully. Your ticket number is: {ticket.ticket_number}. Please save this number for tracking your ticket.')
         return redirect(url_for('public.view_ticket_status', 

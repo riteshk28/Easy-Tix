@@ -110,9 +110,22 @@
                         <div class="text-muted small">
                             <div class="mb-2">
                                 {% if ticket.created_by %}
-                                    <div>Created by: {{ ticket.created_by.first_name }} {{ ticket.created_by.last_name }}</div>
+                                    <div>
+                                        <strong>Created By:</strong> 
+                                        {% if ticket.contact_email %}
+                                            {{ ticket.created_by.first_name }} {{ ticket.created_by.last_name }} 
+                                            <span class="text-muted">({{ ticket.contact_email }})</span>
+                                        {% else %}
+                                            {{ ticket.created_by.first_name }} {{ ticket.created_by.last_name }}
+                                        {% endif %}
+                                    </div>
                                 {% elif ticket.contact_email %}
-                                    <div>Created by: {{ ticket.contact_email }}</div>
+                                    <div>
+                                        Created by: {{ ticket.created_by.first_name }} {{ ticket.created_by.last_name }}
+                                        {% if ticket.contact_email %}
+                                            <span class="text-muted">({{ ticket.contact_email }})</span>
+                                        {% endif %}
+                                    </div>
                                 {% endif %}
                                 {% if ticket.contact_name and not ticket.created_by %}
                                     <div>Customer: {{ ticket.contact_name }}</div>

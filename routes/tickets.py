@@ -71,6 +71,13 @@ def create():
         if ticket.sla_response_due_at:  # Check for SLA deadline instead
             log_ticket_activity(ticket, 'sla_started', f'SLA timer started')
         
+        # Send confirmation email
+        try:
+            mailer = MailerSendService()
+            mailer.send_ticket_confirmation(ticket)
+        except Exception as e:
+            current_app.logger.error(f"Error sending confirmation: {str(e)}")
+        
         flash('Ticket created successfully')
         return redirect(url_for('tickets.view', ticket_id=ticket.id))
     

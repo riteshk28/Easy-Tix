@@ -5,6 +5,9 @@ import logging
 from flask_login import current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
+from flask_login import current_user
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 
 logger = logging.getLogger(__name__)
 db = SQLAlchemy()
@@ -208,3 +211,40 @@ class MailerSendService:
         except Exception as e:
             current_app.logger.error(f"MailerSend Error: {str(e)}")
             raise
+
+    def send_ticket_confirmation(self, ticket):
+        """Send confirmation email to ticket creator with tracking link"""
+        tenant = Tenant.query.get(ticket.tenant_id)
+        portal_url = url_for('public.track_ticket', 
+                            portal_key=tenant.portal_key,
+                            ticket_id=ticket.id,
+                            _external=True)
+        
+        sender = f"Easy-Tix-{tenant.name} <{tenant.support_email}>"
+        recipient = [{"email": ticket.contact_email}]
+        
+        subject = f"Ticket #{ticket.ticket_number} Created - {ticket.title}"
+        
+        html_content = f"""
+            <h2>Ticket Created Successfully</h2>
+            <p>Your ticket has been created with the following details:</p>
+            <ul>
+                <li><strong>Ticket Number:</strong> #{ticket.ticket_number}</li>
+                <li><strong>Title:</strong> {ticket.title}</li>
+                <li><strong>Priority:</strong> {ticket.priority}</li>
+                <li><strong>Status:</strong> {ticket.status}</li>
+            </ul>
+            <p>You can track your ticket status using this link:</p>
+            <p><a href="{portal_url}">{portal_url}</a></p>
+            <p>We'll notify you of any updates to your ticket.</p>
+        """
+        
+        try:
+            self.mailer.send({
+                "from": sender,
+                "to": recipient,
+                "subject": subject,
+                "html": html_content
+            })
+        except Exception as e:
+            current_app.logger.error(f"Error sending confirmation email: {str(e)}")

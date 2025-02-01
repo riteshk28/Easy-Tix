@@ -11,6 +11,8 @@ from email.parser import Parser
 from email.policy import default
 from html2text import HTML2Text  # pip install html2text
 from bs4 import BeautifulSoup  # pip install beautifulsoup4
+from flask_wtf.csrf import csrf_exempt
+from services.mailersend_service import MailerSendService
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -548,6 +550,7 @@ def stripe_webhook():
         return jsonify({'error': str(e)}), 400 
 
 @webhook.route('/api/email/incoming', methods=['POST'])
+@csrf_exempt
 def email_webhook():
     try:
         # Check content type and get data accordingly
@@ -630,6 +633,13 @@ def email_webhook():
         db.session.add(ticket)
         db.session.commit()
 
+        # Send confirmation email
+        try:
+            mailer = MailerSendService()
+            mailer.send_ticket_confirmation(ticket)
+        except Exception as e:
+            current_app.logger.error(f"Error sending confirmation: {str(e)}")
+
         return jsonify({'message': 'Ticket created successfully', 'ticket_id': ticket.id}), 201
 
     except Exception as e:
@@ -675,6 +685,7 @@ def test_email_domains():
     }) 
 
 @webhook.route('/email', methods=['POST'])
+@csrf_exempt
 def handle_email():
     try:
         data = request.get_json()
@@ -750,6 +761,13 @@ def handle_email():
         
         db.session.add(ticket)
         db.session.commit()
+        
+        # Send confirmation email
+        try:
+            mailer = MailerSendService()
+            mailer.send_ticket_confirmation(ticket)
+        except Exception as e:
+            current_app.logger.error(f"Error sending confirmation: {str(e)}")
         
         return jsonify({'message': 'Ticket created successfully', 'ticket_id': ticket.id}), 201
         
