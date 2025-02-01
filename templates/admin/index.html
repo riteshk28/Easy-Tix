@@ -175,6 +175,7 @@
                                     <form method="POST" 
                                           action="{{ url_for('admin.update_user_role', user_id=user.id) }}" 
                                           class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <select name="role" 
                                                 class="form-select form-select-sm" 
                                                 onchange="this.form.submit()" 
