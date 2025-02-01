@@ -10,6 +10,15 @@ tickets = Blueprint('tickets', __name__)
 @tickets.route('/')
 @login_required
 def index():
+    # Define status colors for badges
+    status_colors = {
+        'open': 'danger',
+        'in_progress': 'primary',
+        'on_hold': 'warning',
+        'resolved': 'success',
+        'closed': 'secondary'
+    }
+
     status_filter = request.args.get('status', '')
     priority_filter = request.args.get('priority', '')
     
@@ -28,7 +37,8 @@ def index():
                          agents=agents,
                          status_filter=status_filter,
                          priority_filter=priority_filter,
-                         now=datetime.utcnow())
+                         now=datetime.utcnow(),
+                         status_colors=status_colors)
 
 @tickets.route('/create', methods=['GET', 'POST'])
 @login_required
@@ -69,6 +79,15 @@ def create():
 @tickets.route('/<int:ticket_id>')
 @login_required
 def view(ticket_id):
+    # Define status colors for badges
+    status_colors = {
+        'open': 'danger',
+        'in_progress': 'primary',
+        'on_hold': 'warning',
+        'resolved': 'success',
+        'closed': 'secondary'
+    }
+
     ticket = Ticket.query.filter_by(
         id=ticket_id,
         tenant_id=current_user.tenant_id
@@ -81,7 +100,8 @@ def view(ticket_id):
                          ticket=ticket, 
                          agents=agents, 
                          comments=comments,
-                         now=datetime.utcnow())
+                         now=datetime.utcnow(),
+                         status_colors=status_colors)
 
 @tickets.route('/ticket/<int:ticket_id>/update', methods=['POST'])
 @login_required
