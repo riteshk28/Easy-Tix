@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from models import db, Ticket, Tenant, User, TicketComment
 from datetime import datetime
-from services import MailerSendService
+from services.mailersend_service import MailerSendService
 from flask import current_app
 
 public = Blueprint('public', __name__)
