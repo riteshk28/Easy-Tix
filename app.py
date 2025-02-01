@@ -9,6 +9,7 @@ from datetime import datetime
 
 from werkzeug.serving import is_running_from_reloader
 import os
+from flask_wtf.csrf import CSRFProtect
 
 
 
@@ -21,6 +22,7 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
+    csrf = CSRFProtect(app)
 
     # Register template filters
     def datetime_filter(value):
