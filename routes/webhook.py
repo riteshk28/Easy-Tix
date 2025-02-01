@@ -773,7 +773,7 @@ def handle_email():
         current_app.logger.error(f"Error processing email: {str(e)}")
         return jsonify({'error': str(e)}), 500 
 
-@webhook.route('/test/email', methods=['GET'])
+@webhook.route('/webhook/test/email', methods=['GET'])
 def test_email():
     """Test endpoint for email notifications"""
     try:
@@ -786,24 +786,73 @@ def test_email():
         if not test_tenant:
             return jsonify({'error': 'No tenant found for testing'}), 400
 
-        test_ticket = Ticket(
-            title="Test Ticket",
-            description="This is a test ticket for email notification",
+        # Test all three channels
+        results = []
+        
+        # 1. Test Manual Creation Channel
+        manual_ticket = Ticket(
+            title="Test Manual Ticket",
+            description="Test ticket created via manual channel",
             status='open',
             priority='medium',
             tenant_id=test_tenant.id,
             contact_email=test_email,
-            ticket_number='TEST-001'
+            ticket_number=Ticket.generate_ticket_number(test_tenant.id),
+            source='manual'
+        )
+        
+        # 2. Test Portal Channel
+        portal_ticket = Ticket(
+            title="Test Portal Ticket",
+            description="Test ticket created via portal",
+            status='open',
+            priority='medium',
+            tenant_id=test_tenant.id,
+            contact_email=test_email,
+            ticket_number=Ticket.generate_ticket_number(test_tenant.id),
+            source='portal'
+        )
+        
+        # 3. Test Email Channel
+        email_ticket = Ticket(
+            title="Test Email Ticket",
+            description="Test ticket created via email",
+            status='open',
+            priority='medium',
+            tenant_id=test_tenant.id,
+            contact_email=test_email,
+            ticket_number=Ticket.generate_ticket_number(test_tenant.id),
+            source='email'
         )
 
-        # Test email sending
+        # Test email sending for all channels
         mailer = MailerSendService()
-        mailer.send_ticket_confirmation(test_ticket)
+        try:
+            mailer.send_ticket_confirmation(manual_ticket)
+            results.append({"channel": "manual", "status": "success"})
+        except Exception as e:
+            results.append({"channel": "manual", "status": "failed", "error": str(e)})
+
+        try:
+            mailer.send_ticket_confirmation(portal_ticket)
+            results.append({"channel": "portal", "status": "success"})
+        except Exception as e:
+            results.append({"channel": "portal", "status": "failed", "error": str(e)})
+
+        try:
+            mailer.send_ticket_confirmation(email_ticket)
+            results.append({"channel": "email", "status": "success"})
+        except Exception as e:
+            results.append({"channel": "email", "status": "failed", "error": str(e)})
+
+        current_app.logger.info(f"Test emails sent to {test_email}")
+        current_app.logger.info(f"Using tenant: {test_tenant.name}")
 
         return jsonify({
-            'message': 'Test email sent successfully',
+            'message': 'Test completed',
             'to': test_email,
             'tenant': test_tenant.name,
+            'results': results,
             'mailersend_config': {
                 'api_key_exists': bool(current_app.config.get('MAILERSEND_API_KEY')),
                 'from_email': current_app.config.get('MAILERSEND_FROM_EMAIL'),
