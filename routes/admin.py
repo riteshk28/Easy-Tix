@@ -313,7 +313,7 @@ def team():
 def update_user_role(user_id):
     if not current_user.is_admin:
         flash('Permission denied', 'error')
-        return redirect(url_for('admin.team'))
+        return redirect(url_for('admin.index'))
         
     user = User.query.get_or_404(user_id)
     new_role = request.form.get('role')
@@ -343,7 +343,7 @@ def update_user_role(user_id):
     db.session.commit()
     
     flash(f'Role updated for {user.email}', 'success')
-    return redirect(url_for('admin.team'))
+    return redirect(url_for('admin.index') + '#team')
 
 @admin.route('/team/member/<int:user_id>', methods=['DELETE'])
 @login_required

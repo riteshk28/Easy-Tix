@@ -59,7 +59,9 @@
                     <tr class="clickable-row" data-href="{{ url_for('tickets.view', ticket_id=ticket.id) }}">
                         <td>{{ ticket.ticket_number }}</td>
                         <td>{{ ticket.title }}</td>
-                        <td><span class="badge bg-{{ ticket.status }}">{{ ticket.status }}</span></td>
+                        <td><span class="badge bg-{{ status_colors[ticket.status] }}">
+                            {{ ticket.status|replace('_', ' ')|title }}
+                        </span></td>
                         <td>{{ ticket.priority }}</td>
                         <td>
                             {% if ticket.assigned_to %}

@@ -664,6 +664,14 @@ document.addEventListener('DOMContentLoaded', function() {
 {% block scripts %}
 {{ super() }}
 <script>
+// Show team tab if hash is present
+if (window.location.hash === '#team') {
+    document.addEventListener('DOMContentLoaded', function() {
+        var teamTab = new bootstrap.Tab(document.querySelector('#team-tab'));
+        teamTab.show();
+    });
+}
+
 function submitRoleChange(form) {
     // Get fresh CSRF token
     form.querySelector('input[name="csrf_token"]').value = '{{ csrf_token() }}';
