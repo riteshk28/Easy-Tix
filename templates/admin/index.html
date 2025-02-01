@@ -171,7 +171,23 @@
                             <tr>
                                 <td>{{ user.first_name }} {{ user.last_name }}</td>
                                 <td>{{ user.email }}</td>
-                                <td>{{ user.role }}</td>
+                                <td>
+                                    <form method="POST" 
+                                          action="{{ url_for('admin.update_user_role', user_id=user.id) }}" 
+                                          class="d-inline">
+                                        <select name="role" 
+                                                class="form-select form-select-sm" 
+                                                onchange="this.form.submit()" 
+                                                {% if user.is_superadmin or user.id == current_user.id %}disabled{% endif %}>
+                                            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>
+                                                Admin
+                                            </option>
+                                            <option value="agent" {% if user.role == 'agent' %}selected{% endif %}>
+                                                Agent
+                                            </option>
+                                        </select>
+                                    </form>
+                                </td>
                                 <td>
                                     <button class="btn btn-sm btn-warning" 
                                             data-bs-toggle="modal" 
