@@ -111,8 +111,7 @@
                             <div class="mb-2">
                                 {% if ticket.created_by %}
                                     <div>
-                                        <strong>Created By:</strong> 
-                                        {% if ticket.contact_email %}
+                                        Created By:{% if ticket.contact_email %}
                                             {{ ticket.created_by.first_name }} {{ ticket.created_by.last_name }} 
                                             <span class="text-muted">({{ ticket.contact_email }})</span>
                                         {% else %}
