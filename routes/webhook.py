@@ -11,7 +11,7 @@ from email.parser import Parser
 from email.policy import default
 from html2text import HTML2Text  # pip install html2text
 from bs4 import BeautifulSoup  # pip install beautifulsoup4
-from flask_wtf.csrf import csrf_exempt
+from flask_wtf.csrf import CSRFProtect
 from services.mailersend_service import MailerSendService
 
 logging.basicConfig(level=logging.INFO)
@@ -550,7 +550,6 @@ def stripe_webhook():
         return jsonify({'error': str(e)}), 400 
 
 @webhook.route('/api/email/incoming', methods=['POST'])
-@csrf_exempt
 def email_webhook():
     try:
         # Check content type and get data accordingly
@@ -685,7 +684,6 @@ def test_email_domains():
     }) 
 
 @webhook.route('/email', methods=['POST'])
-@csrf_exempt
 def handle_email():
     try:
         data = request.get_json()

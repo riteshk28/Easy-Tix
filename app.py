@@ -41,8 +41,8 @@ def create_app(config_class=Config):
     from routes.landing import landing
     from routes.webhook import webhook
 
-    # Exempt routes from CSRF protection
-    csrf.exempt(webhook)  # Exempt webhook routes
+    # Exempt entire blueprints from CSRF
+    csrf.exempt(webhook)  # Exempt all webhook routes
     csrf.exempt(public)   # Exempt public portal routes
 
     # Register blueprints
