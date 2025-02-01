@@ -50,6 +50,7 @@ def create():
             priority=request.form['priority'],
             status='open',
             created_by_id=current_user.id,
+            contact_email=request.form.get('contact_email', current_user.email),
             tenant_id=current_user.tenant_id
         )
         

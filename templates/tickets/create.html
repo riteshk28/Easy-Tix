@@ -11,9 +11,17 @@
             </div>
             <div class="card-body">
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
                         <label for="title" class="form-label">Title</label>
                         <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contact_email" class="form-label">Contact Email</label>
+                        <input type="email" class="form-control" id="contact_email" name="contact_email" 
+                               value="{{ current_user.email }}"
+                               placeholder="Customer's email address">
+                        <small class="text-muted">Leave as your email or change to customer's email if creating on their behalf</small>
                     </div>
                     <div class="mb-3">
                         <label for="description" class="form-label">Description</label>
