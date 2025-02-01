@@ -68,7 +68,7 @@ def create():
         db.session.commit()  # Commit again to save SLA deadlines
         
         log_ticket_activity(ticket, 'created', f'Ticket created by {current_user.full_name}')
-        if ticket.sla_start:
+        if ticket.sla_response_due_at:  # Check for SLA deadline instead
             log_ticket_activity(ticket, 'sla_started', f'SLA timer started')
         
         flash('Ticket created successfully')
