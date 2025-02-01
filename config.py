@@ -102,9 +102,9 @@ class Config:
 
     MAILERSEND_API_KEY = os.getenv('MAILERSEND_API_KEY')
 
-    MAILERSEND_FROM_EMAIL = 'MS_WiZzl5@trial-jy7zpl9yy25g5vx6.mlsender.net'
+    MAILERSEND_FROM_EMAIL = os.getenv('MAILERSEND_FROM_EMAIL')
 
-    MAILERSEND_FROM_NAME = 'ServiceDesk Support'
+    MAILERSEND_FROM_NAME = os.getenv('MAILERSEND_FROM_NAME', 'Easy-Tix Support')
 
     MAILERSEND_DOMAIN = 'trial-jy7zpl9yy25g5vx6.mlsender.net'
 

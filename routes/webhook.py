@@ -772,3 +772,51 @@ def handle_email():
     except Exception as e:
         current_app.logger.error(f"Error processing email: {str(e)}")
         return jsonify({'error': str(e)}), 500 
+
+@webhook.route('/test/email', methods=['GET'])
+def test_email():
+    """Test endpoint for email notifications"""
+    try:
+        test_email = request.args.get('email')
+        if not test_email:
+            return jsonify({'error': 'Please provide an email parameter'}), 400
+
+        # Create a dummy ticket for testing
+        test_tenant = Tenant.query.first()
+        if not test_tenant:
+            return jsonify({'error': 'No tenant found for testing'}), 400
+
+        test_ticket = Ticket(
+            title="Test Ticket",
+            description="This is a test ticket for email notification",
+            status='open',
+            priority='medium',
+            tenant_id=test_tenant.id,
+            contact_email=test_email,
+            ticket_number='TEST-001'
+        )
+
+        # Test email sending
+        mailer = MailerSendService()
+        mailer.send_ticket_confirmation(test_ticket)
+
+        return jsonify({
+            'message': 'Test email sent successfully',
+            'to': test_email,
+            'tenant': test_tenant.name,
+            'mailersend_config': {
+                'api_key_exists': bool(current_app.config.get('MAILERSEND_API_KEY')),
+                'from_email': current_app.config.get('MAILERSEND_FROM_EMAIL'),
+                'from_name': current_app.config.get('MAILERSEND_FROM_NAME')
+            }
+        })
+    except Exception as e:
+        current_app.logger.error(f"Test email error: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'mailersend_config': {
+                'api_key_exists': bool(current_app.config.get('MAILERSEND_API_KEY')),
+                'from_email': current_app.config.get('MAILERSEND_FROM_EMAIL'),
+                'from_name': current_app.config.get('MAILERSEND_FROM_NAME')
+            }
+        }), 500 

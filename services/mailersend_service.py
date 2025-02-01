@@ -214,6 +214,9 @@ class MailerSendService:
 
     def send_ticket_confirmation(self, ticket):
         """Send confirmation email to ticket creator with tracking link"""
+        current_app.logger.info(f"Attempting to send confirmation email for ticket {ticket.ticket_number}")
+        current_app.logger.info(f"Using API key: {'*' * (len(self.api_key) - 4) + self.api_key[-4:]}")
+        
         tenant = Tenant.query.get(ticket.tenant_id)
         portal_url = url_for('public.track_ticket', 
                             portal_key=tenant.portal_key,
@@ -221,8 +224,10 @@ class MailerSendService:
                             _external=True)
         
         sender = f"Easy-Tix-{tenant.name} <{tenant.support_email}>"
-        recipient = [{"email": ticket.contact_email}]
+        current_app.logger.info(f"Sending from: {sender}")
+        current_app.logger.info(f"Sending to: {ticket.contact_email}")
         
+        recipient = [{"email": ticket.contact_email}]
         subject = f"Ticket #{ticket.ticket_number} Created - {ticket.title}"
         
         html_content = f"""
@@ -240,11 +245,14 @@ class MailerSendService:
         """
         
         try:
-            self.mailer.send({
+            response = self.mailer.send({
                 "from": sender,
                 "to": recipient,
                 "subject": subject,
                 "html": html_content
             })
+            current_app.logger.info(f"Email sent successfully: {response}")
+            return response
         except Exception as e:
-            current_app.logger.error(f"Error sending confirmation email: {str(e)}")
+            current_app.logger.error(f"Error sending confirmation email: {str(e)}", exc_info=True)
+            raise
