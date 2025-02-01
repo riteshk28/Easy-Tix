@@ -24,9 +24,6 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     csrf = CSRFProtect(app)
 
-    # Exempt webhook routes from CSRF protection
-    csrf.exempt(webhook)  # This exempts all routes in the webhook blueprint
-
     # Register template filters
     def datetime_filter(value):
         if value is None:
@@ -43,6 +40,9 @@ def create_app(config_class=Config):
     from routes.public import public
     from routes.landing import landing
     from routes.webhook import webhook
+
+    # Exempt webhook routes from CSRF protection
+    csrf.exempt(webhook)  # This exempts all routes in the webhook blueprint
 
     # Register blueprints
     app.register_blueprint(landing, url_prefix='/')
