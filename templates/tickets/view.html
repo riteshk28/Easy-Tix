@@ -35,6 +35,7 @@
                         <!-- Status and Assignment -->
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <form method="POST" action="{{ url_for('tickets.update_ticket', ticket_id=ticket.id) }}" class="d-flex flex-column gap-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <select name="status" class="form-select form-select-sm" style="width: auto">
                                     <option value="open" {% if ticket.status == 'open' %}selected{% endif %}>Open</option>
                                     <option value="in_progress" {% if ticket.status == 'in_progress' %}selected{% endif %}>In Progress</option>
@@ -176,6 +177,7 @@
                 {% endif %}
 
                 <form method="POST" action="{{ url_for('tickets.add_comment', ticket_id=ticket.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-group">
                         <textarea class="form-control" name="content" rows="3" required></textarea>
                     </div>

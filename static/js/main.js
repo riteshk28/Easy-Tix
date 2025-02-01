@@ -52,3 +52,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 }); 
+
+fetch(url, {
+    method: 'POST',
+    headers: {
+        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content,
+    },
+    // ...
+}) 
