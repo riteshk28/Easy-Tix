@@ -44,6 +44,7 @@
             <div class="card-body">
                 <!-- Current Plan Selection -->
                 <form method="POST" action="{{ url_for('admin.update_subscription') }}" class="mb-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row align-items-end">
                         <div class="col-md-6">
                             <label class="form-label">Current Plan: <strong>{{ tenant.subscription_plan|title }}</strong></label>
@@ -214,6 +215,7 @@
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <form action="{{ url_for('admin.reset_password', user_id=user.id) }}" method="POST">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <div class="modal-body">
                                                 <div class="mb-3">
                                                     <label for="password" class="form-label">New Password</label>
@@ -243,7 +245,8 @@
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                            <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="POST" class="d-inline">
+                                            <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                 <button type="submit" class="btn btn-danger">Delete</button>
                                             </form>
                                         </div>
@@ -286,6 +289,7 @@
                 </div>
 
                 <form method="POST" action="{{ url_for('admin.update_sla_config') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="row">
                         <!-- High Priority SLA -->
                         <div class="col-md-4">
