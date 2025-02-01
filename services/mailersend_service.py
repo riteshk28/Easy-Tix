@@ -2,15 +2,9 @@ from mailersend import emails
 from flask import current_app, url_for
 import json
 import logging
-from flask_login import current_user
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin
-from flask_login import current_user
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin
+from models import Tenant
 
 logger = logging.getLogger(__name__)
-db = SQLAlchemy()
 
 class MailerSendService:
     def __init__(self):
@@ -218,16 +212,24 @@ class MailerSendService:
         current_app.logger.info(f"Using API key: {'*' * (len(self.api_key) - 4) + self.api_key[-4:]}")
         
         tenant = Tenant.query.get(ticket.tenant_id)
+        if not tenant:
+            current_app.logger.error(f"No tenant found for ID: {ticket.tenant_id}")
+            raise ValueError(f"No tenant found for ID: {ticket.tenant_id}")
+
         portal_url = url_for('public.track_ticket', 
                             portal_key=tenant.portal_key,
                             ticket_id=ticket.id,
                             _external=True)
         
-        sender = f"Easy-Tix-{tenant.name} <{tenant.support_email}>"
+        sender = {
+            "email": current_app.config['MAILERSEND_FROM_EMAIL'],
+            "name": f"Easy-Tix-{tenant.name}"
+        }
         current_app.logger.info(f"Sending from: {sender}")
         current_app.logger.info(f"Sending to: {ticket.contact_email}")
         
-        recipient = [{"email": ticket.contact_email}]
+        recipients = [{"email": ticket.contact_email}]
+        
         subject = f"Ticket #{ticket.ticket_number} Created - {ticket.title}"
         
         html_content = f"""
@@ -247,7 +249,7 @@ class MailerSendService:
         try:
             response = self.mailer.send({
                 "from": sender,
-                "to": recipient,
+                "to": recipients,
                 "subject": subject,
                 "html": html_content
             })
