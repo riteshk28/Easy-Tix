@@ -1,0 +1,7 @@
+<form id="verifyForm" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="mb-3">
+        <label>Enter OTP</label>
+        <input type="text" name="otp" class="form-control" required>
+    </div>
+</form> 

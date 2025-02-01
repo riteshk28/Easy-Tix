@@ -179,7 +179,7 @@
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <select name="role" 
                                                 class="form-select form-select-sm" 
-                                                onchange="this.form.submit()" 
+                                                onchange="submitRoleChange(this.form)" 
                                                 {% if user.is_superadmin or user.id == current_user.id %}disabled{% endif %}>
                                             <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>
                                                 Admin
@@ -662,7 +662,14 @@ document.addEventListener('DOMContentLoaded', function() {
 {% endblock %}
 
 {% block scripts %}
+{{ super() }}
 <script>
+function submitRoleChange(form) {
+    // Get fresh CSRF token
+    form.querySelector('input[name="csrf_token"]').value = '{{ csrf_token() }}';
+    form.submit();
+}
+
 // Preserve active tab on page reload
 document.addEventListener('DOMContentLoaded', function() {
     // Get active tab from localStorage
