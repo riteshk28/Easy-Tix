@@ -69,15 +69,26 @@ def delete_tenant(tenant_id):
             {'tenant_id': tenant_id}
         )
         
+        # Delete email and SLA configs
+        current_app.logger.info("Deleting tenant configurations...")
+        db.session.execute(
+            text('DELETE FROM email_config WHERE tenant_id = :tenant_id'),
+            {'tenant_id': tenant_id}
+        )
+        db.session.execute(
+            text('DELETE FROM sla_config WHERE tenant_id = :tenant_id'),
+            {'tenant_id': tenant_id}
+        )
+        
         # Delete tickets and related records
         current_app.logger.info("Deleting tickets and related records...")
         db.session.execute(
-            text('DELETE FROM ticket_activities WHERE ticket_id IN '
+            text('DELETE FROM ticket_activity WHERE ticket_id IN '
                  '(SELECT id FROM ticket WHERE tenant_id = :tenant_id)'),
             {'tenant_id': tenant_id}
         )
         db.session.execute(
-            text('DELETE FROM ticket_comments WHERE ticket_id IN '
+            text('DELETE FROM ticket_comment WHERE ticket_id IN '
                  '(SELECT id FROM ticket WHERE tenant_id = :tenant_id)'),
             {'tenant_id': tenant_id}
         )
