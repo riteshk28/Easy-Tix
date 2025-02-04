@@ -83,3 +83,15 @@ $.ajaxSetup({
         }
     }
 }); 
+
+function setupDeleteOrgModal() {
+    const deleteOrgModal = document.getElementById('deleteOrgModal');
+    if (deleteOrgModal) {
+        deleteOrgModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const orgId = button.getAttribute('data-org-id');
+            const form = document.getElementById('deleteOrgForm');
+            form.action = `/superadmin/delete-org/${orgId}`;
+        });
+    }
+} 
