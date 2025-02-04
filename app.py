@@ -5,7 +5,7 @@ from config import Config
 from sqlalchemy import exc
 from functools import wraps
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from werkzeug.serving import is_running_from_reloader
 import os
@@ -17,6 +17,11 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)  # Load configuration
     app.secret_key = config_class.SECRET_KEY  # Make sure SECRET_KEY is in your Config
+
+    # Extend CSRF token lifetime
+    app.config['WTF_CSRF_TIME_LIMIT'] = 86400  # 24 hours
+    # Keep session alive longer
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
     # Initialize extensions
     db.init_app(app)
@@ -41,9 +46,10 @@ def create_app(config_class=Config):
     from routes.landing import landing
     from routes.webhook import webhook
 
-    # Exempt entire blueprints from CSRF
-    csrf.exempt(webhook)  # Exempt all webhook routes
-    csrf.exempt(public)   # Exempt public portal routes
+    # Exempt routes from CSRF protection
+    csrf.exempt(webhook)  # External webhooks (email, payments)
+    csrf.exempt(public)   # Public ticket portal
+    csrf.exempt(auth)     # Authentication flows
 
     # Register blueprints
     app.register_blueprint(landing, url_prefix='/')

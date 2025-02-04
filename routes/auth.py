@@ -389,4 +389,10 @@ def generate_reset_token():
         'user_id': user.id,  # Add user ID to session
         'expires_at': (datetime.utcnow() + timedelta(hours=1)).timestamp()
     }
-    return reset_token 
+    return reset_token
+
+@auth.route('/ping')
+@login_required
+def ping():
+    """Keep session alive"""
+    return jsonify({'status': 'ok'}) 
