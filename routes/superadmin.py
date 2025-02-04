@@ -9,6 +9,7 @@ from flask_login import login_required, current_user
 from models import db, User, Tenant
 from functools import wraps
 from sqlalchemy.orm import joinedload
+from sqlalchemy import text
 from werkzeug.security import generate_password_hash
 
 superadmin = Blueprint('superadmin', __name__)
@@ -64,31 +65,31 @@ def delete_tenant(tenant_id):
         # Delete subscription payments
         current_app.logger.info("Deleting subscription payments...")
         db.session.execute(
-            'DELETE FROM subscription_payments WHERE tenant_id = :tenant_id',
+            text('DELETE FROM subscription_payments WHERE tenant_id = :tenant_id'),
             {'tenant_id': tenant_id}
         )
         
         # Delete tickets and related records
         current_app.logger.info("Deleting tickets and related records...")
         db.session.execute(
-            'DELETE FROM ticket_activities WHERE ticket_id IN '
-            '(SELECT id FROM ticket WHERE tenant_id = :tenant_id)',
+            text('DELETE FROM ticket_activities WHERE ticket_id IN '
+                 '(SELECT id FROM ticket WHERE tenant_id = :tenant_id)'),
             {'tenant_id': tenant_id}
         )
         db.session.execute(
-            'DELETE FROM ticket_comments WHERE ticket_id IN '
-            '(SELECT id FROM ticket WHERE tenant_id = :tenant_id)',
+            text('DELETE FROM ticket_comments WHERE ticket_id IN '
+                 '(SELECT id FROM ticket WHERE tenant_id = :tenant_id)'),
             {'tenant_id': tenant_id}
         )
         db.session.execute(
-            'DELETE FROM ticket WHERE tenant_id = :tenant_id',
+            text('DELETE FROM ticket WHERE tenant_id = :tenant_id'),
             {'tenant_id': tenant_id}
         )
         
         # Delete users
         current_app.logger.info("Deleting users...")
         db.session.execute(
-            'DELETE FROM "user" WHERE tenant_id = :tenant_id',
+            text('DELETE FROM "user" WHERE tenant_id = :tenant_id'),
             {'tenant_id': tenant_id}
         )
         
