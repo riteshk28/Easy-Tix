@@ -144,26 +144,32 @@ def change_password():
         
         if action == 'send_otp':
             try:
+                current_app.logger.info(f"Initiating password change OTP for user: {current_user.email}")
                 # Generate OTP and store in session first
                 otp = ''.join(random.SystemRandom().choices('0123456789', k=6))
+                current_app.logger.info("Generated OTP and storing in session")
+                
                 session['password_change_otp'] = {
                     'code': otp,
                     'expires_at': (datetime.utcnow() + timedelta(minutes=10)).timestamp(),
                     'attempts': 0,
-                    'user_id': current_user.id  # Store user ID for verification
+                    'user_id': current_user.id
                 }
                 
                 # Show immediate feedback
                 flash('Sending verification code to your email...', 'info')
                 
                 # Send email with user context
+                current_app.logger.info("Attempting to send OTP email via MailerSend")
                 mailer = MailerSendService()
                 mailer.send_password_change_otp(current_user.email, otp, user=current_user)
+                current_app.logger.info("OTP email sent successfully")
                 
                 flash('Verification code sent! Please note it may take a few minutes to arrive.', 'success')
                 return redirect(url_for('auth.change_password'))
             except Exception as e:
                 current_app.logger.error(f"Failed to send OTP: {str(e)}", exc_info=True)
+                current_app.logger.error(f"User: {current_user.email}, Error: {str(e)}")
                 flash('Error sending OTP email', 'error')
                 return redirect(url_for('auth.change_password'))
                 

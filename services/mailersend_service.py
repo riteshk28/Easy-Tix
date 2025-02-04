@@ -53,11 +53,16 @@ class MailerSendService:
         max_retries = 3
         retry_delay = 1  # seconds
         
+        current_app.logger.info(f"Starting password change OTP email send to {email}")
+        current_app.logger.info(f"API Key last 4 chars: ...{self.api_key[-4:]}")
+        
         for attempt in range(max_retries):
             try:
+                current_app.logger.info(f"Attempt {attempt + 1} of {max_retries}")
                 # Use provided user info or defaults
                 tenant_name = user.tenant.name if user and hasattr(user, 'tenant') else 'Support'
                 user_name = user.first_name if user and hasattr(user, 'first_name') else 'User'
+                current_app.logger.info(f"Sending as Easy-Tix-{tenant_name} to {user_name}")
 
                 response = self.mailer.send({
                     "from": {
@@ -80,12 +85,14 @@ class MailerSendService:
                         </div>
                     """
                 })
-                current_app.logger.info(f"Password change OTP sent to {email} for user {user_name}")
+                current_app.logger.info(f"MailerSend Response: {response}")
                 return True
             except Exception as e:
                 if attempt == max_retries - 1:  # Last attempt
+                    current_app.logger.error(f"All {max_retries} attempts failed for {email}")
                     current_app.logger.error(f"Error sending password change OTP email: {str(e)}")
                     raise
+                current_app.logger.warning(f"Attempt {attempt + 1} failed, retrying in {retry_delay}s")
                 time.sleep(retry_delay)
                 retry_delay *= 2  # Exponential backoff
 
