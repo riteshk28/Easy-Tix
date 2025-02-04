@@ -4,6 +4,7 @@ import json
 import logging
 from flask_login import current_user
 from models import Tenant
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -47,38 +48,46 @@ class MailerSendService:
             logger.error(f"Error sending email: {str(e)}")
             raise 
 
-    def send_password_change_otp(self, email, otp):
+    def send_password_change_otp(self, email, otp, user=None):
         """Send password change OTP email"""
-        try:
-            self.mailer.send({
-                "from": {
-                    "email": current_app.config['MAILERSEND_FROM_EMAIL'],
-                    "name": f"Easy-Tix-{current_user.tenant.name if current_user.tenant else 'Support'}"
-                },
-                "to": [
-                    {
-                        "email": email
-                    }
-                ],
-                "subject": "Easy-Tix: Password Change Verification Code",
-                "text": f"Your OTP for password change is: {otp}",
-                "html": f"""
-                    <div style="font-family: Arial, sans-serif; padding: 20px;">
-                        <h2>Password Change Request</h2>
-                        <p>Hello {current_user.first_name},</p>
-                        <p>We received a request to change your password for your Easy-Tix account.</p>
-                        <p>Your verification code is: <strong style="font-size: 24px; color: #007bff;">{otp}</strong></p>
-                        <p>This code will expire in 10 minutes.</p>
-                        <p>If you didn't request this change, please ignore this email or contact support.</p>
-                        <br>
-                        <p>Best regards,<br>Easy-Tix Team</p>
-                    </div>
-                """
-            })
-            return True
-        except Exception as e:
-            current_app.logger.error(f"Error sending password change OTP email: {str(e)}")
-            raise 
+        max_retries = 3
+        retry_delay = 1  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                # Use provided user info or defaults
+                tenant_name = user.tenant.name if user and hasattr(user, 'tenant') else 'Support'
+                user_name = user.first_name if user and hasattr(user, 'first_name') else 'User'
+
+                response = self.mailer.send({
+                    "from": {
+                        "email": current_app.config['MAILERSEND_FROM_EMAIL'],
+                        "name": f"Easy-Tix-{tenant_name}"
+                    },
+                    "to": [{"email": email}],
+                    "subject": "Easy-Tix: Password Change Verification Code",
+                    "text": f"Your OTP for password change is: {otp}",
+                    "html": f"""
+                        <div style="font-family: Arial, sans-serif; padding: 20px;">
+                            <h2>Password Change Request</h2>
+                            <p>Hello {user_name},</p>
+                            <p>We received a request to change your password for your Easy-Tix account.</p>
+                            <p>Your verification code is: <strong style="font-size: 24px; color: #007bff;">{otp}</strong></p>
+                            <p>This code will expire in 10 minutes.</p>
+                            <p>If you didn't request this change, please ignore this email or contact support.</p>
+                            <br>
+                            <p>Best regards,<br>Easy-Tix Team</p>
+                        </div>
+                    """
+                })
+                current_app.logger.info(f"Password change OTP sent to {email} for user {user_name}")
+                return True
+            except Exception as e:
+                if attempt == max_retries - 1:  # Last attempt
+                    current_app.logger.error(f"Error sending password change OTP email: {str(e)}")
+                    raise
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
 
     def send_password_reset_link(self, email, token):
         """Send password reset link email"""
