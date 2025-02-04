@@ -21,7 +21,9 @@ def create_app(config_class=Config):
     # Extend CSRF token lifetime
     app.config['WTF_CSRF_TIME_LIMIT'] = 86400  # 24 hours
     # Keep session alive longer
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
 
     # Initialize extensions
     db.init_app(app)

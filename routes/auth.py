@@ -139,27 +139,34 @@ def profile():
 @auth.route('/change-password', methods=['GET', 'POST'])
 @login_required
 def change_password():
+    current_app.logger.info(f"Change password request: {request.method}")
+    current_app.logger.info(f"Session OTP data: {session.get('password_change_otp')}")
+
     if request.method == 'POST':
         action = request.form.get('action')
+        current_app.logger.info(f"Action: {action}")
         
         if action == 'send_otp':
             # Generate a more secure OTP
             otp = ''.join(random.SystemRandom().choices('0123456789', k=6))
+            current_app.logger.info(f"Generated OTP for {current_user.email}")
+            
             session['password_change_otp'] = {
                 'code': otp,
                 'expires_at': (datetime.utcnow() + timedelta(minutes=10)).timestamp(),
                 'attempts': 0
             }
             
-            # Send OTP email using MailerSend
             try:
                 mailer = MailerSendService()
                 mailer.send_password_change_otp(current_user.email, otp)
                 flash('A verification code has been sent to your email. It will expire in 10 minutes.', 'success')
                 current_app.logger.info(f"Password change OTP sent to {current_user.email}")
+                return redirect(url_for('auth.change_password'))
             except Exception as e:
                 current_app.logger.error(f"Failed to send OTP: {str(e)}", exc_info=True)
                 flash('Error sending OTP email', 'error')
+                return redirect(url_for('auth.change_password'))
                 
         elif action == 'verify_otp':
             otp = request.form.get('otp')
