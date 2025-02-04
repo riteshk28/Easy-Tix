@@ -53,18 +53,57 @@ def update_tenant(tenant_id):
     return redirect(url_for('superadmin.view_tenant', tenant_id=tenant_id))
 
 @superadmin.route('/tenants/<int:tenant_id>/delete', methods=['POST'])
+@login_required
 @superadmin_required
 def delete_tenant(tenant_id):
     tenant = Tenant.query.get_or_404(tenant_id)
+    try:
+        # Delete related records first
+        current_app.logger.info(f"Deleting tenant {tenant.id} ({tenant.name})")
+        
+        # Delete subscription payments
+        current_app.logger.info("Deleting subscription payments...")
+        db.session.execute(
+            'DELETE FROM subscription_payments WHERE tenant_id = :tenant_id',
+            {'tenant_id': tenant_id}
+        )
+        
+        # Delete tickets and related records
+        current_app.logger.info("Deleting tickets and related records...")
+        db.session.execute(
+            'DELETE FROM ticket_activities WHERE ticket_id IN '
+            '(SELECT id FROM ticket WHERE tenant_id = :tenant_id)',
+            {'tenant_id': tenant_id}
+        )
+        db.session.execute(
+            'DELETE FROM ticket_comments WHERE ticket_id IN '
+            '(SELECT id FROM ticket WHERE tenant_id = :tenant_id)',
+            {'tenant_id': tenant_id}
+        )
+        db.session.execute(
+            'DELETE FROM ticket WHERE tenant_id = :tenant_id',
+            {'tenant_id': tenant_id}
+        )
+        
+        # Delete users
+        current_app.logger.info("Deleting users...")
+        db.session.execute(
+            'DELETE FROM "user" WHERE tenant_id = :tenant_id',
+            {'tenant_id': tenant_id}
+        )
+        
+        # Finally delete the tenant
+        current_app.logger.info("Deleting tenant...")
+        db.session.delete(tenant)
+        db.session.commit()
+        current_app.logger.info("Tenant deletion completed successfully")
+        
+        flash('Tenant deleted successfully', 'success')
+    except Exception as e:
+        current_app.logger.error(f"Error deleting tenant: {str(e)}", exc_info=True)
+        db.session.rollback()
+        flash('Error deleting tenant', 'error')
     
-    # Delete all users associated with the tenant
-    User.query.filter_by(tenant_id=tenant_id).delete()
-    
-    # Delete the tenant
-    db.session.delete(tenant)
-    db.session.commit()
-    
-    flash('Tenant deleted successfully')
     return redirect(url_for('superadmin.index'))
 
 @superadmin.route('/tenant/<int:tenant_id>/user/<int:user_id>/update', methods=['POST'])
