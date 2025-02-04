@@ -1,0 +1,4 @@
+<form method="POST" action="{{ url_for('admin.update_email_settings') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <!-- rest of the form fields -->
+</form> 

@@ -60,3 +60,26 @@ fetch(url, {
     },
     // ...
 }) 
+
+function updateEmailSettings() {
+    $.ajax({
+        url: '/admin/update-email-settings',
+        method: 'POST',
+        data: {
+            'csrf_token': $('meta[name=csrf-token]').attr('content'),
+            // other form data
+        },
+        success: function(response) {
+            // handle success
+        }
+    });
+} 
+
+// Set up CSRF token for all AJAX requests
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", $('meta[name=csrf-token]').attr('content'));
+        }
+    }
+}); 
