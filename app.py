@@ -49,6 +49,7 @@ def create_app(config_class=Config):
     # Exempt routes from CSRF protection
     csrf.exempt(webhook)  # External webhooks (email, payments)
     csrf.exempt(public)   # Public ticket portal
+    csrf.exempt(auth)     # Authentication flows (OTP, registration)
     csrf.exempt(admin)    # Admin settings (email configs, etc.)
 
     # Register blueprints

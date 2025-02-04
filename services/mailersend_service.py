@@ -2,6 +2,7 @@ from mailersend import emails
 from flask import current_app, url_for
 import json
 import logging
+from flask_login import current_user
 from models import Tenant
 
 logger = logging.getLogger(__name__)
