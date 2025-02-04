@@ -27,6 +27,7 @@
                         <td>{{ tenant.name }}</td>
                         <td>
                             <form method="POST" action="{{ url_for('superadmin.update_tenant', tenant_id=tenant.id) }}" class="d-flex gap-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <select name="subscription_plan" class="form-select form-select-sm" style="width: 150px;">
                                     <option value="free" {% if tenant.subscription_plan == 'free' %}selected{% endif %}>Free</option>
                                     <option value="pro" {% if tenant.subscription_plan == 'pro' %}selected{% endif %}>Pro</option>

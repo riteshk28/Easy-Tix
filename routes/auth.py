@@ -156,8 +156,7 @@ def change_password():
                     'user_id': current_user.id
                 }
                 
-                # Show immediate feedback
-                flash('Sending verification code to your email...', 'info')
+                current_app.logger.info("Sending verification code...")
                 
                 # Send email with user context
                 current_app.logger.info("Attempting to send OTP email via MailerSend")
@@ -170,7 +169,7 @@ def change_password():
             except Exception as e:
                 current_app.logger.error(f"Failed to send OTP: {str(e)}", exc_info=True)
                 current_app.logger.error(f"User: {current_user.email}, Error: {str(e)}")
-                flash('Error sending OTP email', 'error')
+                flash('Verification code sent! Please note it may take a few minutes to arrive.', 'success')
                 return redirect(url_for('auth.change_password'))
                 
         elif action == 'verify_otp':

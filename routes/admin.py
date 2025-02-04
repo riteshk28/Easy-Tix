@@ -110,22 +110,26 @@ def reset_password(user_id):
     return redirect(url_for('admin.index'))
 
 @admin.route('/users/<int:user_id>/delete', methods=['POST'])
+@login_required
 @admin_required
 def delete_user(user_id):
-    if user_id == current_user.id:
-        flash('Cannot delete your own account')
-        return redirect(url_for('admin.index'))
-        
-    user = User.query.filter_by(
-        id=user_id,
-        tenant_id=current_user.tenant_id
-    ).first_or_404()
+    user = User.query.filter_by(id=user_id, tenant_id=current_user.tenant_id).first_or_404()
     
-    db.session.delete(user)
-    db.session.commit()
+    # Prevent deleting the last admin
+    if user.role == 'admin' and User.query.filter_by(tenant_id=current_user.tenant_id, role='admin').count() <= 1:
+        flash('Cannot delete the last admin user', 'error')
+        return redirect(url_for('admin.users'))
     
-    flash('User deleted successfully')
-    return redirect(url_for('admin.index'))
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        flash('User deleted successfully', 'success')
+    except Exception as e:
+        current_app.logger.error(f"Error deleting user: {str(e)}")
+        db.session.rollback()
+        flash('Error deleting user', 'error')
+    
+    return redirect(url_for('admin.users'))
 
 @admin.route('/update-subscription', methods=['POST'])
 @admin_required
