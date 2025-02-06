@@ -16,24 +16,31 @@ def index():
     """Analytics landing page"""
     return render_template('analytics/index.html')
 
-@analytics.route('/data/<report_type>')
+@analytics.route('/data/<report_type>', methods=['GET'])
 @login_required
 def get_analytics_data(report_type):
-    """Get data for specific report type"""
-    days = request.args.get('days', 30, type=int)
-    
-    data_functions = {
-        'tickets_by_status': AnalyticsService.get_tickets_by_status,
-        'response_times': AnalyticsService.get_response_times,
-        'sla_compliance': AnalyticsService.get_sla_compliance,
-        'agent_performance': AnalyticsService.get_agent_performance
-    }
-    
-    if report_type not in data_functions:
-        return jsonify({'error': 'Invalid report type'}), 400
+    try:
+        days = request.args.get('days', 30, type=int)
+        data = None
         
-    data = data_functions[report_type](current_user.tenant_id, days)
-    return jsonify(data)
+        if report_type == 'summary':
+            data = AnalyticsService.get_summary_metrics(current_user.tenant_id, days)
+        elif report_type == 'tickets_by_status':
+            data = AnalyticsService.get_tickets_by_status(current_user.tenant_id, days)
+        elif report_type == 'response_times':
+            data = AnalyticsService.get_response_times(current_user.tenant_id, days)
+        elif report_type == 'sla_compliance':
+            data = AnalyticsService.get_sla_compliance(current_user.tenant_id, days)
+        elif report_type == 'agent_performance':
+            data = AnalyticsService.get_agent_performance(current_user.tenant_id, days)
+        
+        if data is None:
+            return jsonify({'error': 'Invalid report type'}), 400
+            
+        return jsonify(data)
+    except Exception as e:
+        current_app.logger.error(f"Error getting analytics data: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @analytics.route('/reports/new', methods=['GET', 'POST'])
 @login_required

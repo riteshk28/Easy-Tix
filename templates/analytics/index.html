@@ -114,13 +114,13 @@
     </div>
 </div>
 
-<!-- Add Metrics Customization Modal -->
-<div class="modal fade" id="metricsModal">
+<!-- Update the metrics modal -->
+<div class="modal fade" id="metricsModal" tabindex="-1" aria-labelledby="metricsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Customize Dashboard</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="metricsModalLabel">Customize Dashboard</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <ul class="nav nav-tabs" role="tablist">
@@ -447,6 +447,111 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Add after the charts initialization
+    const availableMetrics = [
+        { id: 'open_tickets', label: 'Open Tickets', default: true },
+        { id: 'avg_response', label: 'Average Response Time', default: true },
+        { id: 'sla_compliance', label: 'SLA Compliance', default: true },
+        { id: 'resolution_rate', label: 'Resolution Rate', default: true }
+    ];
+
+    const chartTypes = {
+        ticketStatus: ['pie', 'doughnut', 'bar'],
+        responseTime: ['line', 'bar', 'area'],
+        slaCompliance: ['line', 'bar'],
+        agentPerformance: ['bar', 'horizontalBar']
+    };
+
+    function initializeCustomizations() {
+        // Initialize metrics
+        const availableMetricsContainer = document.getElementById('availableMetrics');
+        const selectedMetricsContainer = document.getElementById('selectedMetrics');
+        
+        if (availableMetricsContainer) {
+            availableMetrics.forEach(metric => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                item.innerHTML = `
+                    ${metric.label}
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addMetric('${metric.id}', '${metric.label}')">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                `;
+                availableMetricsContainer.appendChild(item);
+            });
+        }
+
+        // Initialize chart customizations
+        const chartCustomizations = document.getElementById('chartCustomizations');
+        if (chartCustomizations) {
+            Object.entries(chartTypes).forEach(([chartId, types]) => {
+                const div = document.createElement('div');
+                div.className = 'col-md-6 mb-3';
+                div.innerHTML = `
+                    <div class="card">
+                        <div class="card-body">
+                            <h6>${chartId.replace(/([A-Z])/g, ' $1').trim()}</h6>
+                            <select class="form-select" onchange="updateChartType('${chartId}', this.value)">
+                                ${types.map(type => `
+                                    <option value="${type}">${type.charAt(0).toUpperCase() + type.slice(1)}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                    </div>
+                `;
+                chartCustomizations.appendChild(div);
+            });
+        }
+    }
+
+    // Add metric to selected metrics
+    function addMetric(id, label) {
+        const selectedMetrics = document.getElementById('selectedMetrics');
+        const item = document.createElement('div');
+        item.className = 'list-group-item d-flex justify-content-between align-items-center';
+        item.setAttribute('data-metric-id', id);
+        item.innerHTML = `
+            ${label}
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeMetric('${id}')">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        selectedMetrics.appendChild(item);
+    }
+
+    // Remove metric from selected metrics
+    function removeMetric(id) {
+        const item = document.querySelector(`#selectedMetrics [data-metric-id="${id}"]`);
+        if (item) {
+            item.remove();
+        }
+    }
+
+    // Update chart type
+    function updateChartType(chartId, type) {
+        const chart = charts[chartId + 'Chart'];
+        if (chart) {
+            const data = chart.data;
+            chart.destroy();
+            charts[chartId + 'Chart'] = new Chart(document.getElementById(chartId + 'Chart'), {
+                type: type,
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // Call initialization when DOM is ready
+    initializeCustomizations();
 });
 
 function saveCustomizations() {
