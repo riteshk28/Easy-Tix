@@ -410,20 +410,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Reset layout handler
     window.resetLayout = function() {
         const defaultLayout = [
-            { x: 0, y: 0, w: 6, h: 4 },
-            { x: 6, y: 0, w: 6, h: 4 },
-            { x: 0, y: 4, w: 6, h: 4 },
-            { x: 6, y: 4, w: 6, h: 4 }
+            { x: 0, y: 0, w: 6, h: 4, el: document.getElementById('ticketStatusItem') },
+            { x: 6, y: 0, w: 6, h: 4, el: document.getElementById('responseTimeItem') },
+            { x: 0, y: 4, w: 6, h: 4, el: document.getElementById('slaComplianceItem') },
+            { x: 6, y: 4, w: 6, h: 4, el: document.getElementById('agentPerformanceItem') }
         ];
 
-        grid.removeAll();
-        const items = document.querySelectorAll('.grid-stack-item');
-        items.forEach((item, index) => {
-            const layout = defaultLayout[index];
-            grid.addWidget(item, layout);
+        grid.batchUpdate();
+        defaultLayout.forEach(item => {
+            if (item.el) {
+                grid.removeWidget(item.el);
+                grid.addWidget(item.el, item);
+            }
         });
+        grid.commit();
         
-        loadCharts();
+        // Reload charts after layout reset
+        setTimeout(loadCharts, 100);
     };
 
     // Time range update handler
@@ -445,5 +448,33 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+function saveCustomizations() {
+    // Save selected metrics
+    const selectedMetrics = Array.from(document.getElementById('selectedMetrics').children)
+        .map(item => item.getAttribute('data-metric-id'));
+
+    // Save chart types
+    const chartTypes = {};
+    document.querySelectorAll('#chartCustomizations select').forEach(select => {
+        const chartId = select.closest('.card').querySelector('h6').textContent.toLowerCase().replace(/\s+/g, '');
+        chartTypes[chartId] = select.value;
+    });
+
+    // Save to localStorage
+    localStorage.setItem('analytics-customization', JSON.stringify({
+        metrics: selectedMetrics,
+        chartTypes: chartTypes
+    }));
+
+    // Apply changes
+    loadCharts();
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('metricsModal'));
+    if (modal) {
+        modal.hide();
+    }
+}
 </script>
 {% endblock %} 
