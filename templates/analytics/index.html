@@ -425,7 +425,7 @@ function initializeCustomizations() {
 
     const chartCustomizations = document.getElementById('chartCustomizations');
     if (chartCustomizations) {
-        chartCustomizations.innerHTML = ''; // Clear existing content
+        chartCustomizations.innerHTML = '';
         Object.entries(chartTypes).forEach(([chartId, types]) => {
             const div = document.createElement('div');
             div.className = 'col-md-6 mb-3';
@@ -433,7 +433,7 @@ function initializeCustomizations() {
                 <div class="card">
                     <div class="card-body">
                         <h6>${chartId.replace(/([A-Z])/g, ' $1').trim()}</h6>
-                        <select class="form-select" onchange="updateChartType('${chartId}', this.value)">
+                        <select class="form-select" data-chart-id="${chartId}" onchange="updateChartType('${chartId}', this.value)">
                             ${types.map(type => `
                                 <option value="${type}">${type.charAt(0).toUpperCase() + type.slice(1)}</option>
                             `).join('')}
@@ -509,46 +509,55 @@ async function loadCharts(savedChartTypes = null) {
             agentPerformance: 'bar'
         };
 
-        const chartConfigs = [
-            {
-                id: 'ticketStatusChart',
-                type: savedChartTypes?.ticketStatus || defaultChartTypes.ticketStatus,
-                data: chartData[0]
-            },
-            {
-                id: 'responseTimeChart',
-                type: savedChartTypes?.responseTime || defaultChartTypes.responseTime,
-                data: chartData[1]
-            },
-            {
-                id: 'slaComplianceChart',
-                type: savedChartTypes?.slaCompliance || defaultChartTypes.slaCompliance,
-                data: chartData[2]
-            },
-            {
-                id: 'agentPerformanceChart',
-                type: savedChartTypes?.agentPerformance || defaultChartTypes.agentPerformance,
-                data: chartData[3]
-            }
-        ];
+        // Use saved chart types or defaults
+        const chartTypes = savedChartTypes || defaultChartTypes;
 
-        // Create new charts
-        chartConfigs.forEach(config => {
-            const canvas = document.getElementById(config.id);
-            if (canvas && config.data) {
-                charts[config.id] = new Chart(canvas, {
-                    type: config.type,
-                    data: config.data,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        }
-                    }
-                });
+        // Update select elements to match current chart types
+        Object.entries(chartTypes).forEach(([chartId, type]) => {
+            const select = document.querySelector(`#chartCustomizations select[data-chart-id="${chartId}"]`);
+            if (select) {
+                select.value = type;
+            }
+        });
+
+        // Create charts with current types
+        if (chartData[0]) charts.ticketStatusChart = new Chart(document.getElementById('ticketStatusChart'), {
+            type: chartTypes.ticketStatus,
+            data: chartData[0],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        if (chartData[1]) charts.responseTimeChart = new Chart(document.getElementById('responseTimeChart'), {
+            type: chartTypes.responseTime,
+            data: chartData[1],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        if (chartData[2]) charts.slaComplianceChart = new Chart(document.getElementById('slaComplianceChart'), {
+            type: chartTypes.slaCompliance,
+            data: chartData[2],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+
+        if (chartData[3]) charts.agentPerformanceChart = new Chart(document.getElementById('agentPerformanceChart'), {
+            type: chartTypes.agentPerformance,
+            data: chartData[3],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
             }
         });
     } catch (error) {
@@ -590,24 +599,57 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Reset layout handler
     window.resetLayout = function() {
+        // First remove all widgets
+        grid.removeAll();
+        
+        // Default layout with IDs matching the HTML
         const defaultLayout = [
-            { x: 0, y: 0, w: 6, h: 4, el: document.getElementById('ticketStatusItem') },
-            { x: 6, y: 0, w: 6, h: 4, el: document.getElementById('responseTimeItem') },
-            { x: 0, y: 4, w: 6, h: 4, el: document.getElementById('slaComplianceItem') },
-            { x: 6, y: 4, w: 6, h: 4, el: document.getElementById('agentPerformanceItem') }
+            { x: 0, y: 0, w: 6, h: 4, id: 'ticketStatusItem' },
+            { x: 6, y: 0, w: 6, h: 4, id: 'responseTimesItem' },
+            { x: 0, y: 4, w: 6, h: 4, id: 'slaComplianceItem' },
+            { x: 6, y: 4, w: 6, h: 4, id: 'agentPerformanceItem' }
         ];
 
-        grid.batchUpdate();
-        defaultLayout.forEach(item => {
-            if (item.el) {
-                grid.removeWidget(item.el);
-                grid.addWidget(item.el, item);
+        // Add widgets back in default positions
+        defaultLayout.forEach(layout => {
+            const element = document.getElementById(layout.id);
+            if (element) {
+                grid.addWidget(element, layout);
             }
         });
-        grid.commit();
-        
-        // Reload charts after layout reset
-        setTimeout(loadCharts, 100);
+
+        // Reset chart types to default
+        const defaultChartTypes = {
+            ticketStatus: 'pie',
+            responseTime: 'line',
+            slaCompliance: 'line',
+            agentPerformance: 'bar'
+        };
+
+        // Save the default configuration
+        fetch('/analytics/save-dashboard', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+                layout: defaultLayout,
+                chartTypes: defaultChartTypes
+            })
+        })
+        .then(() => {
+            // Reload charts with default types
+            loadCharts(defaultChartTypes);
+            
+            // Update select elements to show default chart types
+            Object.entries(defaultChartTypes).forEach(([chartId, type]) => {
+                const select = document.querySelector(`#chartCustomizations select[data-chart-id="${chartId}"]`);
+                if (select) {
+                    select.value = type;
+                }
+            });
+        });
     };
 
     // Time range update handler

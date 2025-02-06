@@ -5,36 +5,37 @@
 {% block content %}
 <h2>Dashboard</h2>
 
-<div class="row mt-4">
+<!-- Dashboard Metrics -->
+<div class="row g-3 mb-4">
     <div class="col-md-3">
-        <div class="card bg-primary text-white">
+        <div class="card h-100 border-0 shadow-sm">
             <div class="card-body">
-                <h5 class="card-title">Open Tickets</h5>
-                <h2 class="card-text">{{ open_tickets }}</h2>
+                <h6 class="card-title text-muted mb-0">Open Tickets</h6>
+                <h2 class="mb-0">{{ metrics.open_tickets }}</h2>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card bg-warning text-white">
+        <div class="card h-100 border-0 shadow-sm">
             <div class="card-body">
-                <h5 class="card-title">In Progress</h5>
-                <h2 class="card-text">{{ in_progress_tickets }}</h2>
+                <h6 class="card-title text-muted mb-0">Resolved Today</h6>
+                <h2 class="mb-0">{{ metrics.resolved_today }}</h2>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card bg-info text-white">
+        <div class="card h-100 border-0 shadow-sm">
             <div class="card-body">
-                <h5 class="card-title">On Hold</h5>
-                <h2 class="card-text">{{ on_hold_tickets }}</h2>
+                <h6 class="card-title text-muted mb-0">SLA Compliance</h6>
+                <h2 class="mb-0">{{ metrics.sla_compliance }}%</h2>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card bg-success text-white">
+        <div class="card h-100 border-0 shadow-sm">
             <div class="card-body">
-                <h5 class="card-title">Closed</h5>
-                <h2 class="card-text">{{ closed_tickets }}</h2>
+                <h6 class="card-title text-muted mb-0">Avg Response Time</h6>
+                <h2 class="mb-0">{{ metrics.avg_response_time }}h</h2>
             </div>
         </div>
     </div>
