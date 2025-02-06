@@ -104,34 +104,34 @@
 <!-- Move metrics to top -->
 <div class="row mb-4">
     <div class="col-md-3">
-        <div class="card bg-primary text-white">
+        <div class="card h-100 border-0 shadow-sm">
             <div class="card-body">
-                <h6 class="card-title">Open Tickets</h6>
-                <h2 id="openTicketsCount">-</h2>
+                <h6 class="card-title text-muted mb-0">Open Tickets</h6>
+                <h2 class="mb-0" id="openTicketsCount">-</h2>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card bg-success text-white">
+        <div class="card h-100 border-0 shadow-sm">
             <div class="card-body">
-                <h6 class="card-title">Avg Response Time</h6>
-                <h2 id="avgResponseTime">-</h2>
+                <h6 class="card-title text-muted mb-0">Avg Response Time</h6>
+                <h2 class="mb-0" id="avgResponseTime">-</h2>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card bg-warning text-white">
+        <div class="card h-100 border-0 shadow-sm">
             <div class="card-body">
-                <h6 class="card-title">SLA Compliance</h6>
-                <h2 id="slaComplianceRate">-</h2>
+                <h6 class="card-title text-muted mb-0">SLA Compliance</h6>
+                <h2 class="mb-0" id="slaComplianceRate">-</h2>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card bg-info text-white">
+        <div class="card h-100 border-0 shadow-sm">
             <div class="card-body">
-                <h6 class="card-title">Resolution Rate</h6>
-                <h2 id="resolutionRate">-</h2>
+                <h6 class="card-title text-muted mb-0">Resolution Rate</h6>
+                <h2 class="mb-0" id="resolutionRate">-</h2>
             </div>
         </div>
     </div>
@@ -216,8 +216,26 @@ async function loadCharts() {
         const slaCompliance = await fetchData('sla_compliance');
         const agentPerformance = await fetchData('agent_performance');
         
-        // Initialize charts...
-        // Rest of the chart initialization code remains the same
+        // Initialize charts
+        charts.ticketStatus = new Chart(document.getElementById('ticketStatusChart'), {
+            type: 'pie',
+            data: ticketStatus
+        });
+
+        charts.responseTimes = new Chart(document.getElementById('responseTimeChart'), {
+            type: 'line',
+            data: responseTimes
+        });
+
+        charts.slaCompliance = new Chart(document.getElementById('slaComplianceChart'), {
+            type: 'line',
+            data: slaCompliance
+        });
+
+        charts.agentPerformance = new Chart(document.getElementById('agentPerformanceChart'), {
+            type: 'bar',
+            data: agentPerformance
+        });
     } catch (error) {
         console.error('Error loading data:', error);
     }
