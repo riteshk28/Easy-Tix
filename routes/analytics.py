@@ -1,7 +1,10 @@
-from flask import Blueprint, render_template, jsonify, current_app, request
+from flask import Blueprint, render_template, jsonify, current_app, request, send_file
 from flask_login import login_required, current_user
 from services.analytics_service import AnalyticsService
 from models import Dashboard, ReportConfig
+import csv
+from io import StringIO
+from datetime import datetime
 
 analytics = Blueprint('analytics', __name__)
 
@@ -79,4 +82,61 @@ def view_dashboard(dashboard_id):
         id=dashboard_id, 
         tenant_id=current_user.tenant_id
     ).first_or_404()
-    return render_template('analytics/dashboard.html', dashboard=dashboard) 
+    return render_template('analytics/dashboard.html', dashboard=dashboard)
+
+@analytics.route('/export')
+@login_required
+def export_data():
+    """Export analytics data to CSV"""
+    days = request.args.get('days', 30, type=int)
+    
+    # Create CSV file
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Write headers
+    writer.writerow(['Report Type', 'Date', 'Metric', 'Value'])
+    
+    # Get all data
+    ticket_status = AnalyticsService.get_tickets_by_status(current_user.tenant_id, days)
+    response_times = AnalyticsService.get_response_times(current_user.tenant_id, days)
+    sla_compliance = AnalyticsService.get_sla_compliance(current_user.tenant_id, days)
+    agent_performance = AnalyticsService.get_agent_performance(current_user.tenant_id, days)
+    
+    # Write ticket status data
+    for label, value in zip(ticket_status['labels'], ticket_status['datasets'][0]['data']):
+        writer.writerow(['Ticket Status', datetime.utcnow().strftime('%Y-%m-%d'), label, value])
+    
+    # Write response times data
+    for date, value in zip(response_times['labels'], response_times['datasets'][0]['data']):
+        writer.writerow(['Response Time', date, 'Hours', value])
+    
+    # Write SLA compliance data
+    for date, value in zip(sla_compliance['labels'], sla_compliance['datasets'][0]['data']):
+        writer.writerow(['SLA Compliance', date, 'Percentage', value])
+    
+    # Write agent performance data
+    for agent, tickets, sla in zip(
+        agent_performance['labels'],
+        agent_performance['datasets'][0]['data'],
+        agent_performance['datasets'][1]['data']
+    ):
+        writer.writerow(['Agent Performance', datetime.utcnow().strftime('%Y-%m-%d'), f"{agent} - Tickets", tickets])
+        writer.writerow(['Agent Performance', datetime.utcnow().strftime('%Y-%m-%d'), f"{agent} - SLA", sla])
+    
+    # Prepare response
+    output.seek(0)
+    return send_file(
+        StringIO(output.getvalue()),
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name=f'analytics_export_{datetime.utcnow().strftime("%Y%m%d")}.csv'
+    )
+
+@analytics.route('/data/summary')
+@login_required
+def get_summary_data():
+    """Get summary metrics data"""
+    days = request.args.get('days', 30, type=int)
+    data = AnalyticsService.get_summary_metrics(current_user.tenant_id, days)
+    return jsonify(data) 
