@@ -5,10 +5,9 @@ from models import Dashboard, ReportConfig, AnalyticsDashboard
 import csv
 from io import StringIO, BytesIO
 from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
+from extensions import db
 
 analytics = Blueprint('analytics', __name__)
-db = SQLAlchemy()
 
 @analytics.route('/')
 @login_required
@@ -242,6 +241,9 @@ def get_summary_data():
 def save_dashboard():
     try:
         data = request.json
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
         dashboard = AnalyticsDashboard.query.filter_by(
             tenant_id=current_user.tenant_id,
             user_id=current_user.id,
@@ -255,17 +257,26 @@ def save_dashboard():
                 name='Default Dashboard',
                 is_default=True
             )
-            
-        dashboard.chart_config = {
-            'metrics': data.get('metrics', []),
-            'chartTypes': data.get('chartTypes', {})
-        }
+
+        # Update the dashboard configuration
+        if 'layout' in data:
+            dashboard.layout_config = data['layout']
         
+        if not dashboard.chart_config:
+            dashboard.chart_config = {}
+            
+        if 'chartTypes' in data:
+            dashboard.chart_config['chartTypes'] = data['chartTypes']
+            
+        if 'metrics' in data:
+            dashboard.chart_config['metrics'] = data['metrics']
+
         db.session.add(dashboard)
         db.session.commit()
         
         return jsonify({'status': 'success'})
     except Exception as e:
+        db.session.rollback()
         current_app.logger.error(f"Error saving dashboard: {str(e)}")
         return jsonify({'error': str(e)}), 400
 
