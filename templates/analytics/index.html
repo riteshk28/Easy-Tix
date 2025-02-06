@@ -229,57 +229,61 @@
 
 <!-- Charts Grid -->
 <div class="grid-stack">
-    <!-- Ticket Status Chart -->
     <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="0" gs-y="0" id="ticketStatusItem">
         <div class="grid-stack-item-content">
-            <div class="card h-100">
-                <div class="card-header bg-transparent handle">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Tickets by Status</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="ticketStatusChart"></canvas>
+                    <div class="chart-container">
+                        <canvas id="ticketStatusChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Response Time Chart -->
     <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="0" id="responseTimeItem">
         <div class="grid-stack-item-content">
-            <div class="card h-100">
-                <div class="card-header bg-transparent handle">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Response Times</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="responseTimeChart"></canvas>
+                    <div class="chart-container">
+                        <canvas id="responseTimeChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SLA Compliance Chart -->
     <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="0" gs-y="4" id="slaComplianceItem">
         <div class="grid-stack-item-content">
-            <div class="card h-100">
-                <div class="card-header bg-transparent handle">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">SLA Compliance</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="slaComplianceChart"></canvas>
+                    <div class="chart-container">
+                        <canvas id="slaComplianceChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Agent Performance Chart -->
     <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="4" id="agentPerformanceItem">
         <div class="grid-stack-item-content">
-            <div class="card h-100">
-                <div class="card-header bg-transparent handle">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Agent Performance</h5>
                 </div>
                 <div class="card-body">
-                    <canvas id="agentPerformanceChart"></canvas>
+                    <div class="chart-container">
+                        <canvas id="agentPerformanceChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -487,23 +491,15 @@ async function fetchData(reportType) {
 }
 
 // Load charts with proper error handling
-async function loadCharts(savedChartTypes = null) {
+async function loadCharts() {
     try {
         // Load summary data first
         const summaryData = await fetchData('summary');
         if (summaryData) {
-            // Update summary metrics with proper error handling
-            const metrics = {
-                'openTicketsCount': summaryData.open_tickets || '0',
-                'avgResponseTime': summaryData.avg_response_time ? `${summaryData.avg_response_time}h` : '0h',
-                'slaComplianceRate': summaryData.sla_compliance ? `${summaryData.sla_compliance}%` : '0%',
-                'resolutionRate': summaryData.resolution_rate ? `${summaryData.resolution_rate}%` : '0%'
-            };
-
-            Object.entries(metrics).forEach(([id, value]) => {
-                const element = document.getElementById(id);
-                if (element) element.textContent = value;
-            });
+            document.getElementById('openTicketsCount').textContent = summaryData.open_tickets || '0';
+            document.getElementById('avgResponseTime').textContent = `${summaryData.avg_response_time || 0}h`;
+            document.getElementById('slaComplianceRate').textContent = `${summaryData.sla_compliance || 0}%`;
+            document.getElementById('resolutionRate').textContent = `${summaryData.resolution_rate || 0}%`;
         }
 
         // Load chart data
@@ -514,12 +510,13 @@ async function loadCharts(savedChartTypes = null) {
             fetchData('agent_performance')
         ]);
 
-        console.log('Chart Data:', { ticketStatus, responseTimes, slaCompliance, agentPerformance });
-
         // Clear existing charts
         Object.values(charts).forEach(chart => {
             if (chart) chart.destroy();
         });
+
+        // Wait for DOM to be ready
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         // Create new charts
         if (ticketStatus && document.getElementById('ticketStatusChart')) {
@@ -608,7 +605,7 @@ async function loadCharts(savedChartTypes = null) {
 
 // Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize GridStack with proper options
+    // Initialize GridStack
     grid = GridStack.init({
         cellHeight: 100,
         margin: 10,
@@ -617,51 +614,11 @@ document.addEventListener('DOMContentLoaded', function() {
             handle: '.handle'
         },
         float: false,
-        column: 12,
-        // Remove these options that might cause issues
-        // removable: true,
-        // removeTimeout: 100,
-        // acceptWidgets: true
+        column: 12
     });
 
-    // Load saved configuration and initialize charts
-    fetch('/analytics/dashboard-config')
-        .then(response => response.json())
-        .then(config => {
-            // Remove all widgets first
-            grid.removeAll();
-            
-            // Get the original DOM elements
-            const items = {
-                ticketStatusItem: document.getElementById('ticketStatusItem'),
-                responseTimeItem: document.getElementById('responseTimeItem'),
-                slaComplianceItem: document.getElementById('slaComplianceItem'),
-                agentPerformanceItem: document.getElementById('agentPerformanceItem')
-            };
-            
-            // Apply layout
-            const layout = config.layout || [
-                { x: 0, y: 0, w: 6, h: 4, id: 'ticketStatusItem' },
-                { x: 6, y: 0, w: 6, h: 4, id: 'responseTimeItem' },
-                { x: 0, y: 4, w: 6, h: 4, id: 'slaComplianceItem' },
-                { x: 6, y: 4, w: 6, h: 4, id: 'agentPerformanceItem' }
-            ];
-            
-            // Add widgets using the original DOM elements
-            layout.forEach(itemConfig => {
-                const element = items[itemConfig.id];
-                if (element) {
-                    grid.addWidget(element, itemConfig);
-                }
-            });
-            
-            // Load charts with saved types
-            loadCharts(config.chartTypes);
-        })
-        .catch(error => {
-            console.error('Error loading dashboard config:', error);
-            loadCharts();
-        });
+    // Load charts after grid is initialized
+    setTimeout(loadCharts, 500);
 
     // Reset layout handler
     window.resetLayout = function() {
