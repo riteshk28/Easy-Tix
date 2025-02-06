@@ -283,18 +283,23 @@ def save_dashboard():
 @analytics.route('/dashboard-config')
 @login_required
 def get_dashboard_config():
-    dashboard = AnalyticsDashboard.query.filter_by(
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.id,
-        is_default=True
-    ).first()
-    
-    if not dashboard:
-        return jsonify(get_default_config())
+    try:
+        dashboard = AnalyticsDashboard.query.filter_by(
+            tenant_id=current_user.tenant_id,
+            user_id=current_user.id,
+            is_default=True
+        ).first()
         
-    return jsonify({
-        'layout': dashboard.layout_config,
-        'metrics': dashboard.chart_config.get('metrics'),
-        'charts': dashboard.chart_config.get('charts'),
-        'filters': dashboard.chart_config.get('filters')
-    }) 
+        if not dashboard:
+            return jsonify({
+                'layout': None,
+                'chartTypes': None
+            })
+            
+        return jsonify({
+            'layout': dashboard.layout_config,
+            'chartTypes': dashboard.chart_config.get('chartTypes', {})
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error getting dashboard config: {str(e)}")
+        return jsonify({'error': str(e)}), 400 

@@ -481,7 +481,7 @@ async function fetchData(reportType) {
 }
 
 // Load charts with proper error handling
-async function loadCharts() {
+async function loadCharts(savedChartTypes = null) {
     try {
         // Load summary data
         const summaryData = await fetchData('summary');
@@ -502,25 +502,32 @@ async function loadCharts() {
             if (chart) chart.destroy();
         });
 
+        const defaultChartTypes = {
+            ticketStatus: 'pie',
+            responseTime: 'line',
+            slaCompliance: 'line',
+            agentPerformance: 'bar'
+        };
+
         const chartConfigs = [
             {
                 id: 'ticketStatusChart',
-                type: 'pie',
+                type: savedChartTypes?.ticketStatus || defaultChartTypes.ticketStatus,
                 data: chartData[0]
             },
             {
                 id: 'responseTimeChart',
-                type: 'line',
+                type: savedChartTypes?.responseTime || defaultChartTypes.responseTime,
                 data: chartData[1]
             },
             {
                 id: 'slaComplianceChart',
-                type: 'line',
+                type: savedChartTypes?.slaCompliance || defaultChartTypes.slaCompliance,
                 data: chartData[2]
             },
             {
                 id: 'agentPerformanceChart',
-                type: 'bar',
+                type: savedChartTypes?.agentPerformance || defaultChartTypes.agentPerformance,
                 data: chartData[3]
             }
         ];
@@ -563,8 +570,23 @@ document.addEventListener('DOMContentLoaded', function() {
         column: 12
     });
 
-    // Load initial data
-    loadCharts();
+    // Load saved configuration and initialize charts
+    fetch('/analytics/dashboard-config')
+        .then(response => response.json())
+        .then(config => {
+            // Apply saved layout if exists
+            if (config.layout) {
+                grid.load(config.layout);
+            }
+            
+            // Load charts with saved types
+            loadCharts(config.chartTypes);
+        })
+        .catch(error => {
+            console.error('Error loading dashboard config:', error);
+            // Load charts with default configuration if error
+            loadCharts();
+        });
 
     // Reset layout handler
     window.resetLayout = function() {
