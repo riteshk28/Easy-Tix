@@ -107,7 +107,61 @@
         </div>
     </div>
 </div>
+
+<!-- Add this after the existing export button -->
+<div class="btn-group">
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exportModal">
+        <i class="fas fa-file-export"></i> Export Raw Data
+    </button>
+</div>
 {% endblock %}
+
+<!-- Add this at the bottom of the template -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Filtered Data</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="exportForm">
+                    <div class="mb-3">
+                        <label class="form-label">Date Range</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="dateRange" name="date_range" placeholder="Select date range">
+                            <button class="btn btn-outline-secondary" type="button" id="clearDates">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="status" multiple>
+                            <option value="open">Open</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="pending">Pending</option>
+                            <option value="resolved">Resolved</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Priority</label>
+                        <select class="form-select" name="priority" multiple>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="exportFilteredData()">Export</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% block scripts %}
 {{ super() }}
@@ -193,6 +247,74 @@ async function updateTimeRange(days) {
 
 async function exportData() {
     window.location.href = `/analytics/export?days=${currentDays}`;
+}
+
+// Initialize Litepicker
+const picker = new Litepicker({
+    element: document.getElementById('dateRange'),
+    singleMode: false,
+    numberOfMonths: 2,
+    numberOfColumns: 2,
+    startDate: new Date(),
+    endDate: new Date(),
+    format: 'YYYY-MM-DD',
+    showTooltip: true,
+    tooltipText: {
+        one: 'day',
+        other: 'days'
+    },
+    plugins: ['ranges'],
+    ranges: {
+        'Today': [new Date(), new Date()],
+        'Yesterday': [new Date(new Date().setDate(new Date().getDate() - 1)), new Date(new Date().setDate(new Date().getDate() - 1))],
+        'Last 7 Days': [new Date(new Date().setDate(new Date().getDate() - 6)), new Date()],
+        'Last 30 Days': [new Date(new Date().setDate(new Date().getDate() - 29)), new Date()],
+        'This Month': [new Date(new Date().setDate(1)), new Date()],
+        'Last Month': [
+            new Date(new Date().setMonth(new Date().getMonth() - 1, 1)),
+            new Date(new Date().setMonth(new Date().getMonth(), 0))
+        ]
+    },
+    setup: (picker) => {
+        picker.on('selected', (date1, date2) => {
+            document.getElementById('start_date').value = date1.format('YYYY-MM-DD');
+            document.getElementById('end_date').value = date2.format('YYYY-MM-DD');
+        });
+    }
+});
+
+// Clear dates button
+document.getElementById('clearDates').addEventListener('click', () => {
+    picker.clearSelection();
+    document.getElementById('start_date').value = '';
+    document.getElementById('end_date').value = '';
+});
+
+// Add hidden inputs for form submission
+const form = document.getElementById('exportForm');
+const startDateInput = document.createElement('input');
+startDateInput.type = 'hidden';
+startDateInput.id = 'start_date';
+startDateInput.name = 'start_date';
+const endDateInput = document.createElement('input');
+endDateInput.type = 'hidden';
+endDateInput.id = 'end_date';
+endDateInput.name = 'end_date';
+form.appendChild(startDateInput);
+form.appendChild(endDateInput);
+
+function exportFilteredData() {
+    const form = document.getElementById('exportForm');
+    const formData = new FormData(form);
+    
+    // Build query string
+    const params = new URLSearchParams();
+    for (let [key, value] of formData.entries()) {
+        if (value) params.append(key, value);
+    }
+    
+    // Redirect to export URL with filters
+    window.location.href = `/analytics/raw-export?${params.toString()}`;
 }
 
 // Initial load

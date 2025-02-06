@@ -193,4 +193,22 @@ class AnalyticsService:
             'avg_response_time': round(avg_response, 2) if avg_response else 0,
             'sla_compliance_rate': round(sla_rate, 2),
             'resolution_rate': round(resolution_rate, 2)
-        } 
+        }
+
+    @staticmethod
+    def get_filtered_tickets(tenant_id, start_date=None, end_date=None, status=None, priority=None, assigned_to=None):
+        """Get filtered ticket data"""
+        query = Ticket.query.filter(Ticket.tenant_id == tenant_id)
+        
+        if start_date:
+            query = query.filter(Ticket.created_at >= datetime.strptime(start_date, '%Y-%m-%d'))
+        if end_date:
+            query = query.filter(Ticket.created_at <= datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1))
+        if status:
+            query = query.filter(Ticket.status.in_(status))
+        if priority:
+            query = query.filter(Ticket.priority.in_(priority))
+        if assigned_to:
+            query = query.filter(Ticket.assigned_to_id.in_(assigned_to))
+        
+        return query.order_by(Ticket.created_at.desc()).all() 

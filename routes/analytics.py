@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from services.analytics_service import AnalyticsService
 from models import Dashboard, ReportConfig
 import csv
-from io import StringIO
+from io import StringIO, BytesIO
 from datetime import datetime
 
 analytics = Blueprint('analytics', __name__)
@@ -90,8 +90,8 @@ def export_data():
     """Export analytics data to CSV"""
     days = request.args.get('days', 30, type=int)
     
-    # Create CSV file
-    output = StringIO()
+    # Create CSV file in binary mode
+    output = BytesIO()
     writer = csv.writer(output)
     
     # Write headers
@@ -103,19 +103,16 @@ def export_data():
     sla_compliance = AnalyticsService.get_sla_compliance(current_user.tenant_id, days)
     agent_performance = AnalyticsService.get_agent_performance(current_user.tenant_id, days)
     
-    # Write ticket status data
+    # Write data
     for label, value in zip(ticket_status['labels'], ticket_status['datasets'][0]['data']):
         writer.writerow(['Ticket Status', datetime.utcnow().strftime('%Y-%m-%d'), label, value])
     
-    # Write response times data
     for date, value in zip(response_times['labels'], response_times['datasets'][0]['data']):
         writer.writerow(['Response Time', date, 'Hours', value])
     
-    # Write SLA compliance data
     for date, value in zip(sla_compliance['labels'], sla_compliance['datasets'][0]['data']):
         writer.writerow(['SLA Compliance', date, 'Percentage', value])
     
-    # Write agent performance data
     for agent, tickets, sla in zip(
         agent_performance['labels'],
         agent_performance['datasets'][0]['data'],
@@ -127,11 +124,84 @@ def export_data():
     # Prepare response
     output.seek(0)
     return send_file(
-        StringIO(output.getvalue()),
+        output,
         mimetype='text/csv',
         as_attachment=True,
         download_name=f'analytics_export_{datetime.utcnow().strftime("%Y%m%d")}.csv'
     )
+
+@analytics.route('/raw-export')
+@login_required
+def export_raw_data():
+    """Export raw ticket data with filters"""
+    # Get filter parameters
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    status = request.args.getlist('status')
+    priority = request.args.getlist('priority')
+    assigned_to = request.args.getlist('assigned_to')
+    
+    try:
+        # Get filtered data
+        tickets = AnalyticsService.get_filtered_tickets(
+            tenant_id=current_user.tenant_id,
+            start_date=start_date,
+            end_date=end_date,
+            status=status,
+            priority=priority,
+            assigned_to=assigned_to
+        )
+        
+        # Create CSV file
+        output = BytesIO()
+        writer = csv.writer(output)
+        
+        # Write headers
+        writer.writerow([
+            'Ticket Number',
+            'Title',
+            'Status',
+            'Priority',
+            'Created At',
+            'Updated At',
+            'Assigned To',
+            'Contact Name',
+            'Contact Email',
+            'First Response At',
+            'Resolved At',
+            'SLA Response Met',
+            'SLA Resolution Met'
+        ])
+        
+        # Write data
+        for ticket in tickets:
+            writer.writerow([
+                ticket.ticket_number,
+                ticket.title,
+                ticket.status,
+                ticket.priority,
+                ticket.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                ticket.updated_at.strftime('%Y-%m-%d %H:%M:%S') if ticket.updated_at else '',
+                ticket.assigned_to.email if ticket.assigned_to else '',
+                ticket.contact_name,
+                ticket.contact_email,
+                ticket.first_response_at.strftime('%Y-%m-%d %H:%M:%S') if ticket.first_response_at else '',
+                ticket.resolved_at.strftime('%Y-%m-%d %H:%M:%S') if ticket.resolved_at else '',
+                'Yes' if ticket.sla_response_met else 'No',
+                'Yes' if ticket.sla_resolution_met else 'No'
+            ])
+        
+        # Prepare response
+        output.seek(0)
+        return send_file(
+            output,
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=f'tickets_export_{datetime.utcnow().strftime("%Y%m%d")}.csv'
+        )
+    except Exception as e:
+        current_app.logger.error(f"Export error: {str(e)}")
+        return jsonify({'error': str(e)}), 400
 
 @analytics.route('/data/summary')
 @login_required
