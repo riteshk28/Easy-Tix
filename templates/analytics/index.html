@@ -287,21 +287,51 @@ const charts = {};
 let grid;
 let currentDays = 30;
 
-async function updateSummaryMetrics(data) {
-    document.getElementById('openTicketsCount').textContent = data.open_tickets || '-';
-    document.getElementById('avgResponseTime').textContent = data.avg_response_time ? `${data.avg_response_time}h` : '-';
-    document.getElementById('slaComplianceRate').textContent = data.sla_compliance_rate ? `${data.sla_compliance_rate}%` : '-';
-    document.getElementById('resolutionRate').textContent = data.resolution_rate ? `${data.resolution_rate}%` : '-';
+// Define updateSummaryMetrics before it's used
+function updateSummaryMetrics(data) {
+    if (!data) return;
+    
+    const elements = {
+        'openTicketsCount': data.open_tickets,
+        'avgResponseTime': data.avg_response_time ? `${data.avg_response_time}h` : null,
+        'slaComplianceRate': data.sla_compliance_rate ? `${data.sla_compliance_rate}%` : null,
+        'resolutionRate': data.resolution_rate ? `${data.resolution_rate}%` : null
+    };
+
+    Object.entries(elements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value || '-';
+        }
+    });
 }
 
+// Fetch data with error handling
+async function fetchData(reportType) {
+    try {
+        const response = await fetch(`/analytics/data/${reportType}?days=${currentDays}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error(`Error fetching ${reportType}:`, error);
+        return null;
+    }
+}
+
+// Load charts with proper error handling
 async function loadCharts() {
     try {
-        // First load summary metrics
+        // Load summary data
         const summaryData = await fetchData('summary');
-        updateSummaryMetrics(summaryData);
+        if (summaryData) {
+            updateSummaryMetrics(summaryData);
+        }
 
-        // Then load chart data
-        const [ticketStatus, responseTimes, slaCompliance, agentPerformance] = await Promise.all([
+        // Load chart data
+        const chartData = await Promise.all([
             fetchData('tickets_by_status'),
             fetchData('response_times'),
             fetchData('sla_compliance'),
@@ -309,45 +339,50 @@ async function loadCharts() {
         ]);
 
         // Clear existing charts
-        if (charts.ticketStatus) charts.ticketStatus.destroy();
-        if (charts.responseTimes) charts.responseTimes.destroy();
-        if (charts.slaCompliance) charts.slaCompliance.destroy();
-        if (charts.agentPerformance) charts.agentPerformance.destroy();
-
-        // Initialize new charts
-        charts.ticketStatus = new Chart(document.getElementById('ticketStatusChart'), {
-            type: 'pie',
-            data: ticketStatus,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
+        Object.values(charts).forEach(chart => {
+            if (chart) chart.destroy();
         });
 
-        charts.responseTimes = new Chart(document.getElementById('responseTimeChart'), {
-            type: 'line',
-            data: responseTimes,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
+        const chartConfigs = [
+            {
+                id: 'ticketStatusChart',
+                type: 'pie',
+                data: chartData[0]
+            },
+            {
+                id: 'responseTimeChart',
+                type: 'line',
+                data: chartData[1]
+            },
+            {
+                id: 'slaComplianceChart',
+                type: 'line',
+                data: chartData[2]
+            },
+            {
+                id: 'agentPerformanceChart',
+                type: 'bar',
+                data: chartData[3]
             }
-        });
+        ];
 
-        charts.slaCompliance = new Chart(document.getElementById('slaComplianceChart'), {
-            type: 'line',
-            data: slaCompliance,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-
-        charts.agentPerformance = new Chart(document.getElementById('agentPerformanceChart'), {
-            type: 'bar',
-            data: agentPerformance,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false
+        // Create new charts
+        chartConfigs.forEach(config => {
+            const canvas = document.getElementById(config.id);
+            if (canvas && config.data) {
+                charts[config.id] = new Chart(canvas, {
+                    type: config.type,
+                    data: config.data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
             }
         });
     } catch (error) {
@@ -355,9 +390,9 @@ async function loadCharts() {
     }
 }
 
-// Initialize GridStack
+// Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize grid
+    // Initialize GridStack
     grid = GridStack.init({
         cellHeight: 100,
         margin: 10,
@@ -366,50 +401,49 @@ document.addEventListener('DOMContentLoaded', function() {
             handle: '.handle'
         },
         float: false,
-        disableOneColumnMode: true,
         column: 12
     });
 
-    // Load charts
+    // Load initial data
     loadCharts();
 
-    // Reset layout
+    // Reset layout handler
     window.resetLayout = function() {
-        const items = grid.engine.nodes;
         const defaultLayout = [
-            { x: 0, y: 0, w: 6, h: 4, id: 'ticketStatus' },
-            { x: 6, y: 0, w: 6, h: 4, id: 'responseTimes' },
-            { x: 0, y: 4, w: 6, h: 4, id: 'slaCompliance' },
-            { x: 6, y: 4, w: 6, h: 4, id: 'agentPerformance' }
+            { x: 0, y: 0, w: 6, h: 4 },
+            { x: 6, y: 0, w: 6, h: 4 },
+            { x: 0, y: 4, w: 6, h: 4 },
+            { x: 6, y: 4, w: 6, h: 4 }
         ];
 
+        grid.removeAll();
+        const items = document.querySelectorAll('.grid-stack-item');
         items.forEach((item, index) => {
             const layout = defaultLayout[index];
-            grid.update(item.el, { x: layout.x, y: layout.y });
+            grid.addWidget(item, layout);
         });
-
+        
         loadCharts();
     };
 
-    // Handle time range updates
+    // Time range update handler
     window.updateTimeRange = function(days) {
         currentDays = days;
-        document.getElementById('timeRangeBtn').textContent = `Last ${days} Days`;
+        const btn = document.getElementById('timeRangeBtn');
+        if (btn) {
+            btn.textContent = `Last ${days} Days`;
+        }
         loadCharts();
     };
 
     // Handle chart resize
     grid.on('resizestop', function() {
         Object.values(charts).forEach(chart => {
-            if (chart) chart.resize();
+            if (chart && typeof chart.resize === 'function') {
+                chart.resize();
+            }
         });
     });
 });
-
-async function fetchData(reportType) {
-    const response = await fetch(`/analytics/data/${reportType}?days=${currentDays}`);
-    if (!response.ok) throw new Error(`Failed to fetch ${reportType} data`);
-    return response.json();
-}
 </script>
 {% endblock %} 

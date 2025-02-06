@@ -1,6 +1,10 @@
 // Empty file to prevent 404 errors
 // You can add JavaScript functionality here later 
 
+if (typeof url === 'undefined') {
+    var url = window.location.pathname;
+}
+
 function copyPortalLink() {
     var copyText = document.getElementById("portalLink");
     copyText.select();
