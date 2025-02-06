@@ -4,8 +4,8 @@
 <div class="d-flex justify-content-between align-items-center">
     <h2>Analytics Dashboard</h2>
     <div class="btn-group">
-        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-            Time Range
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" id="timeRangeBtn">
+            Last 30 Days
         </button>
         <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="#" onclick="updateTimeRange(7)">Last 7 Days</a></li>
@@ -35,24 +35,59 @@
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
+                        <small class="form-text text-muted">Required. Please select a date range for export.</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Status</label>
-                        <select class="form-select" name="status" multiple>
-                            <option value="open">Open</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="pending">Pending</option>
-                            <option value="resolved">Resolved</option>
-                        </select>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input select-all" id="selectAllStatus">
+                            <label class="form-check-label" for="selectAllStatus">Select All</label>
+                        </div>
+                        <div class="status-options">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input status-option" name="status" value="open" id="statusOpen">
+                                <label class="form-check-label" for="statusOpen">Open</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input status-option" name="status" value="in_progress" id="statusInProgress">
+                                <label class="form-check-label" for="statusInProgress">In Progress</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input status-option" name="status" value="on_hold" id="statusOnHold">
+                                <label class="form-check-label" for="statusOnHold">On Hold</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input status-option" name="status" value="resolved" id="statusResolved">
+                                <label class="form-check-label" for="statusResolved">Resolved</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input status-option" name="status" value="closed" id="statusClosed">
+                                <label class="form-check-label" for="statusClosed">Closed</label>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">Select at least one status.</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Priority</label>
-                        <select class="form-select" name="priority" multiple>
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
-                        </select>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input select-all" id="selectAllPriority">
+                            <label class="form-check-label" for="selectAllPriority">Select All</label>
+                        </div>
+                        <div class="priority-options">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input priority-option" name="priority" value="low" id="priorityLow">
+                                <label class="form-check-label" for="priorityLow">Low</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input priority-option" name="priority" value="medium" id="priorityMedium">
+                                <label class="form-check-label" for="priorityMedium">Medium</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input priority-option" name="priority" value="high" id="priorityHigh">
+                                <label class="form-check-label" for="priorityHigh">High</label>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">Select at least one priority.</small>
                     </div>
                 </form>
             </div>
@@ -233,6 +268,11 @@ async function fetchData(reportType) {
 
 async function updateTimeRange(days) {
     currentDays = days;
+    // Update the button text
+    const timeRangeBtn = document.getElementById('timeRangeBtn');
+    timeRangeBtn.textContent = `Last ${days} Days`;
+    
+    // Update charts
     Object.values(charts).forEach(chart => chart.destroy());
     await loadCharts();
 }
@@ -294,12 +334,60 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load charts
     loadCharts();
+
+    // Initialize select all checkboxes
+    document.querySelectorAll('.select-all').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const container = this.closest('.mb-3');
+            const options = container.querySelectorAll(this.id.includes('Status') ? '.status-option' : '.priority-option');
+            options.forEach(option => option.checked = this.checked);
+        });
+    });
+
+    // Initialize option checkboxes
+    ['status', 'priority'].forEach(type => {
+        const container = document.querySelector(`.${type}-options`);
+        const options = container.querySelectorAll(`.${type}-option`);
+        const selectAll = document.querySelector(`#selectAll${type.charAt(0).toUpperCase() + type.slice(1)}`);
+        
+        options.forEach(option => {
+            option.addEventListener('change', function() {
+                const allChecked = Array.from(options).every(opt => opt.checked);
+                const someChecked = Array.from(options).some(opt => opt.checked);
+                selectAll.checked = allChecked;
+                selectAll.indeterminate = someChecked && !allChecked;
+            });
+        });
+    });
+
+    // Select all by default
+    document.querySelectorAll('.select-all').forEach(checkbox => {
+        checkbox.click();
+    });
+
+    // Set initial text when page loads
+    const timeRangeBtn = document.getElementById('timeRangeBtn');
+    timeRangeBtn.textContent = `Last ${currentDays} Days`;
 });
 
 function exportFilteredData() {
     const form = document.getElementById('exportForm');
     const formData = new FormData(form);
+    const dateRange = document.getElementById('dateRange').value;
     
+    if (!dateRange) {
+        alert('Please select a date range');
+        return;
+    }
+
+    const status = formData.getAll('status');
+    const priority = formData.getAll('priority');
+
+    if (status.length === 0) {
+        alert('Please select at least one status');
+        return;
+    }
+
     // Build query string
     const params = new URLSearchParams();
     for (let [key, value] of formData.entries()) {

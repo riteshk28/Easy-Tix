@@ -198,16 +198,24 @@ class AnalyticsService:
     @staticmethod
     def get_filtered_tickets(tenant_id, start_date=None, end_date=None, status=None, priority=None, assigned_to=None):
         """Get filtered ticket data"""
+        if not start_date or not end_date:
+            raise ValueError("Date range is required")
+        
         query = Ticket.query.filter(Ticket.tenant_id == tenant_id)
         
-        if start_date:
-            query = query.filter(Ticket.created_at >= datetime.strptime(start_date, '%Y-%m-%d'))
-        if end_date:
-            query = query.filter(Ticket.created_at <= datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1))
-        if status:
-            query = query.filter(Ticket.status.in_(status))
-        if priority:
-            query = query.filter(Ticket.priority.in_(priority))
+        # Date range is required
+        query = query.filter(Ticket.created_at >= datetime.strptime(start_date, '%Y-%m-%d'))
+        query = query.filter(Ticket.created_at <= datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1))
+        
+        # Status and priority are required
+        if not status:
+            raise ValueError("At least one status must be selected")
+        if not priority:
+            raise ValueError("At least one priority must be selected")
+        
+        query = query.filter(Ticket.status.in_(status))
+        query = query.filter(Ticket.priority.in_(priority))
+        
         if assigned_to:
             query = query.filter(Ticket.assigned_to_id.in_(assigned_to))
         
