@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
 from sqlalchemy import select, func
 import re
+from sqlalchemy.dialects.postgresql import JSONB
 
 class Tenant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -419,3 +420,40 @@ class TicketActivity(db.Model):
         backref='activities',
         foreign_keys=[user_id]
     ) 
+
+class ReportConfig(db.Model):
+    __tablename__ = 'report_config'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenant.id'), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    type = db.Column(db.String(50), nullable=False)  # e.g., 'tickets_by_status', 'response_times'
+    query_config = db.Column(JSONB, nullable=False, default={})
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    tenant = db.relationship('Tenant', backref=db.backref('reports', lazy=True))
+
+class Dashboard(db.Model):
+    __tablename__ = 'dashboard'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenant.id'), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    layout_config = db.Column(JSONB, nullable=False, default={})
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    tenant = db.relationship('Tenant', backref=db.backref('dashboards', lazy=True))
+    reports = db.relationship('ReportConfig', secondary='dashboard_report', lazy='subquery',
+                            backref=db.backref('dashboards', lazy=True))
+
+class DashboardReport(db.Model):
+    __tablename__ = 'dashboard_report'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    dashboard_id = db.Column(db.Integer, db.ForeignKey('dashboard.id'), nullable=False)
+    report_id = db.Column(db.Integer, db.ForeignKey('report_config.id'), nullable=False)
+    position_config = db.Column(JSONB, nullable=False, default={})  # Stores position, size, etc.
+    created_at = db.Column(db.DateTime, default=datetime.utcnow) 

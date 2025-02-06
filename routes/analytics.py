@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, jsonify, current_app, request
 from flask_login import login_required, current_user
-from services.metabase_service import MetabaseService
+from services.analytics_service import AnalyticsService
 from models import Dashboard, ReportConfig
 
 analytics = Blueprint('analytics', __name__)
@@ -9,9 +9,26 @@ analytics = Blueprint('analytics', __name__)
 @login_required
 def index():
     """Analytics landing page"""
-    dashboards = Dashboard.query.filter_by(tenant_id=current_user.tenant_id).all()
-    reports = ReportConfig.query.filter_by(tenant_id=current_user.tenant_id).all()
-    return render_template('analytics/index.html', dashboards=dashboards, reports=reports)
+    return render_template('analytics/index.html')
+
+@analytics.route('/data/<report_type>')
+@login_required
+def get_report_data(report_type):
+    """Get data for specific report type"""
+    days = request.args.get('days', 30, type=int)
+    
+    data_functions = {
+        'tickets_by_status': AnalyticsService.get_tickets_by_status,
+        'response_times': AnalyticsService.get_response_times,
+        'sla_compliance': AnalyticsService.get_sla_compliance,
+        'agent_performance': AnalyticsService.get_agent_performance
+    }
+    
+    if report_type not in data_functions:
+        return jsonify({'error': 'Invalid report type'}), 400
+        
+    data = data_functions[report_type](current_user.tenant_id, days)
+    return jsonify(data)
 
 @analytics.route('/reports/new', methods=['GET', 'POST'])
 @login_required
