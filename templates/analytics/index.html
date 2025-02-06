@@ -478,5 +478,139 @@ function updateSummaryMetrics(data) {
     document.getElementById('slaComplianceRate').textContent = data.sla_compliance_rate ? `${data.sla_compliance_rate}%` : '0%';
     document.getElementById('resolutionRate').textContent = data.resolution_rate ? `${data.resolution_rate}%` : '0%';
 }
+
+// Add after the existing script section
+const availableMetrics = {
+    tickets: {
+        open_tickets: { label: 'Open Tickets', type: 'number' },
+        avg_response: { label: 'Average Response Time', type: 'duration' },
+        sla_compliance: { label: 'SLA Compliance', type: 'percentage' },
+        resolution_rate: { label: 'Resolution Rate', type: 'percentage' }
+    },
+    charts: {
+        tickets_by_status: {
+            label: 'Tickets by Status',
+            types: ['pie', 'doughnut', 'bar'],
+            default: 'pie'
+        },
+        response_times: {
+            label: 'Response Times',
+            types: ['line', 'bar'],
+            default: 'line'
+        },
+        sla_compliance: {
+            label: 'SLA Compliance',
+            types: ['line', 'bar'],
+            default: 'line'
+        },
+        agent_performance: {
+            label: 'Agent Performance',
+            types: ['bar', 'horizontalBar'],
+            default: 'bar'
+        }
+    }
+};
+
+// Initialize draggable grid
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize grid
+    const grid = new Muuri('.dashboard-grid', {
+        dragEnabled: true,
+        dragHandle: '.card-header',
+        dragContainer: document.body,
+        dragAutoScroll: {
+            targets: [window]
+        }
+    });
+
+    // Populate available metrics
+    const metricsContainer = document.getElementById('availableMetrics');
+    Object.entries(availableMetrics.tickets).forEach(([key, metric]) => {
+        const item = document.createElement('div');
+        item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+        item.setAttribute('data-metric', key);
+        item.innerHTML = `
+            ${metric.label}
+            <button class="btn btn-sm btn-outline-primary add-metric">
+                <i class="fas fa-plus"></i>
+            </button>
+        `;
+        metricsContainer.appendChild(item);
+    });
+
+    // Populate chart customizations
+    const chartsContainer = document.getElementById('chartCustomizations');
+    Object.entries(availableMetrics.charts).forEach(([key, chart]) => {
+        const col = document.createElement('div');
+        col.className = 'col-md-6 mb-3';
+        col.innerHTML = `
+            <div class="card">
+                <div class="card-body">
+                    <h6>${chart.label}</h6>
+                    <select class="form-select chart-type" data-chart="${key}">
+                        ${chart.types.map(type => 
+                            `<option value="${type}" ${type === chart.default ? 'selected' : ''}>
+                                ${type.charAt(0).toUpperCase() + type.slice(1)}
+                            </option>`
+                        ).join('')}
+                    </select>
+                </div>
+            </div>
+        `;
+        chartsContainer.appendChild(col);
+    });
+
+    // Save dashboard layout
+    window.saveDashboard = async function() {
+        const layout = grid.getLayout();
+        const chartTypes = {};
+        document.querySelectorAll('.chart-type').forEach(select => {
+            chartTypes[select.dataset.chart] = select.value;
+        });
+
+        const config = {
+            layout: layout.map(item => ({
+                id: item.getElement().getAttribute('data-id'),
+                position: item.getPosition()
+            })),
+            chartTypes: chartTypes,
+            selectedMetrics: Array.from(document.getElementById('selectedMetrics').children)
+                .map(item => item.getAttribute('data-metric'))
+        };
+
+        try {
+            const response = await fetch('/analytics/save-dashboard', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(config)
+            });
+            
+            if (!response.ok) throw new Error('Failed to save dashboard');
+            
+            showToast('Dashboard layout saved successfully');
+        } catch (error) {
+            console.error('Error saving dashboard:', error);
+            showToast('Error saving dashboard', 'error');
+        }
+    };
+
+    // Handle chart type changes
+    document.querySelectorAll('.chart-type').forEach(select => {
+        select.addEventListener('change', function() {
+            const chartId = this.dataset.chart;
+            const chartInstance = charts[chartId];
+            if (chartInstance) {
+                chartInstance.destroy();
+                charts[chartId] = new Chart(document.getElementById(`${chartId}Chart`), {
+                    type: this.value,
+                    data: chartInstance.data
+                });
+            }
+        });
+    });
+});
 </script>
 {% endblock %} 
