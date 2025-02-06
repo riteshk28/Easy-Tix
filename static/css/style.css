@@ -382,8 +382,13 @@
     inset: 5px;
 }
 
+.grid-stack-item .card {
+    height: 100%;
+}
+
 .grid-stack-item .card-body {
-    height: calc(100% - 50px); /* Adjust for header height */
+    height: calc(100% - 56px);  /* Adjust for header height */
+    position: relative;
 }
 
 .grid-stack-item canvas {
@@ -397,11 +402,6 @@
 
 .handle {
     cursor: move;
-}
-
-.card {
-    height: 100%;
-    margin: 0;
 }
 
 .g-3 {

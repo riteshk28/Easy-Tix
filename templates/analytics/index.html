@@ -229,10 +229,11 @@
 
 <!-- Charts Grid -->
 <div class="grid-stack">
+    <!-- Ticket Status Chart -->
     <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="0" gs-y="0" id="ticketStatusItem">
         <div class="grid-stack-item-content">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 handle">
+            <div class="card h-100">
+                <div class="card-header bg-transparent handle">
                     <h5 class="mb-0">Tickets by Status</h5>
                 </div>
                 <div class="card-body">
@@ -241,11 +242,12 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- Response Time Chart -->
     <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="0" id="responseTimeItem">
         <div class="grid-stack-item-content">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 handle">
+            <div class="card h-100">
+                <div class="card-header bg-transparent handle">
                     <h5 class="mb-0">Response Times</h5>
                 </div>
                 <div class="card-body">
@@ -254,11 +256,12 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- SLA Compliance Chart -->
     <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="0" gs-y="4" id="slaComplianceItem">
         <div class="grid-stack-item-content">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 handle">
+            <div class="card h-100">
+                <div class="card-header bg-transparent handle">
                     <h5 class="mb-0">SLA Compliance</h5>
                 </div>
                 <div class="card-body">
@@ -267,11 +270,12 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- Agent Performance Chart -->
     <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="4" id="agentPerformanceItem">
         <div class="grid-stack-item-content">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 handle">
+            <div class="card h-100">
+                <div class="card-header bg-transparent handle">
                     <h5 class="mb-0">Agent Performance</h5>
                 </div>
                 <div class="card-body">
@@ -489,9 +493,9 @@ async function loadCharts(savedChartTypes = null) {
         const summaryData = await fetchData('summary');
         if (summaryData) {
             document.getElementById('openTicketsCount').textContent = summaryData.open_tickets || '0';
-            document.getElementById('avgResponseTime').textContent = summaryData.avg_response_time ? `${summaryData.avg_response_time}h` : '0h';
-            document.getElementById('slaComplianceRate').textContent = summaryData.sla_compliance ? `${summaryData.sla_compliance}%` : '0%';
-            document.getElementById('resolutionRate').textContent = summaryData.resolution_rate ? `${summaryData.resolution_rate}%` : '0%';
+            document.getElementById('avgResponseTime').textContent = `${summaryData.avg_response_time || 0}h`;
+            document.getElementById('slaComplianceRate').textContent = `${summaryData.sla_compliance || 0}%`;
+            document.getElementById('resolvedToday').textContent = summaryData.resolved_today || '0';
         }
 
         // Load chart data
@@ -501,6 +505,8 @@ async function loadCharts(savedChartTypes = null) {
             fetchData('sla_compliance'),
             fetchData('agent_performance')
         ]);
+
+        console.log('Chart Data:', { ticketStatus, responseTimes, slaCompliance, agentPerformance });
 
         // Clear existing charts
         Object.values(charts).forEach(chart => {
@@ -523,8 +529,7 @@ async function loadCharts(savedChartTypes = null) {
                 data: ticketStatus,
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } }
+                    maintainAspectRatio: false
                 }
             });
         }
@@ -535,8 +540,7 @@ async function loadCharts(savedChartTypes = null) {
                 data: responseTimes,
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } }
+                    maintainAspectRatio: false
                 }
             });
         }
@@ -547,8 +551,7 @@ async function loadCharts(savedChartTypes = null) {
                 data: slaCompliance,
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } }
+                    maintainAspectRatio: false
                 }
             });
         }
@@ -559,8 +562,7 @@ async function loadCharts(savedChartTypes = null) {
                 data: agentPerformance,
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } }
+                    maintainAspectRatio: false
                 }
             });
         }
