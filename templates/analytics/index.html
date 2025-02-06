@@ -500,16 +500,13 @@ async function loadCharts(savedChartTypes = null) {
                 'resolutionRate': summaryData.resolution_rate ? `${summaryData.resolution_rate}%` : '0%'
             };
 
-            // Update each metric with error handling
             Object.entries(metrics).forEach(([id, value]) => {
                 const element = document.getElementById(id);
-                if (element) {
-                    element.textContent = value;
-                }
+                if (element) element.textContent = value;
             });
         }
 
-        // Load chart data with error handling
+        // Load chart data
         const [ticketStatus, responseTimes, slaCompliance, agentPerformance] = await Promise.all([
             fetchData('tickets_by_status'),
             fetchData('response_times'),
@@ -524,37 +521,86 @@ async function loadCharts(savedChartTypes = null) {
             if (chart) chart.destroy();
         });
 
-        const defaultChartTypes = {
-            ticketStatus: 'pie',
-            responseTime: 'line',
-            slaCompliance: 'line',
-            agentPerformance: 'bar'
-        };
-
-        const chartTypes = savedChartTypes || defaultChartTypes;
-
-        // Create new charts with proper error handling
-        const chartConfigs = {
-            'ticketStatusChart': { data: ticketStatus, type: chartTypes.ticketStatus || 'pie' },
-            'responseTimeChart': { data: responseTimes, type: chartTypes.responseTime || 'line' },
-            'slaComplianceChart': { data: slaCompliance, type: chartTypes.slaCompliance || 'line' },
-            'agentPerformanceChart': { data: agentPerformance, type: chartTypes.agentPerformance || 'bar' }
-        };
-
-        // Initialize each chart with error handling
-        Object.entries(chartConfigs).forEach(([chartId, config]) => {
-            const canvas = document.getElementById(chartId);
-            if (canvas && config.data) {
-                charts[chartId] = new Chart(canvas, {
-                    type: config.type,
-                    data: config.data,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false
+        // Create new charts
+        if (ticketStatus && document.getElementById('ticketStatusChart')) {
+            charts.ticketStatusChart = new Chart(document.getElementById('ticketStatusChart'), {
+                type: 'pie',
+                data: ticketStatus,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
                     }
-                });
-            }
-        });
+                }
+            });
+        }
+
+        if (responseTimes && document.getElementById('responseTimeChart')) {
+            charts.responseTimeChart = new Chart(document.getElementById('responseTimeChart'), {
+                type: 'line',
+                data: responseTimes,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        if (slaCompliance && document.getElementById('slaComplianceChart')) {
+            charts.slaComplianceChart = new Chart(document.getElementById('slaComplianceChart'), {
+                type: 'line',
+                data: slaCompliance,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        if (agentPerformance && document.getElementById('agentPerformanceChart')) {
+            charts.agentPerformanceChart = new Chart(document.getElementById('agentPerformanceChart'), {
+                type: 'bar',
+                data: agentPerformance,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
     } catch (error) {
         console.error('Error loading charts:', error);
     }
