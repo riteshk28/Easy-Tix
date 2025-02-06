@@ -62,28 +62,28 @@
                     <div class="mb-3">
                         <label class="form-label">Status</label>
                         <div class="form-check">
-                            <input type="checkbox" class="form-check-input select-all" id="selectAllStatus">
+                            <input type="checkbox" class="form-check-input" id="selectAllStatus">
                             <label class="form-check-label" for="selectAllStatus">Select All</label>
                         </div>
                         <div class="status-options">
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input status-option" name="status" value="open" id="statusOpen">
+                                <input type="checkbox" class="form-check-input" name="status" value="open" id="statusOpen">
                                 <label class="form-check-label" for="statusOpen">Open</label>
                             </div>
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input status-option" name="status" value="in_progress" id="statusInProgress">
+                                <input type="checkbox" class="form-check-input" name="status" value="in_progress" id="statusInProgress">
                                 <label class="form-check-label" for="statusInProgress">In Progress</label>
                             </div>
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input status-option" name="status" value="on_hold" id="statusOnHold">
+                                <input type="checkbox" class="form-check-input" name="status" value="on_hold" id="statusOnHold">
                                 <label class="form-check-label" for="statusOnHold">On Hold</label>
                             </div>
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input status-option" name="status" value="resolved" id="statusResolved">
+                                <input type="checkbox" class="form-check-input" name="status" value="resolved" id="statusResolved">
                                 <label class="form-check-label" for="statusResolved">Resolved</label>
                             </div>
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input status-option" name="status" value="closed" id="statusClosed">
+                                <input type="checkbox" class="form-check-input" name="status" value="closed" id="statusClosed">
                                 <label class="form-check-label" for="statusClosed">Closed</label>
                             </div>
                         </div>
@@ -92,20 +92,20 @@
                     <div class="mb-3">
                         <label class="form-label">Priority</label>
                         <div class="form-check">
-                            <input type="checkbox" class="form-check-input select-all" id="selectAllPriority">
+                            <input type="checkbox" class="form-check-input" id="selectAllPriority">
                             <label class="form-check-label" for="selectAllPriority">Select All</label>
                         </div>
                         <div class="priority-options">
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input priority-option" name="priority" value="low" id="priorityLow">
+                                <input type="checkbox" class="form-check-input" name="priority" value="low" id="priorityLow">
                                 <label class="form-check-label" for="priorityLow">Low</label>
                             </div>
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input priority-option" name="priority" value="medium" id="priorityMedium">
+                                <input type="checkbox" class="form-check-input" name="priority" value="medium" id="priorityMedium">
                                 <label class="form-check-label" for="priorityMedium">Medium</label>
                             </div>
                             <div class="form-check">
-                                <input type="checkbox" class="form-check-input priority-option" name="priority" value="high" id="priorityHigh">
+                                <input type="checkbox" class="form-check-input" name="priority" value="high" id="priorityHigh">
                                 <label class="form-check-label" for="priorityHigh">High</label>
                             </div>
                         </div>
@@ -824,6 +824,84 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         $('#dateRange').val(picker.startDate.format('YYYY-MM-DD') + ' to ' + picker.endDate.format('YYYY-MM-DD'));
     }
+
+    // Add this after the setDateRange function
+    function exportFilteredData() {
+        // Get form values
+        const dateRange = $('#dateRange').val();
+        if (!dateRange) {
+            alert('Please select a date range');
+            return;
+        }
+
+        // Get selected statuses
+        const selectedStatus = [];
+        $('input[name="status"]:checked').each(function() {
+            selectedStatus.push($(this).val());
+        });
+        if (selectedStatus.length === 0) {
+            alert('Please select at least one status');
+            return;
+        }
+
+        // Get selected priorities
+        const selectedPriority = [];
+        $('input[name="priority"]:checked').each(function() {
+            selectedPriority.push($(this).val());
+        });
+        if (selectedPriority.length === 0) {
+            alert('Please select at least one priority');
+            return;
+        }
+
+        // Split date range
+        const [startDate, endDate] = dateRange.split(' to ');
+
+        // Build query parameters
+        const params = new URLSearchParams({
+            start_date: startDate,
+            end_date: endDate,
+        });
+
+        // Add multiple values for status and priority
+        selectedStatus.forEach(status => params.append('status', status));
+        selectedPriority.forEach(priority => params.append('priority', priority));
+
+        // Create temporary link and trigger download
+        const link = document.createElement('a');
+        link.href = `/analytics/raw-export?${params.toString()}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+        modal.hide();
+    }
+
+    // Add handlers for select all checkboxes with proper class targeting
+    $('#selectAllStatus').change(function() {
+        const isChecked = $(this).is(':checked');
+        $('input[name="status"]').prop('checked', isChecked);
+    });
+
+    $('#selectAllPriority').change(function() {
+        const isChecked = $(this).is(':checked');
+        $('input[name="priority"]').prop('checked', isChecked);
+    });
+
+    // Update select all checkbox state when individual checkboxes change
+    $('input[name="status"]').change(function() {
+        const totalStatus = $('input[name="status"]').length;
+        const checkedStatus = $('input[name="status"]:checked').length;
+        $('#selectAllStatus').prop('checked', totalStatus === checkedStatus);
+    });
+
+    $('input[name="priority"]').change(function() {
+        const totalPriority = $('input[name="priority"]').length;
+        const checkedPriority = $('input[name="priority"]:checked').length;
+        $('#selectAllPriority').prop('checked', totalPriority === checkedPriority);
+    });
 });
 </script>
 {% endblock %} 
