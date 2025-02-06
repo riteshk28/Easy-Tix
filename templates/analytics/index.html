@@ -560,7 +560,7 @@ async function loadCharts(savedChartTypes = null) {
 
 // Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize GridStack
+    // Initialize GridStack with proper options
     grid = GridStack.init({
         cellHeight: 100,
         margin: 10,
@@ -570,26 +570,48 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         float: false,
         column: 12,
-        disableOneColumnMode: true,
-        staticGrid: false
+        // Remove these options that might cause issues
+        // removable: true,
+        // removeTimeout: 100,
+        // acceptWidgets: true
     });
 
     // Load saved configuration and initialize charts
     fetch('/analytics/dashboard-config')
         .then(response => response.json())
         .then(config => {
-            // Apply saved layout if exists
-            if (config.layout) {
-                grid.removeAll();
-                grid.load(config.layout);
-            }
+            // Remove all widgets first
+            grid.removeAll();
+            
+            // Get the original DOM elements
+            const items = {
+                ticketStatusItem: document.getElementById('ticketStatusItem'),
+                responseTimeItem: document.getElementById('responseTimeItem'),
+                slaComplianceItem: document.getElementById('slaComplianceItem'),
+                agentPerformanceItem: document.getElementById('agentPerformanceItem')
+            };
+            
+            // Apply layout
+            const layout = config.layout || [
+                { x: 0, y: 0, w: 6, h: 4, id: 'ticketStatusItem' },
+                { x: 6, y: 0, w: 6, h: 4, id: 'responseTimeItem' },
+                { x: 0, y: 4, w: 6, h: 4, id: 'slaComplianceItem' },
+                { x: 6, y: 4, w: 6, h: 4, id: 'agentPerformanceItem' }
+            ];
+            
+            // Add widgets using the original DOM elements
+            layout.forEach(itemConfig => {
+                const element = items[itemConfig.id];
+                if (element) {
+                    grid.addWidget(element, itemConfig);
+                }
+            });
             
             // Load charts with saved types
             loadCharts(config.chartTypes);
         })
         .catch(error => {
             console.error('Error loading dashboard config:', error);
-            // Load charts with default configuration if error
             loadCharts();
         });
 
@@ -597,6 +619,14 @@ document.addEventListener('DOMContentLoaded', function() {
     window.resetLayout = function() {
         // First remove all widgets
         grid.removeAll();
+        
+        // Get the original DOM elements
+        const items = {
+            ticketStatusItem: document.getElementById('ticketStatusItem'),
+            responseTimeItem: document.getElementById('responseTimeItem'),
+            slaComplianceItem: document.getElementById('slaComplianceItem'),
+            agentPerformanceItem: document.getElementById('agentPerformanceItem')
+        };
         
         // Default layout
         const defaultLayout = [
@@ -606,11 +636,11 @@ document.addEventListener('DOMContentLoaded', function() {
             { x: 6, y: 4, w: 6, h: 4, id: 'agentPerformanceItem' }
         ];
 
-        // Add widgets back in default positions
-        defaultLayout.forEach(layout => {
-            const element = document.getElementById(layout.id);
+        // Add widgets using the original DOM elements
+        defaultLayout.forEach(itemConfig => {
+            const element = items[itemConfig.id];
             if (element) {
-                grid.addWidget(element, { ...layout });
+                grid.addWidget(element, itemConfig);
             }
         });
 

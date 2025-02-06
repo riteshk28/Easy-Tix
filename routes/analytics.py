@@ -291,14 +291,25 @@ def get_dashboard_config():
         ).first()
         
         if not dashboard:
+            # Return default layout if no saved configuration
             return jsonify({
-                'layout': None,
-                'chartTypes': None
+                'layout': [
+                    { 'x': 0, 'y': 0, 'w': 6, 'h': 4, 'id': 'ticketStatusItem' },
+                    { 'x': 6, 'y': 0, 'w': 6, 'h': 4, 'id': 'responseTimeItem' },
+                    { 'x': 0, 'y': 4, 'w': 6, 'h': 4, 'id': 'slaComplianceItem' },
+                    { 'x': 6, 'y': 4, 'w': 6, 'h': 4, 'id': 'agentPerformanceItem' }
+                ],
+                'chartTypes': {
+                    'ticketStatus': 'pie',
+                    'responseTime': 'line',
+                    'slaCompliance': 'line',
+                    'agentPerformance': 'bar'
+                }
             })
             
         return jsonify({
             'layout': dashboard.layout_config,
-            'chartTypes': dashboard.chart_config.get('chartTypes', {})
+            'chartTypes': dashboard.chart_config.get('chartTypes', {}) if dashboard.chart_config else {}
         })
     except Exception as e:
         current_app.logger.error(f"Error getting dashboard config: {str(e)}")
