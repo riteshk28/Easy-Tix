@@ -368,14 +368,22 @@
     color: #6c757d;
 }
 
-/* Add to your existing CSS */
+/* Grid and Chart Styles */
 .grid-stack {
     background: transparent;
-    min-height: 500px;
+}
+
+.grid-stack-item {
+    min-height: 350px;
 }
 
 .grid-stack-item-content {
-    padding: 5px;
+    inset: 5px;
+}
+
+.card-body canvas {
+    width: 100% !important;
+    height: 300px !important;
 }
 
 .handle {
@@ -395,12 +403,4 @@
     position: relative;
     height: 300px !important;
     width: 100% !important;
-}
-
-.grid-stack > .grid-stack-item {
-    min-height: 350px;
-}
-
-.grid-stack-item-content {
-    inset: 5px;
 } 

@@ -192,7 +192,7 @@
 
 {% block analytics_content %}
 <!-- Summary Metrics -->
-<div class="row g-3 mb-3">
+<div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="card h-100 border-0 shadow-sm">
             <div class="card-body">
@@ -229,49 +229,49 @@
 
 <!-- Charts Grid -->
 <div class="grid-stack">
-    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="0" gs-y="0">
+    <div class="grid-stack-item" gs-w="6" gs-h="4">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Tickets by Status</h5>
                 </div>
-                <div class="card-body chart-container">
+                <div class="card-body">
                     <canvas id="ticketStatusChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
-    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="0">
+    <div class="grid-stack-item" gs-w="6" gs-h="4">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Response Times</h5>
                 </div>
-                <div class="card-body chart-container">
+                <div class="card-body">
                     <canvas id="responseTimeChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
-    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="0" gs-y="4">
+    <div class="grid-stack-item" gs-w="6" gs-h="4">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">SLA Compliance</h5>
                 </div>
-                <div class="card-body chart-container">
+                <div class="card-body">
                     <canvas id="slaComplianceChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
-    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="4">
+    <div class="grid-stack-item" gs-w="6" gs-h="4">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Agent Performance</h5>
                 </div>
-                <div class="card-body chart-container">
+                <div class="card-body">
                     <canvas id="agentPerformanceChart"></canvas>
                 </div>
             </div>
@@ -283,44 +283,84 @@
 {% block scripts %}
 {{ super() }}
 <script>
-let currentDays = 30;
-let charts = {};
+// Initialize chart instances object
+const charts = {};
 let grid;
-
-// Professional color palette
-const chartColors = {
-    primary: ['#2c7be5', '#1a68d1', '#1657af', '#12478d', '#0d356b'],
-    accent: ['#00d97e', '#39f', '#6e84a3', '#fd7e14', '#e63757'],
-    background: ['#f9fbfd', '#f6f9fc', '#edf2f9', '#e3ebf6', '#d2ddec']
-};
+let currentDays = 30;
 
 async function loadCharts() {
     try {
-        const config = JSON.parse(localStorage.getItem('dashboard-config')) || {};
-        
         // Load data
         const ticketStatus = await fetchData('tickets_by_status');
         const responseTimes = await fetchData('response_times');
         const slaCompliance = await fetchData('sla_compliance');
         const agentPerformance = await fetchData('agent_performance');
-        
-        // Create/update charts with saved configurations
-        const contexts = {
-            ticketStatus: document.getElementById('ticketStatusChart').getContext('2d'),
-            responseTimes: document.getElementById('responseTimeChart').getContext('2d'),
-            slaCompliance: document.getElementById('slaComplianceChart').getContext('2d'),
-            agentPerformance: document.getElementById('agentPerformanceChart').getContext('2d')
-        };
+        const summaryMetrics = await fetchData('summary');
 
-        if (charts.ticketStatus) charts.ticketStatus.destroy();
-        if (charts.responseTimes) charts.responseTimes.destroy();
-        if (charts.slaCompliance) charts.slaCompliance.destroy();
-        if (charts.agentPerformance) charts.agentPerformance.destroy();
+        // Update summary metrics
+        updateSummaryMetrics(summaryMetrics);
 
-        charts.ticketStatus = createChart(config.chartTypes?.ticketStatus || 'pie', ticketStatus, contexts.ticketStatus);
-        charts.responseTimes = createChart(config.chartTypes?.responseTimes || 'line', responseTimes, contexts.responseTimes);
-        charts.slaCompliance = createChart(config.chartTypes?.slaCompliance || 'line', slaCompliance, contexts.slaCompliance);
-        charts.agentPerformance = createChart(config.chartTypes?.agentPerformance || 'bar', agentPerformance, contexts.agentPerformance);
+        // Destroy existing charts if they exist
+        Object.values(charts).forEach(chart => {
+            if (chart) chart.destroy();
+        });
+
+        // Create new charts
+        charts.ticketStatus = new Chart(document.getElementById('ticketStatusChart'), {
+            type: 'pie',
+            data: ticketStatus,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        charts.responseTimes = new Chart(document.getElementById('responseTimeChart'), {
+            type: 'line',
+            data: responseTimes,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        charts.slaCompliance = new Chart(document.getElementById('slaComplianceChart'), {
+            type: 'line',
+            data: slaCompliance,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        charts.agentPerformance = new Chart(document.getElementById('agentPerformanceChart'), {
+            type: 'bar',
+            data: agentPerformance,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
     } catch (error) {
         console.error('Error loading charts:', error);
     }
@@ -328,115 +368,19 @@ async function loadCharts() {
 
 async function fetchData(reportType) {
     const response = await fetch(`/analytics/data/${reportType}?days=${currentDays}`);
-    return await response.json();
+    if (!response.ok) throw new Error('Failed to fetch data');
+    return response.json();
 }
 
-async function updateTimeRange(days) {
+function updateTimeRange(days) {
     currentDays = days;
-    // Update the button text
-    const timeRangeBtn = document.getElementById('timeRangeBtn');
-    timeRangeBtn.textContent = `Last ${days} Days`;
-    
-    // Update charts
-    Object.values(charts).forEach(chart => chart.destroy());
-    await loadCharts();
+    document.getElementById('timeRangeBtn').textContent = `Last ${days} Days`;
+    loadCharts();
 }
 
-// Initialize Litepicker when DOM is loaded
+// Initialize GridStack
 document.addEventListener('DOMContentLoaded', function() {
-    const picker = new Litepicker({
-        element: document.getElementById('dateRange'),
-        singleMode: false,
-        numberOfMonths: 2,
-        numberOfColumns: 2,
-        startDate: new Date(),
-        endDate: new Date(),
-        format: 'YYYY-MM-DD',
-        showTooltip: true,
-        tooltipText: {
-            one: 'day',
-            other: 'days'
-        },
-        plugins: ['ranges'],
-        ranges: {
-            'Today': [new Date(), new Date()],
-            'Yesterday': [new Date(new Date().setDate(new Date().getDate() - 1)), new Date(new Date().setDate(new Date().getDate() - 1))],
-            'Last 7 Days': [new Date(new Date().setDate(new Date().getDate() - 6)), new Date()],
-            'Last 30 Days': [new Date(new Date().setDate(new Date().getDate() - 29)), new Date()],
-            'This Month': [new Date(new Date().setDate(1)), new Date()],
-            'Last Month': [
-                new Date(new Date().setMonth(new Date().getMonth() - 1, 1)),
-                new Date(new Date().setMonth(new Date().getMonth(), 0))
-            ]
-        },
-        setup: (picker) => {
-            picker.on('selected', (date1, date2) => {
-                document.getElementById('start_date').value = date1.format('YYYY-MM-DD');
-                document.getElementById('end_date').value = date2.format('YYYY-MM-DD');
-            });
-        }
-    });
-
-    // Add hidden inputs for form submission
-    const form = document.getElementById('exportForm');
-    const startDateInput = document.createElement('input');
-    startDateInput.type = 'hidden';
-    startDateInput.id = 'start_date';
-    startDateInput.name = 'start_date';
-    const endDateInput = document.createElement('input');
-    endDateInput.type = 'hidden';
-    endDateInput.id = 'end_date';
-    endDateInput.name = 'end_date';
-    form.appendChild(startDateInput);
-    form.appendChild(endDateInput);
-
-    // Clear dates button handler
-    document.getElementById('clearDates').addEventListener('click', () => {
-        picker.clearSelection();
-        document.getElementById('start_date').value = '';
-        document.getElementById('end_date').value = '';
-    });
-
-    // Load charts
-    loadCharts();
-
-    // Initialize select all checkboxes
-    document.querySelectorAll('.select-all').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const container = this.closest('.mb-3');
-            const options = container.querySelectorAll(this.id.includes('Status') ? '.status-option' : '.priority-option');
-            options.forEach(option => option.checked = this.checked);
-        });
-    });
-
-    // Initialize option checkboxes
-    ['status', 'priority'].forEach(type => {
-        const container = document.querySelector(`.${type}-options`);
-        const options = container.querySelectorAll(`.${type}-option`);
-        const selectAll = document.querySelector(`#selectAll${type.charAt(0).toUpperCase() + type.slice(1)}`);
-        
-        options.forEach(option => {
-            option.addEventListener('change', function() {
-                const allChecked = Array.from(options).every(opt => opt.checked);
-                const someChecked = Array.from(options).some(opt => opt.checked);
-                selectAll.checked = allChecked;
-                selectAll.indeterminate = someChecked && !allChecked;
-            });
-        });
-    });
-
-    // Select all by default
-    document.querySelectorAll('.select-all').forEach(checkbox => {
-        checkbox.click();
-    });
-
-    // Set initial text when page loads
-    const timeRangeBtn = document.getElementById('timeRangeBtn');
-    timeRangeBtn.textContent = `Last ${currentDays} Days`;
-
-    // Initialize GridStack with fixed settings
     grid = GridStack.init({
-        float: false,
         cellHeight: 100,
         margin: 10,
         minWidth: 300,
@@ -444,10 +388,11 @@ document.addEventListener('DOMContentLoaded', function() {
         draggable: {
             handle: '.handle'
         },
-        resizable: {
-            handles: 'e,se,s,sw,w'
-        }
+        float: false
     });
+
+    // Initial chart load
+    loadCharts();
 
     // Save layout
     window.saveDashboard = function() {
@@ -456,203 +401,43 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('Layout saved successfully');
     };
 
-    // Reset layout function
+    // Reset layout
     window.resetLayout = function() {
         const defaultLayout = [
-            { x: 0, y: 0, w: 6, h: 4, id: 'ticketStatus' },
-            { x: 6, y: 0, w: 6, h: 4, id: 'responseTimes' },
-            { x: 0, y: 4, w: 6, h: 4, id: 'slaCompliance' },
-            { x: 6, y: 4, w: 6, h: 4, id: 'agentPerformance' }
+            { x: 0, y: 0, w: 6, h: 4 },
+            { x: 6, y: 0, w: 6, h: 4 },
+            { x: 0, y: 4, w: 6, h: 4 },
+            { x: 6, y: 4, w: 6, h: 4 }
         ];
-        
-        grid.batchUpdate();
+
         grid.removeAll();
-        defaultLayout.forEach(item => {
-            const el = document.querySelector(`#${item.id}Chart`).closest('.grid-stack-item');
-            grid.addWidget(el, item);
-        });
-        grid.commit();
+        grid.load(defaultLayout);
         
-        // Reload charts
-        Object.values(charts).forEach(chart => chart.destroy());
+        // Reload charts after layout reset
         loadCharts();
     };
 
-    // Load saved layout or use default
+    // Load saved layout if exists
     const savedLayout = localStorage.getItem('dashboard-layout');
     if (savedLayout) {
         grid.load(JSON.parse(savedLayout));
     }
 
-    // Add resize event handler to redraw charts
-    grid.on('resizestop', function(event, element) {
-        const chartId = element.querySelector('canvas').id;
-        const chart = charts[chartId.replace('Chart', '')];
-        if (chart) {
-            chart.resize();
-        }
-    });
-});
-
-function exportFilteredData() {
-    const form = document.getElementById('exportForm');
-    const formData = new FormData(form);
-    const dateRange = document.getElementById('dateRange').value;
-    
-    if (!dateRange) {
-        alert('Please select a date range');
-        return;
-    }
-
-    const status = formData.getAll('status');
-    const priority = formData.getAll('priority');
-
-    if (status.length === 0) {
-        alert('Please select at least one status');
-        return;
-    }
-
-    // Build query string
-    const params = new URLSearchParams();
-    for (let [key, value] of formData.entries()) {
-        if (value) params.append(key, value);
-    }
-    
-    // Redirect to export URL with filters
-    window.location.href = `/analytics/raw-export?${params.toString()}`;
-}
-
-function updateSummaryMetrics(data) {
-    if (!data) return;
-    
-    document.getElementById('openTicketsCount').textContent = data.open_tickets || '0';
-    document.getElementById('avgResponseTime').textContent = data.avg_response_time ? `${data.avg_response_time}h` : '0h';
-    document.getElementById('slaComplianceRate').textContent = data.sla_compliance_rate ? `${data.sla_compliance_rate}%` : '0%';
-    document.getElementById('resolutionRate').textContent = data.resolution_rate ? `${data.resolution_rate}%` : '0%';
-}
-
-// Add after the existing script section
-const availableMetrics = {
-    tickets: {
-        open_tickets: { label: 'Open Tickets', type: 'number' },
-        avg_response: { label: 'Average Response Time', type: 'duration' },
-        sla_compliance: { label: 'SLA Compliance', type: 'percentage' },
-        resolution_rate: { label: 'Resolution Rate', type: 'percentage' }
-    },
-    charts: {
-        tickets_by_status: {
-            label: 'Tickets by Status',
-            types: ['pie', 'doughnut', 'bar'],
-            default: 'pie'
-        },
-        response_times: {
-            label: 'Response Times',
-            types: ['line', 'bar'],
-            default: 'line'
-        },
-        sla_compliance: {
-            label: 'SLA Compliance',
-            types: ['line', 'bar'],
-            default: 'line'
-        },
-        agent_performance: {
-            label: 'Agent Performance',
-            types: ['bar', 'horizontalBar'],
-            default: 'bar'
-        }
-    }
-};
-
-// Initialize draggable grid
-document.addEventListener('DOMContentLoaded', function() {
-    // Populate available metrics
-    const metricsContainer = document.getElementById('availableMetrics');
-    Object.entries(availableMetrics.tickets).forEach(([key, metric]) => {
-        const item = document.createElement('div');
-        item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
-        item.setAttribute('data-metric', key);
-        item.innerHTML = `
-            ${metric.label}
-            <button class="btn btn-sm btn-outline-primary add-metric">
-                <i class="fas fa-plus"></i>
-            </button>
-        `;
-        metricsContainer.appendChild(item);
-    });
-
-    // Populate chart customizations
-    const chartsContainer = document.getElementById('chartCustomizations');
-    Object.entries(availableMetrics.charts).forEach(([key, chart]) => {
-        const col = document.createElement('div');
-        col.className = 'col-md-6 mb-3';
-        col.innerHTML = `
-            <div class="card">
-                <div class="card-body">
-                    <h6>${chart.label}</h6>
-                    <select class="form-select chart-type" data-chart="${key}">
-                        ${chart.types.map(type => 
-                            `<option value="${type}" ${type === chart.default ? 'selected' : ''}>
-                                ${type.charAt(0).toUpperCase() + type.slice(1)}
-                            </option>`
-                        ).join('')}
-                    </select>
-                </div>
-            </div>
-        `;
-        chartsContainer.appendChild(col);
-    });
-
-    // Handle chart type changes
-    document.querySelectorAll('.chart-type').forEach(select => {
-        select.addEventListener('change', function() {
-            const chartId = this.dataset.chart;
-            const chartInstance = charts[chartId];
-            if (chartInstance) {
-                chartInstance.destroy();
-                charts[chartId] = new Chart(document.getElementById(`${chartId}Chart`), {
-                    type: this.value,
-                    data: chartInstance.data
-                });
-            }
+    // Handle chart resize
+    grid.on('resizestop', function() {
+        Object.values(charts).forEach(chart => {
+            if (chart) chart.resize();
         });
     });
 });
 
-// Update chart initialization to include responsive options
-function createChart(type, data, ctx) {
-    return new Chart(ctx, {
-        type: type,
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
-}
-
-function saveCustomizations() {
-    const chartTypes = {};
-    document.querySelectorAll('.chart-type').forEach(select => {
-        chartTypes[select.dataset.chart] = select.value;
-    });
-
-    const selectedMetrics = Array.from(document.getElementById('selectedMetrics').children)
-        .map(item => item.getAttribute('data-metric'));
-
-    const config = {
-        chartTypes: chartTypes,
-        selectedMetrics: selectedMetrics,
-        timeRange: document.getElementById('defaultTimeRange').value
-    };
-
-    localStorage.setItem('dashboard-config', JSON.stringify(config));
-    loadCharts(); // Reload charts with new configurations
-    $('#metricsModal').modal('hide');
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} position-fixed bottom-0 end-0 m-3`;
+    toast.style.zIndex = '1050';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
 }
 </script>
 {% endblock %} 
