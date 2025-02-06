@@ -256,11 +256,9 @@ def save_dashboard():
                 is_default=True
             )
             
-        dashboard.layout_config = data.get('layout')
         dashboard.chart_config = {
-            'metrics': data.get('metrics'),
-            'charts': data.get('charts'),
-            'filters': data.get('filters')
+            'metrics': data.get('metrics', []),
+            'chartTypes': data.get('chartTypes', {})
         }
         
         db.session.add(dashboard)
