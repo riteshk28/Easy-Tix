@@ -235,43 +235,46 @@
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Tickets by Status</h5>
                 </div>
-                <div class="card-body chart-container">
+                <div class="card-body">
                     <canvas id="ticketStatusChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
+    
     <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="0" id="responseTimeItem">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Response Times</h5>
                 </div>
-                <div class="card-body chart-container">
+                <div class="card-body">
                     <canvas id="responseTimeChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
+    
     <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="0" gs-y="4" id="slaComplianceItem">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">SLA Compliance</h5>
                 </div>
-                <div class="card-body chart-container">
+                <div class="card-body">
                     <canvas id="slaComplianceChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
+    
     <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="4" id="agentPerformanceItem">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Agent Performance</h5>
                 </div>
-                <div class="card-body chart-container">
+                <div class="card-body">
                     <canvas id="agentPerformanceChart"></canvas>
                 </div>
             </div>
@@ -470,12 +473,11 @@ async function fetchData(reportType) {
     try {
         const response = await fetch(`/analytics/data/${reportType}?days=${currentDays}`);
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error('Network response was not ok');
         }
-        const data = await response.json();
-        return data;
+        return await response.json();
     } catch (error) {
-        console.error(`Error fetching ${reportType}:`, error);
+        console.error(`Error fetching ${reportType} data:`, error);
         return null;
     }
 }
@@ -483,7 +485,16 @@ async function fetchData(reportType) {
 // Load charts with proper error handling
 async function loadCharts(savedChartTypes = null) {
     try {
-        // Load data
+        // Load summary data first
+        const summaryData = await fetchData('summary');
+        if (summaryData) {
+            document.getElementById('openTicketsCount').textContent = summaryData.open_tickets;
+            document.getElementById('avgResponseTime').textContent = `${summaryData.avg_response_time}h`;
+            document.getElementById('slaComplianceRate').textContent = `${summaryData.sla_compliance}%`;
+            // ... update other summary metrics
+        }
+
+        // Load chart data
         const [ticketStatus, responseTimes, slaCompliance, agentPerformance] = await Promise.all([
             fetchData('tickets_by_status'),
             fetchData('response_times'),
@@ -506,7 +517,7 @@ async function loadCharts(savedChartTypes = null) {
         const chartTypes = savedChartTypes || defaultChartTypes;
 
         // Create new charts
-        if (ticketStatus) {
+        if (ticketStatus && document.getElementById('ticketStatusChart')) {
             charts.ticketStatusChart = new Chart(document.getElementById('ticketStatusChart'), {
                 type: chartTypes.ticketStatus,
                 data: ticketStatus,
@@ -518,7 +529,7 @@ async function loadCharts(savedChartTypes = null) {
             });
         }
 
-        if (responseTimes) {
+        if (responseTimes && document.getElementById('responseTimeChart')) {
             charts.responseTimeChart = new Chart(document.getElementById('responseTimeChart'), {
                 type: chartTypes.responseTime,
                 data: responseTimes,
@@ -530,7 +541,7 @@ async function loadCharts(savedChartTypes = null) {
             });
         }
 
-        if (slaCompliance) {
+        if (slaCompliance && document.getElementById('slaComplianceChart')) {
             charts.slaComplianceChart = new Chart(document.getElementById('slaComplianceChart'), {
                 type: chartTypes.slaCompliance,
                 data: slaCompliance,
@@ -542,7 +553,7 @@ async function loadCharts(savedChartTypes = null) {
             });
         }
 
-        if (agentPerformance) {
+        if (agentPerformance && document.getElementById('agentPerformanceChart')) {
             charts.agentPerformanceChart = new Chart(document.getElementById('agentPerformanceChart'), {
                 type: chartTypes.agentPerformance,
                 data: agentPerformance,
