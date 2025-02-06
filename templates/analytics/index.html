@@ -235,19 +235,19 @@
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Tickets by Status</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body chart-container">
                     <canvas id="ticketStatusChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
-    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="0" id="responseTimesItem">
+    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="0" id="responseTimeItem">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Response Times</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body chart-container">
                     <canvas id="responseTimeChart"></canvas>
                 </div>
             </div>
@@ -259,7 +259,7 @@
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">SLA Compliance</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body chart-container">
                     <canvas id="slaComplianceChart"></canvas>
                 </div>
             </div>
@@ -271,7 +271,7 @@
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Agent Performance</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body chart-container">
                     <canvas id="agentPerformanceChart"></canvas>
                 </div>
             </div>
@@ -483,14 +483,8 @@ async function fetchData(reportType) {
 // Load charts with proper error handling
 async function loadCharts(savedChartTypes = null) {
     try {
-        // Load summary data
-        const summaryData = await fetchData('summary');
-        if (summaryData) {
-            updateSummaryMetrics(summaryData);
-        }
-
-        // Load chart data
-        const chartData = await Promise.all([
+        // Load data
+        const [ticketStatus, responseTimes, slaCompliance, agentPerformance] = await Promise.all([
             fetchData('tickets_by_status'),
             fetchData('response_times'),
             fetchData('sla_compliance'),
@@ -509,57 +503,56 @@ async function loadCharts(savedChartTypes = null) {
             agentPerformance: 'bar'
         };
 
-        // Use saved chart types or defaults
         const chartTypes = savedChartTypes || defaultChartTypes;
 
-        // Update select elements to match current chart types
-        Object.entries(chartTypes).forEach(([chartId, type]) => {
-            const select = document.querySelector(`#chartCustomizations select[data-chart-id="${chartId}"]`);
-            if (select) {
-                select.value = type;
-            }
-        });
+        // Create new charts
+        if (ticketStatus) {
+            charts.ticketStatusChart = new Chart(document.getElementById('ticketStatusChart'), {
+                type: chartTypes.ticketStatus,
+                data: ticketStatus,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
 
-        // Create charts with current types
-        if (chartData[0]) charts.ticketStatusChart = new Chart(document.getElementById('ticketStatusChart'), {
-            type: chartTypes.ticketStatus,
-            data: chartData[0],
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
+        if (responseTimes) {
+            charts.responseTimeChart = new Chart(document.getElementById('responseTimeChart'), {
+                type: chartTypes.responseTime,
+                data: responseTimes,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
 
-        if (chartData[1]) charts.responseTimeChart = new Chart(document.getElementById('responseTimeChart'), {
-            type: chartTypes.responseTime,
-            data: chartData[1],
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
+        if (slaCompliance) {
+            charts.slaComplianceChart = new Chart(document.getElementById('slaComplianceChart'), {
+                type: chartTypes.slaCompliance,
+                data: slaCompliance,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
 
-        if (chartData[2]) charts.slaComplianceChart = new Chart(document.getElementById('slaComplianceChart'), {
-            type: chartTypes.slaCompliance,
-            data: chartData[2],
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
-
-        if (chartData[3]) charts.agentPerformanceChart = new Chart(document.getElementById('agentPerformanceChart'), {
-            type: chartTypes.agentPerformance,
-            data: chartData[3],
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
+        if (agentPerformance) {
+            charts.agentPerformanceChart = new Chart(document.getElementById('agentPerformanceChart'), {
+                type: chartTypes.agentPerformance,
+                data: agentPerformance,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
     } catch (error) {
         console.error('Error loading charts:', error);
     }
@@ -577,33 +570,19 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         float: false,
         column: 12,
-        removable: true,
-        removeTimeout: 100,
-        acceptWidgets: true
+        disableOneColumnMode: true,
+        staticGrid: false
     });
 
     // Load saved configuration and initialize charts
     fetch('/analytics/dashboard-config')
         .then(response => response.json())
         .then(config => {
-            // Remove any existing widgets first
-            grid.removeAll();
-            
-            // Apply saved layout if exists, otherwise use default
-            const layout = config.layout || [
-                { x: 0, y: 0, w: 6, h: 4, id: 'ticketStatusItem' },
-                { x: 6, y: 0, w: 6, h: 4, id: 'responseTimesItem' },
-                { x: 0, y: 4, w: 6, h: 4, id: 'slaComplianceItem' },
-                { x: 6, y: 4, w: 6, h: 4, id: 'agentPerformanceItem' }
-            ];
-            
-            // Add widgets with proper IDs
-            layout.forEach(item => {
-                const element = document.getElementById(item.id);
-                if (element) {
-                    grid.addWidget(element, item);
-                }
-            });
+            // Apply saved layout if exists
+            if (config.layout) {
+                grid.removeAll();
+                grid.load(config.layout);
+            }
             
             // Load charts with saved types
             loadCharts(config.chartTypes);
@@ -622,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Default layout
         const defaultLayout = [
             { x: 0, y: 0, w: 6, h: 4, id: 'ticketStatusItem' },
-            { x: 6, y: 0, w: 6, h: 4, id: 'responseTimesItem' },
+            { x: 6, y: 0, w: 6, h: 4, id: 'responseTimeItem' },
             { x: 0, y: 4, w: 6, h: 4, id: 'slaComplianceItem' },
             { x: 6, y: 4, w: 6, h: 4, id: 'agentPerformanceItem' }
         ];

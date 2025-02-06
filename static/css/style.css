@@ -370,12 +370,12 @@
 
 /* Grid and Chart Styles */
 .grid-stack {
+    min-height: 800px;
     background: transparent;
-    min-height: 600px;
 }
 
 .grid-stack-item {
-    min-height: 300px;
+    min-height: 350px;
 }
 
 .grid-stack-item-content {
@@ -392,8 +392,7 @@
 }
 
 .card-body canvas {
-    width: 100% !important;
-    height: 300px !important;
+    max-height: 100%;
 }
 
 .handle {
@@ -411,6 +410,6 @@
 
 .chart-container {
     position: relative;
-    height: 300px !important;
+    height: 100% !important;
     width: 100% !important;
 } 
