@@ -1,9 +1,6 @@
 [{
-  "table_name": "dashboard",
-  "columns": "id (integer), tenant_id (integer), name (character varying), description (text), layout_config (jsonb), created_by_id (integer), created_at (timestamp without time zone), updated_at (timestamp without time zone), is_default (boolean)"
-}, {
-  "table_name": "dashboard_report",
-  "columns": "id (integer), dashboard_id (integer), report_id (integer), position_config (jsonb), created_at (timestamp without time zone)"
+  "table_name": "dashboards",
+  "columns": "id (integer), tenant_id (integer), name (character varying), description (text), is_default (boolean), created_by_id (integer), created_at (timestamp without time zone), updated_at (timestamp without time zone), layout_config (jsonb)"
 }, {
   "table_name": "email_config",
   "columns": "id (integer), tenant_id (integer), email_address (character varying), imap_server (character varying), imap_port (integer), imap_username (character varying), imap_password (character varying), postmark_api_key (character varying), enabled (boolean), created_at (timestamp without time zone), last_check (timestamp without time zone)"
@@ -21,7 +18,7 @@
   "columns": "id (integer), tenant_id (integer), plan (character varying), amount (double precision), status (character varying), payment_id (character varying), created_at (timestamp without time zone), completed_at (timestamp without time zone)"
 }, {
   "table_name": "tenant",
-  "columns": "id (integer), name (character varying), subscription_plan (character varying), created_at (timestamp without time zone), portal_key (character varying), email_domain (character varying), support_email (character varying), support_alias (character varying), cloudmailin_address (character varying), webhook_url (character varying), webhook_events (jsonb), subscription_starts_at (timestamp without time zone), subscription_ends_at (timestamp without time zone), trial_ends_at (timestamp without time zone), auto_renew (boolean), subscription_status (character varying)"
+  "columns": "id (integer), name (character varying), subscription_plan (character varying), created_at (timestamp without time zone), portal_key (character varying), email_domain (character varying), support_email (character varying), support_alias (character varying), cloudmailin_address (character varying), webhook_url (character varying), webhook_events (jsonb), subscription_starts_at (timestamp without time zone), subscription_ends_at (timestamp without time zone), trial_ends_at (timestamp without time zone), auto_renew (boolean), subscription_status (character varying), metabase_url (character varying), metabase_secret_key (character varying), metabase_dashboard_ids (jsonb)"
 }, {
   "table_name": "ticket",
   "columns": "id (integer), ticket_number (character varying), title (character varying), description (text), status (character varying), priority (character varying), created_at (timestamp without time zone), updated_at (timestamp without time zone), created_by_id (integer), assigned_to_id (integer), tenant_id (integer), contact_name (character varying), contact_email (character varying), source (character varying), first_response_at (timestamp without time zone), resolved_at (timestamp without time zone), sla_response_due_at (timestamp without time zone), sla_resolution_due_at (timestamp without time zone), sla_response_met (boolean), sla_resolution_met (boolean)"

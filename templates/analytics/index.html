@@ -156,34 +156,62 @@
 <!-- Additional Metrics -->
 <div class="row">
     <div class="col-md-3">
-        <div class="card bg-primary text-white">
+        <div class="card h-100 border-0 shadow-sm">
             <div class="card-body">
-                <h6 class="card-title">Open Tickets</h6>
-                <h2 id="openTicketsCount">-</h2>
+                <div class="d-flex align-items-center mb-2">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-ticket-alt fa-2x text-primary"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="card-title text-muted mb-0">Open Tickets</h6>
+                        <h2 class="mb-0" id="openTicketsCount">-</h2>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card bg-success text-white">
+        <div class="card h-100 border-0 shadow-sm">
             <div class="card-body">
-                <h6 class="card-title">Avg Response Time</h6>
-                <h2 id="avgResponseTime">-</h2>
+                <div class="d-flex align-items-center mb-2">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-clock fa-2x text-info"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="card-title text-muted mb-0">Avg Response Time</h6>
+                        <h2 class="mb-0" id="avgResponseTime">-</h2>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card bg-warning text-white">
+        <div class="card h-100 border-0 shadow-sm">
             <div class="card-body">
-                <h6 class="card-title">SLA Compliance</h6>
-                <h2 id="slaComplianceRate">-</h2>
+                <div class="d-flex align-items-center mb-2">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-chart-line fa-2x text-success"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="card-title text-muted mb-0">SLA Compliance</h6>
+                        <h2 class="mb-0" id="slaComplianceRate">-</h2>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card bg-info text-white">
+        <div class="card h-100 border-0 shadow-sm">
             <div class="card-body">
-                <h6 class="card-title">Resolution Rate</h6>
-                <h2 id="resolutionRate">-</h2>
+                <div class="d-flex align-items-center mb-2">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-check-circle fa-2x text-warning"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="card-title text-muted mb-0">Resolution Rate</h6>
+                        <h2 class="mb-0" id="resolutionRate">-</h2>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -196,6 +224,13 @@
 let currentDays = 30;
 let charts = {};
 
+// Professional color palette
+const chartColors = {
+    primary: ['#2c7be5', '#1a68d1', '#1657af', '#12478d', '#0d356b'],
+    accent: ['#00d97e', '#39f', '#6e84a3', '#fd7e14', '#e63757'],
+    background: ['#f9fbfd', '#f6f9fc', '#edf2f9', '#e3ebf6', '#d2ddec']
+};
+
 async function loadCharts() {
     // Load all charts
     const ticketStatus = await fetchData('tickets_by_status');
@@ -203,10 +238,20 @@ async function loadCharts() {
     const slaCompliance = await fetchData('sla_compliance');
     const agentPerformance = await fetchData('agent_performance');
     
+    // Load summary metrics
+    const summaryMetrics = await fetchData('summary');
+    updateSummaryMetrics(summaryMetrics);
+    
     // Tickets by Status (Pie Chart)
     charts.ticketStatus = new Chart(document.getElementById('ticketStatusChart'), {
         type: 'pie',
-        data: ticketStatus,
+        data: {
+            ...ticketStatus,
+            datasets: [{
+                ...ticketStatus.datasets[0],
+                backgroundColor: chartColors.primary
+            }]
+        },
         options: {
             responsive: true,
             plugins: {
@@ -220,7 +265,14 @@ async function loadCharts() {
     // Response Times (Line Chart)
     charts.responseTimes = new Chart(document.getElementById('responseTimeChart'), {
         type: 'line',
-        data: responseTimes,
+        data: {
+            ...responseTimes,
+            datasets: [{
+                ...responseTimes.datasets[0],
+                borderColor: chartColors.primary[0],
+                backgroundColor: 'rgba(44, 123, 229, 0.1)'
+            }]
+        },
         options: {
             responsive: true,
             scales: {
@@ -396,6 +448,13 @@ function exportFilteredData() {
     
     // Redirect to export URL with filters
     window.location.href = `/analytics/raw-export?${params.toString()}`;
+}
+
+function updateSummaryMetrics(data) {
+    document.getElementById('openTicketsCount').textContent = data.open_tickets;
+    document.getElementById('avgResponseTime').textContent = `${data.avg_response_time}h`;
+    document.getElementById('slaComplianceRate').textContent = `${data.sla_compliance_rate}%`;
+    document.getElementById('resolutionRate').textContent = `${data.resolution_rate}%`;
 }
 </script>
 {% endblock %} 
