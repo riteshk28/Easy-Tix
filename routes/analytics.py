@@ -134,14 +134,14 @@ def export_data():
 @login_required
 def export_raw_data():
     """Export raw ticket data with filters"""
-    # Get filter parameters
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-    status = request.args.getlist('status')
-    priority = request.args.getlist('priority')
-    assigned_to = request.args.getlist('assigned_to')
-    
     try:
+        # Get filter parameters
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        status = request.args.getlist('status')
+        priority = request.args.getlist('priority')
+        assigned_to = request.args.getlist('assigned_to')
+        
         # Get filtered data
         tickets = AnalyticsService.get_filtered_tickets(
             tenant_id=current_user.tenant_id,
@@ -152,9 +152,12 @@ def export_raw_data():
             assigned_to=assigned_to
         )
         
-        # Create CSV file
+        # Create CSV file in memory
         output = BytesIO()
-        writer = csv.writer(output)
+        
+        # Create a string buffer for CSV writing
+        string_buffer = StringIO()
+        writer = csv.writer(string_buffer)
         
         # Write headers
         writer.writerow([
@@ -191,14 +194,28 @@ def export_raw_data():
                 'Yes' if ticket.sla_resolution_met else 'No'
             ])
         
+        # Get the string value and encode it
+        csv_data = string_buffer.getvalue().encode('utf-8-sig')  # utf-8-sig for Excel compatibility
+        
+        # Write to bytes buffer
+        output.write(csv_data)
+        
         # Prepare response
         output.seek(0)
+        
+        # Generate filename with date range
+        if start_date and end_date:
+            filename = f'tickets_{start_date}_to_{end_date}.csv'
+        else:
+            filename = f'tickets_export_{datetime.utcnow().strftime("%Y%m%d")}.csv'
+        
         return send_file(
             output,
             mimetype='text/csv',
             as_attachment=True,
-            download_name=f'tickets_export_{datetime.utcnow().strftime("%Y%m%d")}.csv'
+            download_name=filename
         )
+        
     except Exception as e:
         current_app.logger.error(f"Export error: {str(e)}")
         return jsonify({'error': str(e)}), 400
