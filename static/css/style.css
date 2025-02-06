@@ -366,4 +366,27 @@
 .activity-content {
     font-size: 0.85rem;
     color: #6c757d;
+}
+
+/* Add to your existing CSS */
+.grid-stack {
+    background: transparent;
+    min-height: 500px;
+}
+
+.grid-stack-item-content {
+    padding: 5px;
+}
+
+.handle {
+    cursor: move;
+}
+
+.card {
+    height: 100%;
+    margin: 0;
+}
+
+.g-3 {
+    --bs-gutter-y: 1rem;
 } 

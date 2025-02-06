@@ -191,49 +191,48 @@
 {% endblock %}
 
 {% block analytics_content %}
-<div class="dashboard-grid" id="dashboardGrid">
-    <!-- Metrics Cards -->
-    <div class="row mb-4" id="metricsRow">
-        <div class="col-md-3">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title text-muted mb-0">Open Tickets</h6>
-                    <h2 class="mb-0" id="openTicketsCount">-</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title text-muted mb-0">Avg Response Time</h6>
-                    <h2 class="mb-0" id="avgResponseTime">-</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title text-muted mb-0">SLA Compliance</h6>
-                    <h2 class="mb-0" id="slaComplianceRate">-</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title text-muted mb-0">Resolution Rate</h6>
-                    <h2 class="mb-0" id="resolutionRate">-</h2>
-                </div>
+<!-- Summary Metrics -->
+<div class="row g-3 mb-3">
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title text-muted mb-0">Open Tickets</h6>
+                <h2 class="mb-0" id="openTicketsCount">-</h2>
             </div>
         </div>
     </div>
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title text-muted mb-0">Avg Response Time</h6>
+                <h2 class="mb-0" id="avgResponseTime">-</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title text-muted mb-0">SLA Compliance</h6>
+                <h2 class="mb-0" id="slaComplianceRate">-</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title text-muted mb-0">Resolution Rate</h6>
+                <h2 class="mb-0" id="resolutionRate">-</h2>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <!-- Charts Grid -->
-    <div class="row" id="chartsGrid">
-        <!-- Tickets by Status -->
-        <div class="col-md-6">
+<!-- Charts Grid -->
+<div class="grid-stack">
+    <div class="grid-stack-item" gs-w="6" gs-h="4">
+        <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0">
+                <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Tickets by Status</h5>
                 </div>
                 <div class="card-body">
@@ -241,11 +240,11 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Response Times -->
-        <div class="col-md-6">
+    </div>
+    <div class="grid-stack-item" gs-w="6" gs-h="4">
+        <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0">
+                <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Response Times</h5>
                 </div>
                 <div class="card-body">
@@ -254,12 +253,10 @@
             </div>
         </div>
     </div>
-
-    <div class="row" id="chartsGrid">
-        <!-- SLA Compliance -->
-        <div class="col-md-6">
+    <div class="grid-stack-item" gs-w="6" gs-h="4">
+        <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0">
+                <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">SLA Compliance</h5>
                 </div>
                 <div class="card-body">
@@ -267,11 +264,11 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Agent Performance -->
-        <div class="col-md-6">
+    </div>
+    <div class="grid-stack-item" gs-w="6" gs-h="4">
+        <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0">
+                <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Agent Performance</h5>
                 </div>
                 <div class="card-body">
@@ -288,6 +285,7 @@
 <script>
 let currentDays = 30;
 let charts = {};
+let grid;
 
 // Professional color palette
 const chartColors = {
@@ -440,6 +438,52 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set initial text when page loads
     const timeRangeBtn = document.getElementById('timeRangeBtn');
     timeRangeBtn.textContent = `Last ${currentDays} Days`;
+
+    // Initialize GridStack
+    grid = GridStack.init({
+        float: true,
+        cellHeight: '70px',
+        margin: '10px',
+        animate: true,
+        draggable: {
+            handle: '.handle'
+        }
+    });
+
+    // Save layout
+    window.saveDashboard = function() {
+        const layout = grid.save();
+        localStorage.setItem('dashboard-layout', JSON.stringify(layout));
+        showToast('Layout saved successfully');
+    };
+
+    // Reset layout
+    window.resetLayout = function() {
+        const defaultLayout = [
+            { x: 0, y: 0, w: 6, h: 4 },  // Tickets by Status
+            { x: 6, y: 0, w: 6, h: 4 },  // Response Times
+            { x: 0, y: 4, w: 6, h: 4 },  // SLA Compliance
+            { x: 6, y: 4, w: 6, h: 4 }   // Agent Performance
+        ];
+        grid.removeAll();
+        grid.load(defaultLayout);
+        loadCharts();  // Reload charts after resetting layout
+    };
+
+    // Load saved layout or use default
+    const savedLayout = localStorage.getItem('dashboard-layout');
+    if (savedLayout) {
+        grid.load(JSON.parse(savedLayout));
+    }
+
+    // Add resize event handler to redraw charts
+    grid.on('resizestop', function(event, element) {
+        const chartId = element.querySelector('canvas').id;
+        const chart = charts[chartId.replace('Chart', '')];
+        if (chart) {
+            chart.resize();
+        }
+    });
 });
 
 function exportFilteredData() {
@@ -513,16 +557,6 @@ const availableMetrics = {
 
 // Initialize draggable grid
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize grid
-    const grid = new Muuri('.dashboard-grid', {
-        dragEnabled: true,
-        dragHandle: '.card-header',
-        dragContainer: document.body,
-        dragAutoScroll: {
-            targets: [window]
-        }
-    });
-
     // Populate available metrics
     const metricsContainer = document.getElementById('availableMetrics');
     Object.entries(availableMetrics.tickets).forEach(([key, metric]) => {
@@ -559,43 +593,6 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         chartsContainer.appendChild(col);
     });
-
-    // Save dashboard layout
-    window.saveDashboard = async function() {
-        const layout = grid.getLayout();
-        const chartTypes = {};
-        document.querySelectorAll('.chart-type').forEach(select => {
-            chartTypes[select.dataset.chart] = select.value;
-        });
-
-        const config = {
-            layout: layout.map(item => ({
-                id: item.getElement().getAttribute('data-id'),
-                position: item.getPosition()
-            })),
-            chartTypes: chartTypes,
-            selectedMetrics: Array.from(document.getElementById('selectedMetrics').children)
-                .map(item => item.getAttribute('data-metric'))
-        };
-
-        try {
-            const response = await fetch('/analytics/save-dashboard', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify(config)
-            });
-            
-            if (!response.ok) throw new Error('Failed to save dashboard');
-            
-            showToast('Dashboard layout saved successfully');
-        } catch (error) {
-            console.error('Error saving dashboard:', error);
-            showToast('Error saving dashboard', 'error');
-        }
-    };
 
     // Handle chart type changes
     document.querySelectorAll('.chart-type').forEach(select => {
