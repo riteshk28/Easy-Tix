@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify, abort
 from flask_login import login_required, current_user
 from models import db, User, Tenant, SubscriptionPayment, SLAConfig, Ticket
 from werkzeug.security import generate_password_hash
@@ -481,3 +481,23 @@ def recalculate_sla():
         current_app.logger.error(f"Error in recalculate_sla: {str(e)}")
     
     return redirect(url_for('admin.index')) 
+
+@admin.route('/settings/metabase', methods=['POST'])
+@login_required
+def update_metabase_settings():
+    """Update Metabase settings"""
+    if not current_user.role == 'admin':
+        abort(403)
+        
+    try:
+        tenant = current_user.tenant
+        tenant.metabase_url = request.form.get('metabase_url')
+        tenant.metabase_secret_key = request.form.get('metabase_secret_key')
+        tenant.metabase_dashboard_ids = request.form.get('dashboard_ids')
+        db.session.commit()
+        flash('Metabase settings updated successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating Metabase settings: {str(e)}', 'error')
+    
+    return redirect(url_for('admin.settings')) 

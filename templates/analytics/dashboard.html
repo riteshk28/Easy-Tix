@@ -1,0 +1,57 @@
+{% extends "analytics/base_analytics.html" %}
+
+{% block analytics_content %}
+<div class="row">
+    <div class="col">
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% else %}
+        <div class="grid-stack"></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+const grid = GridStack.init({
+    column: 12,
+    row: 20,
+    cellHeight: 50,
+    staticGrid: true
+});
+
+// Load dashboard layout
+const layout = {{ dashboard.layout_config|tojson }};
+grid.load(layout);
+
+// Load report data and create charts
+async function loadReports() {
+    for (const widget of layout) {
+        const reportId = widget.reportId;
+        try {
+            const response = await fetch(`/analytics/reports/${reportId}/data`);
+            const data = await response.json();
+            
+            const container = document.querySelector(`[gs-id="${widget.id}"] .grid-stack-item-content`);
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            
+            new Chart(canvas, {
+                type: widget.type || 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        } catch (error) {
+            console.error('Error loading report:', error);
+        }
+    }
+}
+
+loadReports();
+</script>
+{% endblock %} 

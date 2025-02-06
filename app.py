@@ -47,6 +47,7 @@ def create_app(config_class=Config):
     from routes.public import public
     from routes.landing import landing
     from routes.webhook import webhook
+    from routes.analytics import analytics
 
     # Exempt routes from CSRF protection
     csrf.exempt(webhook)  # External webhooks (email, payments)
@@ -63,6 +64,7 @@ def create_app(config_class=Config):
     app.register_blueprint(superadmin, url_prefix='/superadmin')
     app.register_blueprint(public, url_prefix='/public')
     app.register_blueprint(webhook)
+    app.register_blueprint(analytics, url_prefix='/analytics')
 
     def retry_on_connection_error(max_retries=3, delay=1):
         def decorator(f):

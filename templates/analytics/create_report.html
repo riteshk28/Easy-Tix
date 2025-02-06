@@ -1,0 +1,77 @@
+{% extends "analytics/base_analytics.html" %}
+
+{% block analytics_header %}
+<div class="d-flex justify-content-between align-items-center">
+    <h2>Create Report</h2>
+</div>
+{% endblock %}
+
+{% block analytics_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form id="reportForm">
+                    <div class="mb-3">
+                        <label class="form-label">Report Name</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Report Type</label>
+                        <select class="form-select" name="type" required>
+                            <option value="tickets_by_status">Tickets by Status</option>
+                            <option value="response_times">Response Times</option>
+                            <option value="sla_compliance">SLA Compliance</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Chart Type</label>
+                        <select class="form-select" name="chart_type" required>
+                            <option value="bar">Bar Chart</option>
+                            <option value="line">Line Chart</option>
+                            <option value="pie">Pie Chart</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Create Report</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.getElementById('reportForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = {
+        name: formData.get('name'),
+        type: formData.get('type'),
+        config: {
+            chart_type: formData.get('chart_type')
+        }
+    };
+    
+    try {
+        const response = await fetch("{{ url_for('analytics.create_report') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            window.location.href = "{{ url_for('analytics.index') }}";
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+});
+</script>
+{% endblock %} 
