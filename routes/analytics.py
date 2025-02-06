@@ -16,7 +16,7 @@ def index():
 
 @analytics.route('/data/<report_type>')
 @login_required
-def get_report_data(report_type):
+def get_analytics_data(report_type):
     """Get data for specific report type"""
     days = request.args.get('days', 30, type=int)
     
@@ -38,7 +38,7 @@ def get_report_data(report_type):
 def create_report():
     if request.method == 'POST':
         data = request.json
-        report = MetabaseService.create_report(
+        report = AnalyticsService.create_report(
             tenant_id=current_user.tenant_id,
             name=data['name'],
             report_type=data['type'],
@@ -46,7 +46,7 @@ def create_report():
         )
         return jsonify({'id': report.id})
         
-    metrics = MetabaseService.get_available_metrics()
+    metrics = AnalyticsService.get_available_metrics()
     return render_template('analytics/create_report.html', metrics=metrics)
 
 @analytics.route('/dashboards/new', methods=['GET', 'POST'])
@@ -54,7 +54,7 @@ def create_report():
 def create_dashboard():
     if request.method == 'POST':
         data = request.json
-        dashboard = MetabaseService.create_dashboard(
+        dashboard = AnalyticsService.create_dashboard(
             tenant_id=current_user.tenant_id,
             name=data['name'],
             layout=data.get('layout')
@@ -69,7 +69,7 @@ def create_dashboard():
 def get_report_data(report_id):
     """Get data for a specific report"""
     try:
-        data = MetabaseService.get_report_data(report_id, current_user.tenant_id)
+        data = AnalyticsService.get_report_data(report_id, current_user.tenant_id)
         return jsonify(data)
     except Exception as e:
         current_app.logger.error(f"Error getting report data: {str(e)}")
