@@ -229,7 +229,7 @@
 
 <!-- Charts Grid -->
 <div class="grid-stack">
-    <div class="grid-stack-item" gs-w="6" gs-h="4">
+    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="0" gs-y="0" id="ticketStatusItem">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
@@ -241,7 +241,7 @@
             </div>
         </div>
     </div>
-    <div class="grid-stack-item" gs-w="6" gs-h="4">
+    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="0" id="responseTimesItem">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
@@ -253,7 +253,7 @@
             </div>
         </div>
     </div>
-    <div class="grid-stack-item" gs-w="6" gs-h="4">
+    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="0" gs-y="4" id="slaComplianceItem">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
@@ -265,7 +265,7 @@
             </div>
         </div>
     </div>
-    <div class="grid-stack-item" gs-w="6" gs-h="4">
+    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="4" id="agentPerformanceItem">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
@@ -283,40 +283,44 @@
 {% block scripts %}
 {{ super() }}
 <script>
-// Initialize chart instances object
 const charts = {};
 let grid;
 let currentDays = 30;
 
+async function updateSummaryMetrics(data) {
+    document.getElementById('openTicketsCount').textContent = data.open_tickets || '-';
+    document.getElementById('avgResponseTime').textContent = data.avg_response_time ? `${data.avg_response_time}h` : '-';
+    document.getElementById('slaComplianceRate').textContent = data.sla_compliance_rate ? `${data.sla_compliance_rate}%` : '-';
+    document.getElementById('resolutionRate').textContent = data.resolution_rate ? `${data.resolution_rate}%` : '-';
+}
+
 async function loadCharts() {
     try {
-        // Load data
-        const ticketStatus = await fetchData('tickets_by_status');
-        const responseTimes = await fetchData('response_times');
-        const slaCompliance = await fetchData('sla_compliance');
-        const agentPerformance = await fetchData('agent_performance');
-        const summaryMetrics = await fetchData('summary');
+        // First load summary metrics
+        const summaryData = await fetchData('summary');
+        updateSummaryMetrics(summaryData);
 
-        // Update summary metrics
-        updateSummaryMetrics(summaryMetrics);
+        // Then load chart data
+        const [ticketStatus, responseTimes, slaCompliance, agentPerformance] = await Promise.all([
+            fetchData('tickets_by_status'),
+            fetchData('response_times'),
+            fetchData('sla_compliance'),
+            fetchData('agent_performance')
+        ]);
 
-        // Destroy existing charts if they exist
-        Object.values(charts).forEach(chart => {
-            if (chart) chart.destroy();
-        });
+        // Clear existing charts
+        if (charts.ticketStatus) charts.ticketStatus.destroy();
+        if (charts.responseTimes) charts.responseTimes.destroy();
+        if (charts.slaCompliance) charts.slaCompliance.destroy();
+        if (charts.agentPerformance) charts.agentPerformance.destroy();
 
-        // Create new charts
+        // Initialize new charts
         charts.ticketStatus = new Chart(document.getElementById('ticketStatusChart'), {
             type: 'pie',
             data: ticketStatus,
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
+                maintainAspectRatio: false
             }
         });
 
@@ -325,12 +329,7 @@ async function loadCharts() {
             data: responseTimes,
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
+                maintainAspectRatio: false
             }
         });
 
@@ -339,12 +338,7 @@ async function loadCharts() {
             data: slaCompliance,
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
+                maintainAspectRatio: false
             }
         });
 
@@ -353,12 +347,7 @@ async function loadCharts() {
             data: agentPerformance,
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
+                maintainAspectRatio: false
             }
         });
     } catch (error) {
@@ -366,62 +355,48 @@ async function loadCharts() {
     }
 }
 
-async function fetchData(reportType) {
-    const response = await fetch(`/analytics/data/${reportType}?days=${currentDays}`);
-    if (!response.ok) throw new Error('Failed to fetch data');
-    return response.json();
-}
-
-function updateTimeRange(days) {
-    currentDays = days;
-    document.getElementById('timeRangeBtn').textContent = `Last ${days} Days`;
-    loadCharts();
-}
-
 // Initialize GridStack
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize grid
     grid = GridStack.init({
         cellHeight: 100,
         margin: 10,
-        minWidth: 300,
         animate: true,
         draggable: {
             handle: '.handle'
         },
-        float: false
+        float: false,
+        disableOneColumnMode: true,
+        column: 12
     });
 
-    // Initial chart load
+    // Load charts
     loadCharts();
-
-    // Save layout
-    window.saveDashboard = function() {
-        const layout = grid.save();
-        localStorage.setItem('dashboard-layout', JSON.stringify(layout));
-        showToast('Layout saved successfully');
-    };
 
     // Reset layout
     window.resetLayout = function() {
+        const items = grid.engine.nodes;
         const defaultLayout = [
-            { x: 0, y: 0, w: 6, h: 4 },
-            { x: 6, y: 0, w: 6, h: 4 },
-            { x: 0, y: 4, w: 6, h: 4 },
-            { x: 6, y: 4, w: 6, h: 4 }
+            { x: 0, y: 0, w: 6, h: 4, id: 'ticketStatus' },
+            { x: 6, y: 0, w: 6, h: 4, id: 'responseTimes' },
+            { x: 0, y: 4, w: 6, h: 4, id: 'slaCompliance' },
+            { x: 6, y: 4, w: 6, h: 4, id: 'agentPerformance' }
         ];
 
-        grid.removeAll();
-        grid.load(defaultLayout);
-        
-        // Reload charts after layout reset
+        items.forEach((item, index) => {
+            const layout = defaultLayout[index];
+            grid.update(item.el, { x: layout.x, y: layout.y });
+        });
+
         loadCharts();
     };
 
-    // Load saved layout if exists
-    const savedLayout = localStorage.getItem('dashboard-layout');
-    if (savedLayout) {
-        grid.load(JSON.parse(savedLayout));
-    }
+    // Handle time range updates
+    window.updateTimeRange = function(days) {
+        currentDays = days;
+        document.getElementById('timeRangeBtn').textContent = `Last ${days} Days`;
+        loadCharts();
+    };
 
     // Handle chart resize
     grid.on('resizestop', function() {
@@ -431,13 +406,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function showToast(message, type = 'success') {
-    const toast = document.createElement('div');
-    toast.className = `alert alert-${type} position-fixed bottom-0 end-0 m-3`;
-    toast.style.zIndex = '1050';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+async function fetchData(reportType) {
+    const response = await fetch(`/analytics/data/${reportType}?days=${currentDays}`);
+    if (!response.ok) throw new Error(`Failed to fetch ${reportType} data`);
+    return response.json();
 }
 </script>
 {% endblock %} 

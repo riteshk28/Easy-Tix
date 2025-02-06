@@ -371,14 +371,24 @@
 /* Grid and Chart Styles */
 .grid-stack {
     background: transparent;
+    min-height: 600px;
 }
 
 .grid-stack-item {
-    min-height: 350px;
+    min-height: 300px;
 }
 
 .grid-stack-item-content {
     inset: 5px;
+}
+
+.grid-stack-item .card-body {
+    height: calc(100% - 50px); /* Adjust for header height */
+}
+
+.grid-stack-item canvas {
+    width: 100% !important;
+    height: 100% !important;
 }
 
 .card-body canvas {
