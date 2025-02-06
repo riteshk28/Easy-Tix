@@ -576,17 +576,34 @@ document.addEventListener('DOMContentLoaded', function() {
             handle: '.handle'
         },
         float: false,
-        column: 12
+        column: 12,
+        removable: true,
+        removeTimeout: 100,
+        acceptWidgets: true
     });
 
     // Load saved configuration and initialize charts
     fetch('/analytics/dashboard-config')
         .then(response => response.json())
         .then(config => {
-            // Apply saved layout if exists
-            if (config.layout) {
-                grid.load(config.layout);
-            }
+            // Remove any existing widgets first
+            grid.removeAll();
+            
+            // Apply saved layout if exists, otherwise use default
+            const layout = config.layout || [
+                { x: 0, y: 0, w: 6, h: 4, id: 'ticketStatusItem' },
+                { x: 6, y: 0, w: 6, h: 4, id: 'responseTimesItem' },
+                { x: 0, y: 4, w: 6, h: 4, id: 'slaComplianceItem' },
+                { x: 6, y: 4, w: 6, h: 4, id: 'agentPerformanceItem' }
+            ];
+            
+            // Add widgets with proper IDs
+            layout.forEach(item => {
+                const element = document.getElementById(item.id);
+                if (element) {
+                    grid.addWidget(element, item);
+                }
+            });
             
             // Load charts with saved types
             loadCharts(config.chartTypes);
@@ -602,7 +619,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // First remove all widgets
         grid.removeAll();
         
-        // Default layout with IDs matching the HTML
+        // Default layout
         const defaultLayout = [
             { x: 0, y: 0, w: 6, h: 4, id: 'ticketStatusItem' },
             { x: 6, y: 0, w: 6, h: 4, id: 'responseTimesItem' },
@@ -614,7 +631,7 @@ document.addEventListener('DOMContentLoaded', function() {
         defaultLayout.forEach(layout => {
             const element = document.getElementById(layout.id);
             if (element) {
-                grid.addWidget(element, layout);
+                grid.addWidget(element, { ...layout });
             }
         });
 
@@ -638,17 +655,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 chartTypes: defaultChartTypes
             })
         })
-        .then(() => {
-            // Reload charts with default types
-            loadCharts(defaultChartTypes);
-            
-            // Update select elements to show default chart types
-            Object.entries(defaultChartTypes).forEach(([chartId, type]) => {
-                const select = document.querySelector(`#chartCustomizations select[data-chart-id="${chartId}"]`);
-                if (select) {
-                    select.value = type;
-                }
-            });
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Reload charts with default types
+                loadCharts(defaultChartTypes);
+                
+                // Show success message
+                const toast = document.createElement('div');
+                toast.className = 'alert alert-success position-fixed bottom-0 end-0 m-3';
+                toast.style.zIndex = '1050';
+                toast.textContent = 'Dashboard reset successfully';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            }
+        })
+        .catch(error => {
+            console.error('Error resetting layout:', error);
         });
     };
 
