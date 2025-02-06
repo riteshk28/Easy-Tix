@@ -389,4 +389,18 @@
 
 .g-3 {
     --bs-gutter-y: 1rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px !important;
+    width: 100% !important;
+}
+
+.grid-stack > .grid-stack-item {
+    min-height: 350px;
+}
+
+.grid-stack-item-content {
+    inset: 5px;
 } 

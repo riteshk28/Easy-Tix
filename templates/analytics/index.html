@@ -229,49 +229,49 @@
 
 <!-- Charts Grid -->
 <div class="grid-stack">
-    <div class="grid-stack-item" gs-w="6" gs-h="4">
+    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="0" gs-y="0">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Tickets by Status</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body chart-container">
                     <canvas id="ticketStatusChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
-    <div class="grid-stack-item" gs-w="6" gs-h="4">
+    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="0">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Response Times</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body chart-container">
                     <canvas id="responseTimeChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
-    <div class="grid-stack-item" gs-w="6" gs-h="4">
+    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="0" gs-y="4">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">SLA Compliance</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body chart-container">
                     <canvas id="slaComplianceChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
-    <div class="grid-stack-item" gs-w="6" gs-h="4">
+    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="4">
         <div class="grid-stack-item-content">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle">
                     <h5 class="mb-0">Agent Performance</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body chart-container">
                     <canvas id="agentPerformanceChart"></canvas>
                 </div>
             </div>
@@ -296,38 +296,33 @@ const chartColors = {
 
 async function loadCharts() {
     try {
-        // Load summary metrics first
-        const summaryMetrics = await fetchData('summary');
-        updateSummaryMetrics(summaryMetrics);
+        const config = JSON.parse(localStorage.getItem('dashboard-config')) || {};
         
-        // Then load chart data
+        // Load data
         const ticketStatus = await fetchData('tickets_by_status');
         const responseTimes = await fetchData('response_times');
         const slaCompliance = await fetchData('sla_compliance');
         const agentPerformance = await fetchData('agent_performance');
         
-        // Initialize charts
-        charts.ticketStatus = new Chart(document.getElementById('ticketStatusChart'), {
-            type: 'pie',
-            data: ticketStatus
-        });
+        // Create/update charts with saved configurations
+        const contexts = {
+            ticketStatus: document.getElementById('ticketStatusChart').getContext('2d'),
+            responseTimes: document.getElementById('responseTimeChart').getContext('2d'),
+            slaCompliance: document.getElementById('slaComplianceChart').getContext('2d'),
+            agentPerformance: document.getElementById('agentPerformanceChart').getContext('2d')
+        };
 
-        charts.responseTimes = new Chart(document.getElementById('responseTimeChart'), {
-            type: 'line',
-            data: responseTimes
-        });
+        if (charts.ticketStatus) charts.ticketStatus.destroy();
+        if (charts.responseTimes) charts.responseTimes.destroy();
+        if (charts.slaCompliance) charts.slaCompliance.destroy();
+        if (charts.agentPerformance) charts.agentPerformance.destroy();
 
-        charts.slaCompliance = new Chart(document.getElementById('slaComplianceChart'), {
-            type: 'line',
-            data: slaCompliance
-        });
-
-        charts.agentPerformance = new Chart(document.getElementById('agentPerformanceChart'), {
-            type: 'bar',
-            data: agentPerformance
-        });
+        charts.ticketStatus = createChart(config.chartTypes?.ticketStatus || 'pie', ticketStatus, contexts.ticketStatus);
+        charts.responseTimes = createChart(config.chartTypes?.responseTimes || 'line', responseTimes, contexts.responseTimes);
+        charts.slaCompliance = createChart(config.chartTypes?.slaCompliance || 'line', slaCompliance, contexts.slaCompliance);
+        charts.agentPerformance = createChart(config.chartTypes?.agentPerformance || 'bar', agentPerformance, contexts.agentPerformance);
     } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error loading charts:', error);
     }
 }
 
@@ -439,14 +434,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const timeRangeBtn = document.getElementById('timeRangeBtn');
     timeRangeBtn.textContent = `Last ${currentDays} Days`;
 
-    // Initialize GridStack
+    // Initialize GridStack with fixed settings
     grid = GridStack.init({
-        float: true,
-        cellHeight: '70px',
-        margin: '10px',
+        float: false,
+        cellHeight: 100,
+        margin: 10,
+        minWidth: 300,
         animate: true,
         draggable: {
             handle: '.handle'
+        },
+        resizable: {
+            handles: 'e,se,s,sw,w'
         }
     });
 
@@ -457,17 +456,26 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('Layout saved successfully');
     };
 
-    // Reset layout
+    // Reset layout function
     window.resetLayout = function() {
         const defaultLayout = [
-            { x: 0, y: 0, w: 6, h: 4 },  // Tickets by Status
-            { x: 6, y: 0, w: 6, h: 4 },  // Response Times
-            { x: 0, y: 4, w: 6, h: 4 },  // SLA Compliance
-            { x: 6, y: 4, w: 6, h: 4 }   // Agent Performance
+            { x: 0, y: 0, w: 6, h: 4, id: 'ticketStatus' },
+            { x: 6, y: 0, w: 6, h: 4, id: 'responseTimes' },
+            { x: 0, y: 4, w: 6, h: 4, id: 'slaCompliance' },
+            { x: 6, y: 4, w: 6, h: 4, id: 'agentPerformance' }
         ];
+        
+        grid.batchUpdate();
         grid.removeAll();
-        grid.load(defaultLayout);
-        loadCharts();  // Reload charts after resetting layout
+        defaultLayout.forEach(item => {
+            const el = document.querySelector(`#${item.id}Chart`).closest('.grid-stack-item');
+            grid.addWidget(el, item);
+        });
+        grid.commit();
+        
+        // Reload charts
+        Object.values(charts).forEach(chart => chart.destroy());
+        loadCharts();
     };
 
     // Load saved layout or use default
@@ -609,5 +617,42 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Update chart initialization to include responsive options
+function createChart(type, data, ctx) {
+    return new Chart(ctx, {
+        type: type,
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function saveCustomizations() {
+    const chartTypes = {};
+    document.querySelectorAll('.chart-type').forEach(select => {
+        chartTypes[select.dataset.chart] = select.value;
+    });
+
+    const selectedMetrics = Array.from(document.getElementById('selectedMetrics').children)
+        .map(item => item.getAttribute('data-metric'));
+
+    const config = {
+        chartTypes: chartTypes,
+        selectedMetrics: selectedMetrics,
+        timeRange: document.getElementById('defaultTimeRange').value
+    };
+
+    localStorage.setItem('dashboard-config', JSON.stringify(config));
+    loadCharts(); // Reload charts with new configurations
+    $('#metricsModal').modal('hide');
+}
 </script>
 {% endblock %} 
