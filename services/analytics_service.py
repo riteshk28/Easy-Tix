@@ -71,7 +71,12 @@ class AnalyticsService:
         result = db.session.query(
             func.date(Ticket.created_at),
             func.count(Ticket.id).label('total'),
-            func.sum(case([(Ticket.sla_response_met == True, 1)], else_=0)).label('met')
+            func.sum(
+                case(
+                    (Ticket.sla_response_met.is_(True), 1),
+                    else_=0
+                )
+            ).label('met')
         ).filter(
             Ticket.tenant_id == tenant_id,
             Ticket.created_at >= start_date,
@@ -101,7 +106,12 @@ class AnalyticsService:
         result = db.session.query(
             User.email,
             func.count(Ticket.id).label('total_tickets'),
-            func.avg(case([(Ticket.sla_response_met == True, 1)], else_=0)).label('sla_rate')
+            func.avg(
+                case(
+                    (Ticket.sla_response_met.is_(True), 1),
+                    else_=0
+                )
+            ).label('sla_rate')
         ).join(
             Ticket, Ticket.assigned_to_id == User.id
         ).filter(
@@ -148,7 +158,12 @@ class AnalyticsService:
         # Overall SLA compliance
         sla_result = db.session.query(
             func.count(Ticket.id).label('total'),
-            func.sum(case([(Ticket.sla_response_met == True, 1)], else_=0)).label('met')
+            func.sum(
+                case(
+                    (Ticket.sla_response_met.is_(True), 1),
+                    else_=0
+                )
+            ).label('met')
         ).filter(
             Ticket.tenant_id == tenant_id,
             Ticket.created_at >= start_date,
@@ -160,7 +175,12 @@ class AnalyticsService:
         # Resolution rate
         resolution_result = db.session.query(
             func.count(Ticket.id).label('total'),
-            func.sum(case([(Ticket.status == 'resolved', 1)], else_=0)).label('resolved')
+            func.sum(
+                case(
+                    (Ticket.status == 'resolved', 1),
+                    else_=0
+                )
+            ).label('resolved')
         ).filter(
             Ticket.tenant_id == tenant_id,
             Ticket.created_at >= start_date
