@@ -154,7 +154,7 @@ class AnalyticsService:
                     'open_tickets': 0,
                     'avg_response_time': 0,
                     'sla_compliance': 0,
-                    'resolved_today': 0
+                    'resolution_rate': 0
                 }
             
             # Calculate open tickets
@@ -173,15 +173,16 @@ class AnalyticsService:
             sla_met_tickets = len([t for t in tickets if t.sla_response_met and t.sla_resolution_met])
             sla_compliance = round((sla_met_tickets / total_sla_tickets * 100) if total_sla_tickets > 0 else 0)
             
-            # Calculate resolved today
-            today_start = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
-            resolved_today = len([t for t in tickets if t.resolved_at and t.resolved_at >= today_start])
+            # Calculate resolution rate
+            total_tickets = len(tickets)
+            resolved_tickets = len([t for t in tickets if t.status == 'resolved'])
+            resolution_rate = round((resolved_tickets / total_tickets * 100) if total_tickets > 0 else 0)
             
             return {
                 'open_tickets': open_tickets,
                 'avg_response_time': avg_response_time,
                 'sla_compliance': sla_compliance,
-                'resolved_today': resolved_today
+                'resolution_rate': resolution_rate
             }
         except Exception as e:
             current_app.logger.error(f"Error getting summary metrics: {str(e)}")
