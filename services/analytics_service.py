@@ -134,66 +134,58 @@ class AnalyticsService:
             }]
         }
 
-    @staticmethod
-    def get_summary_metrics(tenant_id, days=30):
-        """Get summary metrics for dashboard"""
-        end_date = datetime.utcnow()
-        start_date = end_date - timedelta(days=days)
-        
-        # Open tickets count
-        open_tickets = db.session.query(func.count(Ticket.id)).filter(
-            Ticket.tenant_id == tenant_id,
-            Ticket.status == 'open'
-        ).scalar()
-        
-        # Average response time
-        avg_response = db.session.query(
-            func.avg(func.extract('epoch', Ticket.first_response_at - Ticket.created_at) / 3600)
-        ).filter(
-            Ticket.tenant_id == tenant_id,
-            Ticket.created_at >= start_date,
-            Ticket.first_response_at.isnot(None)
-        ).scalar()
-        
-        # Overall SLA compliance
-        sla_result = db.session.query(
-            func.count(Ticket.id).label('total'),
-            func.sum(
-                case(
-                    (Ticket.sla_response_met.is_(True), 1),
-                    else_=0
-                )
-            ).label('met')
-        ).filter(
-            Ticket.tenant_id == tenant_id,
-            Ticket.created_at >= start_date,
-            Ticket.sla_response_met.isnot(None)
-        ).first()
-        
-        sla_rate = (sla_result[1] / sla_result[0] * 100) if sla_result[0] > 0 else 0
-        
-        # Resolution rate
-        resolution_result = db.session.query(
-            func.count(Ticket.id).label('total'),
-            func.sum(
-                case(
-                    (Ticket.status == 'resolved', 1),
-                    else_=0
-                )
-            ).label('resolved')
-        ).filter(
-            Ticket.tenant_id == tenant_id,
-            Ticket.created_at >= start_date
-        ).first()
-        
-        resolution_rate = (resolution_result[1] / resolution_result[0] * 100) if resolution_result[0] > 0 else 0
-        
-        return {
-            'open_tickets': open_tickets,
-            'avg_response_time': round(avg_response, 2) if avg_response else 0,
-            'sla_compliance_rate': round(sla_rate, 2),
-            'resolution_rate': round(resolution_rate, 2)
-        }
+    @classmethod
+    def get_summary_metrics(cls, tenant_id, days=30):
+        """Get summary metrics for the dashboard"""
+        try:
+            # Calculate date range
+            end_date = datetime.utcnow()
+            start_date = end_date - timedelta(days=days)
+            
+            # Get tickets in date range
+            tickets = Ticket.query.filter(
+                Ticket.tenant_id == tenant_id,
+                Ticket.created_at >= start_date,
+                Ticket.created_at <= end_date
+            ).all()
+            
+            if not tickets:
+                return {
+                    'open_tickets': 0,
+                    'avg_response_time': 0,
+                    'sla_compliance': 0,
+                    'resolved_today': 0
+                }
+            
+            # Calculate open tickets
+            open_tickets = len([t for t in tickets if t.status == 'open'])
+            
+            # Calculate average response time (in hours)
+            response_times = []
+            for ticket in tickets:
+                if ticket.first_response_at:
+                    response_time = (ticket.first_response_at - ticket.created_at).total_seconds() / 3600
+                    response_times.append(response_time)
+            avg_response_time = round(sum(response_times) / len(response_times)) if response_times else 0
+            
+            # Calculate SLA compliance
+            total_sla_tickets = len([t for t in tickets if t.sla_response_due_at is not None])
+            sla_met_tickets = len([t for t in tickets if t.sla_response_met and t.sla_resolution_met])
+            sla_compliance = round((sla_met_tickets / total_sla_tickets * 100) if total_sla_tickets > 0 else 0)
+            
+            # Calculate resolved today
+            today_start = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            resolved_today = len([t for t in tickets if t.resolved_at and t.resolved_at >= today_start])
+            
+            return {
+                'open_tickets': open_tickets,
+                'avg_response_time': avg_response_time,
+                'sla_compliance': sla_compliance,
+                'resolved_today': resolved_today
+            }
+        except Exception as e:
+            current_app.logger.error(f"Error getting summary metrics: {str(e)}")
+            return None
 
     @staticmethod
     def get_filtered_tickets(tenant_id, start_date=None, end_date=None, status=None, priority=None, assigned_to=None):

@@ -9,7 +9,7 @@ from extensions import db
 
 analytics = Blueprint('analytics', __name__)
 
-@analytics.route('/')
+@analytics.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
     """Analytics landing page"""

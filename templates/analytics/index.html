@@ -488,10 +488,10 @@ async function loadCharts(savedChartTypes = null) {
         // Load summary data first
         const summaryData = await fetchData('summary');
         if (summaryData) {
-            document.getElementById('openTicketsCount').textContent = summaryData.open_tickets || '-';
-            document.getElementById('avgResponseTime').textContent = summaryData.avg_response_time ? `${summaryData.avg_response_time}h` : '-';
-            document.getElementById('slaComplianceRate').textContent = summaryData.sla_compliance ? `${summaryData.sla_compliance}%` : '-';
-            document.getElementById('resolvedToday').textContent = summaryData.resolved_today || '-';
+            document.getElementById('openTicketsCount').textContent = summaryData.open_tickets || '0';
+            document.getElementById('avgResponseTime').textContent = summaryData.avg_response_time ? `${summaryData.avg_response_time}h` : '0h';
+            document.getElementById('slaComplianceRate').textContent = summaryData.sla_compliance ? `${summaryData.sla_compliance}%` : '0%';
+            document.getElementById('resolutionRate').textContent = summaryData.resolution_rate ? `${summaryData.resolution_rate}%` : '0%';
         }
 
         // Load chart data
@@ -516,10 +516,10 @@ async function loadCharts(savedChartTypes = null) {
 
         const chartTypes = savedChartTypes || defaultChartTypes;
 
-        // Create new charts with null checks
+        // Create new charts with proper error handling
         if (ticketStatus && document.getElementById('ticketStatusChart')) {
             charts.ticketStatusChart = new Chart(document.getElementById('ticketStatusChart'), {
-                type: chartTypes.ticketStatus,
+                type: chartTypes.ticketStatus || 'pie',
                 data: ticketStatus,
                 options: {
                     responsive: true,
@@ -531,7 +531,7 @@ async function loadCharts(savedChartTypes = null) {
 
         if (responseTimes && document.getElementById('responseTimeChart')) {
             charts.responseTimeChart = new Chart(document.getElementById('responseTimeChart'), {
-                type: chartTypes.responseTime,
+                type: chartTypes.responseTime || 'line',
                 data: responseTimes,
                 options: {
                     responsive: true,
@@ -543,7 +543,7 @@ async function loadCharts(savedChartTypes = null) {
 
         if (slaCompliance && document.getElementById('slaComplianceChart')) {
             charts.slaComplianceChart = new Chart(document.getElementById('slaComplianceChart'), {
-                type: chartTypes.slaCompliance,
+                type: chartTypes.slaCompliance || 'line',
                 data: slaCompliance,
                 options: {
                     responsive: true,
@@ -555,7 +555,7 @@ async function loadCharts(savedChartTypes = null) {
 
         if (agentPerformance && document.getElementById('agentPerformanceChart')) {
             charts.agentPerformanceChart = new Chart(document.getElementById('agentPerformanceChart'), {
-                type: chartTypes.agentPerformance,
+                type: chartTypes.agentPerformance || 'bar',
                 data: agentPerformance,
                 options: {
                     responsive: true,
