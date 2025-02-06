@@ -1,26 +1,47 @@
 from flask import Blueprint, render_template, flash
 from flask_login import login_required, current_user
 from models import Ticket
-from services import AnalyticsService
 
 dashboard = Blueprint('dashboard', __name__)
 
 @dashboard.route('/')
 @login_required
 def index():
-    """Dashboard landing page"""
-    metrics = {
-        'open_tickets': AnalyticsService.get_open_tickets_count(current_user.tenant_id),
-        'resolved_today': AnalyticsService.get_resolved_today_count(current_user.tenant_id),
-        'sla_compliance': AnalyticsService.get_sla_compliance_rate(current_user.tenant_id),
-        'avg_response_time': AnalyticsService.get_avg_response_time(current_user.tenant_id)
-    }
+    tenant = current_user.tenant
     
-    recent_tickets = Ticket.query.filter_by(tenant_id=current_user.tenant_id)\
-        .order_by(Ticket.created_at.desc())\
-        .limit(5)\
-        .all()
+    # Check for subscription expiry
+    if tenant.handle_subscription_expiry():
+        flash('Your paid subscription has expired. Your account has been switched to the Free plan.')
+    
+    # Get ticket counts for different statuses
+    open_tickets = Ticket.query.filter_by(
+        tenant_id=current_user.tenant_id,
+        status='open'
+    ).count()
+    
+    in_progress_tickets = Ticket.query.filter_by(
+        tenant_id=current_user.tenant_id,
+        status='in_progress'
+    ).count()
+    
+    on_hold_tickets = Ticket.query.filter_by(
+        tenant_id=current_user.tenant_id,
+        status='on_hold'
+    ).count()
+    
+    closed_tickets = Ticket.query.filter_by(
+        tenant_id=current_user.tenant_id,
+        status='closed'
+    ).count()
+    
+    # Get recent tickets
+    recent_tickets = Ticket.query.filter_by(
+        tenant_id=current_user.tenant_id
+    ).order_by(Ticket.created_at.desc()).limit(5).all()
         
     return render_template('dashboard/index.html',
-                         metrics=metrics,
+                         open_tickets=open_tickets,
+                         in_progress_tickets=in_progress_tickets,
+                         on_hold_tickets=on_hold_tickets,
+                         closed_tickets=closed_tickets,
                          recent_tickets=recent_tickets) 
