@@ -1,8 +1,23 @@
 {% extends "analytics/base_analytics.html" %}
 
 {% block analytics_header %}
-<div class="d-flex justify-content-between align-items-center">
-    <h2>Analytics Dashboard</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>Analytics Dashboard</h2>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-columns"></i> Dashboard
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="saveDashboard()">Save Layout</a></li>
+                <li><a class="dropdown-item" href="#" onclick="resetLayout()">Reset Layout</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#metricsModal">
+                    Customize Metrics
+                </a></li>
+            </ul>
+        </div>
+    </div>
     <div class="btn-group">
         <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" id="timeRangeBtn">
             Last 30 Days
@@ -98,93 +113,170 @@
         </div>
     </div>
 </div>
+
+<!-- Add Metrics Customization Modal -->
+<div class="modal fade" id="metricsModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Customize Dashboard</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#metricsTab">Metrics</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#chartsTab">Charts</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#filtersTab">Filters</a>
+                    </li>
+                </ul>
+                
+                <div class="tab-content mt-3">
+                    <!-- Metrics Tab -->
+                    <div class="tab-pane fade show active" id="metricsTab">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Available Metrics</h6>
+                                <div class="list-group" id="availableMetrics">
+                                    <!-- Populated via JavaScript -->
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Selected Metrics</h6>
+                                <div class="list-group" id="selectedMetrics">
+                                    <!-- Populated via JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts Tab -->
+                    <div class="tab-pane fade" id="chartsTab">
+                        <div class="row" id="chartCustomizations">
+                            <!-- Populated via JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Filters Tab -->
+                    <div class="tab-pane fade" id="filtersTab">
+                        <div class="mb-3">
+                            <label class="form-label">Default Time Range</label>
+                            <select class="form-select" id="defaultTimeRange">
+                                <option value="7">Last 7 Days</option>
+                                <option value="30">Last 30 Days</option>
+                                <option value="90">Last 90 Days</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Filters</label>
+                            <div id="additionalFilters">
+                                <!-- Populated via JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveCustomizations()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block analytics_content %}
-<!-- Move metrics to top -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="card-title text-muted mb-0">Open Tickets</h6>
-                <h2 class="mb-0" id="openTicketsCount">-</h2>
+<div class="dashboard-grid" id="dashboardGrid">
+    <!-- Metrics Cards -->
+    <div class="row mb-4" id="metricsRow">
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-0">Open Tickets</h6>
+                    <h2 class="mb-0" id="openTicketsCount">-</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-0">Avg Response Time</h6>
+                    <h2 class="mb-0" id="avgResponseTime">-</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-0">SLA Compliance</h6>
+                    <h2 class="mb-0" id="slaComplianceRate">-</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-0">Resolution Rate</h6>
+                    <h2 class="mb-0" id="resolutionRate">-</h2>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="card-title text-muted mb-0">Avg Response Time</h6>
-                <h2 class="mb-0" id="avgResponseTime">-</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="card-title text-muted mb-0">SLA Compliance</h6>
-                <h2 class="mb-0" id="slaComplianceRate">-</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="card-title text-muted mb-0">Resolution Rate</h6>
-                <h2 class="mb-0" id="resolutionRate">-</h2>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Charts follow -->
-<div class="row mb-4">
-    <!-- Tickets by Status -->
-    <div class="col-md-6">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0">
-                <h5 class="mb-0">Tickets by Status</h5>
+    <!-- Charts Grid -->
+    <div class="row" id="chartsGrid">
+        <!-- Tickets by Status -->
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">Tickets by Status</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="ticketStatusChart"></canvas>
+                </div>
             </div>
-            <div class="card-body">
-                <canvas id="ticketStatusChart"></canvas>
+        </div>
+        
+        <!-- Response Times -->
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">Response Times</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="responseTimeChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
-    
-    <!-- Response Times -->
-    <div class="col-md-6">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0">
-                <h5 class="mb-0">Response Times</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="responseTimeChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="row mb-4">
-    <!-- SLA Compliance -->
-    <div class="col-md-6">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0">
-                <h5 class="mb-0">SLA Compliance</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="slaComplianceChart"></canvas>
+    <div class="row" id="chartsGrid">
+        <!-- SLA Compliance -->
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">SLA Compliance</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="slaComplianceChart"></canvas>
+                </div>
             </div>
         </div>
-    </div>
-    
-    <!-- Agent Performance -->
-    <div class="col-md-6">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0">
-                <h5 class="mb-0">Agent Performance</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="agentPerformanceChart"></canvas>
+        
+        <!-- Agent Performance -->
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">Agent Performance</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="agentPerformanceChart"></canvas>
+                </div>
             </div>
         </div>
     </div>

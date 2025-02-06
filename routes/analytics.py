@@ -1,12 +1,14 @@
 from flask import Blueprint, render_template, jsonify, current_app, request, send_file
 from flask_login import login_required, current_user
 from services.analytics_service import AnalyticsService
-from models import Dashboard, ReportConfig
+from models import Dashboard, ReportConfig, AnalyticsDashboard
 import csv
 from io import StringIO, BytesIO
 from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
 
 analytics = Blueprint('analytics', __name__)
+db = SQLAlchemy()
 
 @analytics.route('/')
 @login_required
@@ -226,4 +228,57 @@ def get_summary_data():
     """Get summary metrics data"""
     days = request.args.get('days', 30, type=int)
     data = AnalyticsService.get_summary_metrics(current_user.tenant_id, days)
-    return jsonify(data) 
+    return jsonify(data)
+
+@analytics.route('/save-dashboard', methods=['POST'])
+@login_required
+def save_dashboard():
+    try:
+        data = request.json
+        dashboard = AnalyticsDashboard.query.filter_by(
+            tenant_id=current_user.tenant_id,
+            user_id=current_user.id,
+            is_default=True
+        ).first()
+        
+        if not dashboard:
+            dashboard = AnalyticsDashboard(
+                tenant_id=current_user.tenant_id,
+                user_id=current_user.id,
+                name='Default Dashboard',
+                is_default=True
+            )
+            
+        dashboard.layout_config = data.get('layout')
+        dashboard.chart_config = {
+            'metrics': data.get('metrics'),
+            'charts': data.get('charts'),
+            'filters': data.get('filters')
+        }
+        
+        db.session.add(dashboard)
+        db.session.commit()
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        current_app.logger.error(f"Error saving dashboard: {str(e)}")
+        return jsonify({'error': str(e)}), 400
+
+@analytics.route('/dashboard-config')
+@login_required
+def get_dashboard_config():
+    dashboard = AnalyticsDashboard.query.filter_by(
+        tenant_id=current_user.tenant_id,
+        user_id=current_user.id,
+        is_default=True
+    ).first()
+    
+    if not dashboard:
+        return jsonify(get_default_config())
+        
+    return jsonify({
+        'layout': dashboard.layout_config,
+        'metrics': dashboard.chart_config.get('metrics'),
+        'charts': dashboard.chart_config.get('charts'),
+        'filters': dashboard.chart_config.get('filters')
+    }) 

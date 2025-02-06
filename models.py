@@ -457,3 +457,14 @@ class DashboardReport(db.Model):
     report_id = db.Column(db.Integer, db.ForeignKey('report_config.id'), nullable=False)
     position_config = db.Column(JSONB, nullable=False, default={})  # Stores position, size, etc.
     created_at = db.Column(db.DateTime, default=datetime.utcnow) 
+
+class AnalyticsDashboard(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey('tenant.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(255))
+    layout_config = db.Column(db.JSON)  # Stores chart positions, sizes, visibility
+    chart_config = db.Column(db.JSON)   # Stores chart types, colors, metrics
+    is_default = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow) 
