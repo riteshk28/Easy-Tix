@@ -488,10 +488,10 @@ async function loadCharts(savedChartTypes = null) {
         // Load summary data first
         const summaryData = await fetchData('summary');
         if (summaryData) {
-            document.getElementById('openTicketsCount').textContent = summaryData.open_tickets;
-            document.getElementById('avgResponseTime').textContent = `${summaryData.avg_response_time}h`;
-            document.getElementById('slaComplianceRate').textContent = `${summaryData.sla_compliance}%`;
-            // ... update other summary metrics
+            document.getElementById('openTicketsCount').textContent = summaryData.open_tickets || '-';
+            document.getElementById('avgResponseTime').textContent = summaryData.avg_response_time ? `${summaryData.avg_response_time}h` : '-';
+            document.getElementById('slaComplianceRate').textContent = summaryData.sla_compliance ? `${summaryData.sla_compliance}%` : '-';
+            document.getElementById('resolvedToday').textContent = summaryData.resolved_today || '-';
         }
 
         // Load chart data
@@ -516,7 +516,7 @@ async function loadCharts(savedChartTypes = null) {
 
         const chartTypes = savedChartTypes || defaultChartTypes;
 
-        // Create new charts
+        // Create new charts with null checks
         if (ticketStatus && document.getElementById('ticketStatusChart')) {
             charts.ticketStatusChart = new Chart(document.getElementById('ticketStatusChart'), {
                 type: chartTypes.ticketStatus,
