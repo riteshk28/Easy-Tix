@@ -40,9 +40,10 @@ document.addEventListener('DOMContentLoaded', function() {
         width: '100%'
     });
 
-    // Initialize date range picker
+    // Initialize date range picker to match Export functionality
     $('#metricDateRange').daterangepicker({
-        autoUpdateInput: false,
+        startDate: moment().subtract(29, 'days'),
+        endDate: moment(),
         ranges: {
             'Today': [moment(), moment()],
             'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
@@ -50,17 +51,29 @@ document.addEventListener('DOMContentLoaded', function() {
             'Last 30 Days': [moment().subtract(29, 'days'), moment()],
             'This Month': [moment().startOf('month'), moment().endOf('month')],
             'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
-        }
+        },
+        locale: {
+            format: 'MM/DD/YYYY'
+        },
+        opens: 'left',
+        drops: 'down',
+        showDropdowns: true,
+        autoUpdateInput: true
     });
 
-    // Handle date range selection
+    // Update the input value when date range is selected
     $('#metricDateRange').on('apply.daterangepicker', function(ev, picker) {
-        $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+        $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
     });
 
     $('#metricDateRange').on('cancel.daterangepicker', function(ev, picker) {
         $(this).val('');
     });
+
+    // Set initial date range value
+    const initialStartDate = moment().subtract(29, 'days');
+    const initialEndDate = moment();
+    $('#metricDateRange').val(initialStartDate.format('MM/DD/YYYY') + ' - ' + initialEndDate.format('MM/DD/YYYY'));
 
     // Initialize grid
     grid = GridStack.init({
