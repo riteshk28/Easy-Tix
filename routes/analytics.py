@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, jsonify, current_app, request, send_file
 from flask_login import login_required, current_user
 from services.analytics_service import AnalyticsService
-from models import Dashboard, ReportConfig, AnalyticsDashboard, Ticket, User, SLAPolicy, TicketComment
+from models import Dashboard, ReportConfig, AnalyticsDashboard, Ticket, User, TicketComment
 import csv
 from io import StringIO, BytesIO
 from datetime import datetime, timedelta
@@ -376,7 +376,7 @@ def response_time_trend():
     ).filter(
         Ticket.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date),
-        TicketComment.is_first_response == True
+        TicketComment.is_response == True  # Changed from is_first_response
     ).group_by(
         func.date(Ticket.created_at)
     ).order_by(
@@ -387,40 +387,31 @@ def response_time_trend():
         'labels': [rt.date.strftime('%Y-%m-%d') for rt in response_times],
         'datasets': [{
             'label': 'Average Response Time (hours)',
-            'data': [float(rt.avg_response_time.total_seconds() / 3600) for rt in response_times],
+            'data': [float(rt.avg_response_time.total_seconds() / 3600) if rt.avg_response_time else 0 for rt in response_times],
             'borderColor': '#4e73df',
             'fill': False
         }]
     })
 
-@analytics.route('/api/custom/sla-by-priority')
+@analytics.route('/api/custom/tickets-by-status')
 @login_required
-def sla_by_priority():
+def tickets_by_status():
     date_range = request.args.get('dateRange')
     start_date, end_date = parse_date_range(date_range)
     
-    # Calculate SLA compliance by priority
-    sla_stats = db.session.query(
-        Ticket.priority,
-        func.count(Ticket.id).label('total'),
-        func.sum(case([(Ticket.sla_breached == False, 1)], else_=0)).label('compliant')
-    ).filter(
+    tickets = Ticket.query.filter(
         Ticket.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date)
-    ).group_by(Ticket.priority).all()
-    
-    priorities = [stat.priority.capitalize() for stat in sla_stats]
-    compliance_rates = [
-        (stat.compliant / stat.total * 100) if stat.total > 0 else 0 
-        for stat in sla_stats
-    ]
+    ).with_entities(
+        Ticket.status,
+        func.count(Ticket.id)
+    ).group_by(Ticket.status).all()
     
     return jsonify({
-        'labels': priorities,
+        'labels': [t[0].capitalize() for t in tickets],
         'datasets': [{
-            'label': 'SLA Compliance Rate (%)',
-            'data': compliance_rates,
-            'backgroundColor': ['#4e73df', '#1cc88a', '#36b9cc']
+            'data': [t[1] for t in tickets],
+            'backgroundColor': ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e']
         }]
     })
 
@@ -434,8 +425,7 @@ def agent_performance():
     performance = db.session.query(
         User.name,
         func.count(Ticket.id).label('tickets_handled'),
-        func.avg(case([(Ticket.sla_breached == False, 1)], else_=0)).label('sla_compliance'),
-        func.avg(Ticket.resolution_time).label('avg_resolution_time')
+        func.avg(case([(Ticket.status == 'closed', 1)], else_=0)).label('resolution_rate')
     ).join(
         Ticket, User.id == Ticket.assigned_to
     ).filter(
@@ -450,8 +440,8 @@ def agent_performance():
             'data': [p.tickets_handled for p in performance],
             'backgroundColor': '#4e73df'
         }, {
-            'label': 'SLA Compliance Rate (%)',
-            'data': [float(p.sla_compliance * 100) for p in performance],
+            'label': 'Resolution Rate (%)',
+            'data': [float(p.resolution_rate * 100) if p.resolution_rate else 0 for p in performance],
             'backgroundColor': '#1cc88a'
         }]
     })
