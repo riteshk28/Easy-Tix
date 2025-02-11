@@ -446,6 +446,115 @@ def agent_performance():
         }]
     })
 
+@analytics.route('/api/custom/tickets-by-source')
+@login_required
+def tickets_by_source():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    tickets = Ticket.query.filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).with_entities(
+        Ticket.source,
+        func.count(Ticket.id)
+    ).group_by(Ticket.source).all()
+    
+    return jsonify({
+        'labels': [t[0].capitalize() for t in tickets],
+        'datasets': [{
+            'data': [t[1] for t in tickets],
+            'backgroundColor': ['#4e73df', '#1cc88a', '#36b9cc']
+        }]
+    })
+
+@analytics.route('/api/custom/resolution-time-by-priority')
+@login_required
+def resolution_time_by_priority():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    resolution_times = db.session.query(
+        Ticket.priority,
+        func.avg(Ticket.resolved_at - Ticket.created_at).label('avg_resolution_time')
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date),
+        Ticket.resolved_at.isnot(None)
+    ).group_by(Ticket.priority).all()
+    
+    return jsonify({
+        'labels': [rt.priority.capitalize() for rt in resolution_times],
+        'datasets': [{
+            'label': 'Average Resolution Time (hours)',
+            'data': [float(rt.avg_resolution_time.total_seconds() / 3600) if rt.avg_resolution_time else 0 
+                    for rt in resolution_times],
+            'backgroundColor': ['#4e73df', '#1cc88a', '#36b9cc']
+        }]
+    })
+
+@analytics.route('/api/custom/first-response-trend')
+@login_required
+def first_response_trend():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    response_times = db.session.query(
+        func.date(Ticket.created_at).label('date'),
+        func.avg(TicketComment.created_at - Ticket.created_at).label('avg_first_response')
+    ).join(
+        TicketComment,
+        Ticket.id == TicketComment.ticket_id
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date),
+        TicketComment.is_first_response == True
+    ).group_by(
+        func.date(Ticket.created_at)
+    ).order_by(
+        func.date(Ticket.created_at)
+    ).all()
+    
+    return jsonify({
+        'labels': [rt.date.strftime('%Y-%m-%d') for rt in response_times],
+        'datasets': [{
+            'label': 'First Response Time (hours)',
+            'data': [float(rt.avg_first_response.total_seconds() / 3600) if rt.avg_first_response else 0 
+                    for rt in response_times],
+            'borderColor': '#4e73df',
+            'fill': false
+        }]
+    })
+
+@analytics.route('/api/custom/open-tickets-age')
+@login_required
+def open_tickets_age():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    now = datetime.now()
+    tickets = db.session.query(
+        case(
+            (now - Ticket.created_at < timedelta(days=1), '<1 day'),
+            (now - Ticket.created_at < timedelta(days=7), '1-7 days'),
+            (now - Ticket.created_at < timedelta(days=30), '8-30 days'),
+            else_='>30 days'
+        ).label('age_group'),
+        func.count(Ticket.id).label('count')
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.status != 'closed',
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by('age_group').all()
+    
+    return jsonify({
+        'labels': [t.age_group for t in tickets],
+        'datasets': [{
+            'data': [t.count for t in tickets],
+            'backgroundColor': ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e']
+        }]
+    })
+
 def parse_date_range(date_range):
     """Parse date range string into start and end dates"""
     if not date_range:

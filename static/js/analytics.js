@@ -3,19 +3,48 @@ const charts = {};
 let grid;
 let currentDays = 30;
 
-// Add custom metric configurations
+// Define available metrics based on DB schema
 const customMetricConfigs = {
-    tickets_by_category: {
-        label: 'Tickets by Category',
+    tickets_by_source: {
+        label: 'Tickets by Source (Email/Web/API)',
         type: 'pie',
-        endpoint: '/analytics/api/custom/tickets-by-category'
+        endpoint: '/analytics/api/custom/tickets-by-source'
+    },
+    tickets_by_type: {
+        label: 'Tickets by Type (Bug/Feature/Support)',
+        type: 'pie',
+        endpoint: '/analytics/api/custom/tickets-by-type'
     },
     tickets_by_priority: {
-        label: 'Tickets by Priority',
+        label: 'Tickets by Priority (Low/Medium/High)',
         type: 'bar',
         endpoint: '/analytics/api/custom/tickets-by-priority'
     },
-    // Add other metric configurations...
+    tickets_by_department: {
+        label: 'Tickets by Department',
+        type: 'pie',
+        endpoint: '/analytics/api/custom/tickets-by-department'
+    },
+    resolution_time_by_priority: {
+        label: 'Resolution Time by Priority',
+        type: 'bar',
+        endpoint: '/analytics/api/custom/resolution-time-by-priority'
+    },
+    first_response_time_trend: {
+        label: 'First Response Time Trend',
+        type: 'line',
+        endpoint: '/analytics/api/custom/first-response-trend'
+    },
+    tickets_by_assignee: {
+        label: 'Tickets by Assignee',
+        type: 'bar',
+        endpoint: '/analytics/api/custom/tickets-by-assignee'
+    },
+    open_tickets_age: {
+        label: 'Age of Open Tickets',
+        type: 'bar',
+        endpoint: '/analytics/api/custom/open-tickets-age'
+    }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -38,8 +67,9 @@ document.addEventListener('DOMContentLoaded', function() {
         width: '100%'
     });
 
-    // Initialize date range picker (matching Export Raw Data style)
+    // Initialize date range picker (exactly like Export Raw Data)
     $('#metricDateRange').daterangepicker({
+        autoUpdateInput: false,
         ranges: {
             'Today': [moment(), moment()],
             'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
@@ -47,10 +77,15 @@ document.addEventListener('DOMContentLoaded', function() {
             'Last 30 Days': [moment().subtract(29, 'days'), moment()],
             'This Month': [moment().startOf('month'), moment().endOf('month')],
             'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
-        },
-        locale: {
-            format: 'YYYY-MM-DD'
         }
+    });
+
+    $('#metricDateRange').on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+    });
+
+    $('#metricDateRange').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
     });
 
     // Handle add metrics button click
