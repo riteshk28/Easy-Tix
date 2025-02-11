@@ -33,28 +33,23 @@ const customMetricConfigs = {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Keep existing initialization code
-    initializeExistingCharts();
-    
-    // Initialize grid (keep existing configuration)
+    // Initialize grid exactly like the default charts
     grid = GridStack.init({
         cellHeight: 100,
         minRow: 1,
         margin: 10,
         draggable: {
             handle: '.handle'
-        }
+        },
+        float: true
     });
 
-    // Initialize Select2 for metric selection
-    $('#customMetricSelect').select2({
-        placeholder: 'Search and select metrics...',
-        width: '100%'
-    });
-
-    // Initialize date range picker (exactly like Export Raw Data)
+    // Initialize date range picker exactly like Export Raw Data
     $('#metricDateRange').daterangepicker({
         autoUpdateInput: false,
+        locale: {
+            format: 'YYYY-MM-DD'
+        },
         ranges: {
             'Today': [moment(), moment()],
             'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
@@ -65,17 +60,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    $('#metricDateRange').on('apply.daterangepicker', function(ev, picker) {
-        $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
-        // Update any existing custom charts with new date range
-        updateExistingCharts($(this).val());
-    });
-
-    $('#metricDateRange').on('cancel.daterangepicker', function(ev, picker) {
-        $(this).val('');
-    });
-
-    // Handle add metrics button click
     $('#addMetricsBtn').on('click', async function() {
         const selectedMetrics = $('#customMetricSelect').val();
         const dateRange = $('#metricDateRange').val();
@@ -90,100 +74,61 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        try {
-            // Add each selected metric as a new chart
-            for (const metricId of selectedMetrics) {
-                await addCustomMetric(metricId, dateRange);
-            }
+        // Add each selected metric as a new chart
+        for (const metricId of selectedMetrics) {
+            const config = customMetricConfigs[metricId];
+            const widgetHtml = `
+                <div class="grid-stack-item-content">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-transparent d-flex justify-content-between align-items-center handle">
+                            <h6 class="mb-0">${config.label}</h6>
+                            <div>
+                                <button class="btn btn-sm" onclick="removeWidget(this)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="${metricId}Chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
 
-            // Close modal and reset selections
-            $('#metricsModal').modal('hide');
-            $('#customMetricSelect').val(null).trigger('change');
-            $('#metricDateRange').val('');
-        } catch (error) {
-            console.error('Error adding metrics:', error);
-            alert('Error adding metrics. Please try again.');
+            // Add widget to grid
+            const node = grid.addWidget({
+                w: 6,
+                h: 4,
+                content: widgetHtml
+            });
+
+            // Initialize chart
+            await initializeCustomChart(metricId, config, dateRange);
         }
+
+        // Close modal and reset form
+        $('#metricsModal').modal('hide');
+        $('#customMetricSelect').val(null).trigger('change');
+        $('#metricDateRange').val('');
     });
 });
 
-// Function to update existing charts with new date range
-async function updateExistingCharts(dateRange) {
-    for (const [metricId, chart] of Object.entries(charts)) {
-        const config = customMetricConfigs[metricId];
-        if (config) {
-            try {
-                const response = await fetch(`${config.endpoint}?dateRange=${dateRange}`);
-                if (!response.ok) throw new Error('Failed to fetch chart data');
-                
-                const chartData = await response.json();
-                chart.data = chartData;
-                chart.update();
-            } catch (error) {
-                console.error(`Error updating chart ${metricId}:`, error);
-            }
-        }
-    }
-}
-
-// Update addCustomMetric function to store date range with chart
-async function addCustomMetric(metricId, dateRange) {
-    const config = customMetricConfigs[metricId];
-    if (!config) return;
-
-    // Create widget HTML with date range stored as data attribute
-    const widgetHtml = `
-        <div class="grid-stack-item-content" data-date-range="${dateRange}">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 handle d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">${config.label}</h5>
-                    <div class="chart-controls">
-                        <button class="btn btn-sm btn-icon" onclick="downloadChart('${metricId}')">
-                            <i class="fas fa-download"></i>
-                        </button>
-                        <button class="btn btn-sm btn-icon" onclick="removeCustomChart('${metricId}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="${metricId}Chart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Add widget to grid
-    const widget = grid.addWidget({
-        w: 6,
-        h: 4,
-        content: widgetHtml
-    });
-
-    // Initialize the chart with actual data
-    await initializeCustomChart(metricId, config, dateRange);
-}
-
+// Function to initialize custom chart
 async function initializeCustomChart(metricId, config, dateRange) {
     const ctx = document.getElementById(`${metricId}Chart`).getContext('2d');
+    const container = ctx.canvas.closest('.chart-container');
     
     try {
-        // Show loading state
-        const chartContainer = ctx.canvas.closest('.chart-container');
-        chartContainer.classList.add('loading');
-        
-        // Fetch actual data from the backend
+        container.classList.add('loading');
         const response = await fetch(`${config.endpoint}?dateRange=${dateRange}`);
-        if (!response.ok) throw new Error('Failed to fetch chart data');
+        if (!response.ok) throw new Error('Failed to fetch data');
         
-        const chartData = await response.json();
-        
-        // Create chart with actual data
+        const data = await response.json();
         charts[metricId] = new Chart(ctx, {
             type: config.type,
-            data: chartData,
+            data: data,
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -195,16 +140,10 @@ async function initializeCustomChart(metricId, config, dateRange) {
             }
         });
     } catch (error) {
-        console.error('Error initializing chart:', error);
-        const chartContainer = ctx.canvas.closest('.chart-container');
-        chartContainer.innerHTML = `
-            <div class="alert alert-danger">
-                Failed to load chart data. Please try again.
-            </div>
-        `;
+        console.error('Error:', error);
+        container.innerHTML = '<div class="alert alert-danger">Failed to load chart</div>';
     } finally {
-        const chartContainer = ctx.canvas.closest('.chart-container');
-        chartContainer.classList.remove('loading');
+        container.classList.remove('loading');
     }
 }
 
