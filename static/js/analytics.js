@@ -51,6 +51,9 @@ document.addEventListener('DOMContentLoaded', function() {
         float: true
     });
 
+    // Get the modal instance
+    const metricsModal = new bootstrap.Modal(document.getElementById('metricsModal'));
+
     // Handle add metrics button click
     $('#addMetricsBtn').on('click', async function() {
         const selectedMetrics = $('#customMetricSelect').val();
@@ -99,13 +102,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Reset form and close modal
-            $('#metricsModal').modal('hide');
             $('#customMetricSelect').val(null).trigger('change');
             $('#metricDateRange').val('');
+            metricsModal.hide(); // Use Bootstrap's modal method to hide
         } catch (error) {
             console.error('Error adding metrics:', error);
             alert('Failed to add metrics. Please try again.');
         }
+    });
+
+    // Handle modal hidden event to reset form
+    $('#metricsModal').on('hidden.bs.modal', function () {
+        $('#customMetricSelect').val(null).trigger('change');
+        $('#metricDateRange').val('');
     });
 });
 
