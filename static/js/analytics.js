@@ -23,7 +23,7 @@ const customMetricConfigs = {
     response_time_trend: {
         label: 'Response Time Trend',
         type: 'line',
-        endpoint: '/analytics/api/custom/response-time-trend'
+        endpoint: '/analytics/api/custom/first-response-trend'
     },
     resolution_time: {
         label: 'Resolution Time by Priority',
