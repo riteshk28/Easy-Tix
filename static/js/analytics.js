@@ -40,10 +40,9 @@ document.addEventListener('DOMContentLoaded', function() {
         width: '100%'
     });
 
-    // Update date range picker to match Export Raw Data implementation
-    $('#metricDateRange').daterangepicker({
+    // Match the Export date range picker exactly
+    $('.daterangepicker-input').daterangepicker({
         autoUpdateInput: false,
-        alwaysShowCalendars: true,
         showDropdowns: true,
         ranges: {
             'Today': [moment(), moment()],
@@ -55,18 +54,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    $('#metricDateRange').on('apply.daterangepicker', function(ev, picker) {
+    $('.daterangepicker-input').on('apply.daterangepicker', function(ev, picker) {
         $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
     });
 
-    $('#metricDateRange').on('cancel.daterangepicker', function(ev, picker) {
+    $('.daterangepicker-input').on('cancel.daterangepicker', function(ev, picker) {
         $(this).val('');
     });
 
     // Set initial date range value
     const initialStartDate = moment().subtract(29, 'days');
     const initialEndDate = moment();
-    $('#metricDateRange').val(initialStartDate.format('MM/DD/YYYY') + ' - ' + initialEndDate.format('MM/DD/YYYY'));
+    $('.daterangepicker-input').val(initialStartDate.format('MM/DD/YYYY') + ' - ' + initialEndDate.format('MM/DD/YYYY'));
 
     // Initialize grid
     grid = GridStack.init({
@@ -82,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle add metrics button click
     $('#addMetricsBtn').on('click', async function() {
         const selectedMetrics = $('#customMetricSelect').val();
-        const dateRange = $('#metricDateRange').val();
+        const dateRange = $('.daterangepicker-input').val();
 
         if (!selectedMetrics || selectedMetrics.length === 0) {
             alert('Please select at least one metric');
@@ -129,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Reset form and close modal
             $('#metricsModal').modal('hide');
             $('#customMetricSelect').val(null).trigger('change');
-            $('#metricDateRange').val('');
+            $('.daterangepicker-input').val('');
         } catch (error) {
             console.error('Error adding metrics:', error);
             alert('Failed to add metrics. Please try again.');
