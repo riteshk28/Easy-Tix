@@ -15,20 +15,20 @@ const customMetricConfigs = {
         type: 'bar',
         endpoint: '/analytics/api/custom/tickets-by-priority'
     },
-    tickets_by_assignee: {
-        label: 'Tickets by Assignee',
+    agent_performance: {
+        label: 'Agent Performance',
         type: 'bar',
-        endpoint: '/analytics/api/custom/tickets-by-assignee'
+        endpoint: '/analytics/api/custom/agent-performance'
     },
     response_time_trend: {
         label: 'Response Time Trend',
         type: 'line',
         endpoint: '/analytics/api/custom/response-time-trend'
     },
-    resolution_time_trend: {
-        label: 'Resolution Time Trend',
-        type: 'line',
-        endpoint: '/analytics/api/custom/resolution-time-trend'
+    resolution_time: {
+        label: 'Resolution Time by Priority',
+        type: 'bar',
+        endpoint: '/analytics/api/custom/resolution-time-by-priority'
     }
 };
 
