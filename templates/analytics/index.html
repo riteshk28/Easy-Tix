@@ -122,75 +122,52 @@
 </div>
 
 <!-- Update the metrics modal -->
-<div class="modal fade" id="metricsModal" tabindex="-1" aria-labelledby="metricsModalLabel" aria-hidden="true">
+<div class="modal fade" id="metricsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="metricsModalLabel">Customize Dashboard</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title">Add Custom Metrics</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <ul class="nav nav-tabs" role="tablist">
-                    <li class="nav-item">
-                        <a class="nav-link active" data-bs-toggle="tab" href="#metricsTab">Metrics</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="tab" href="#chartsTab">Charts</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="tab" href="#filtersTab">Filters</a>
-                    </li>
-                </ul>
-                
-                <div class="tab-content mt-3">
-                    <!-- Metrics Tab -->
-                    <div class="tab-pane fade show active" id="metricsTab">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>Available Metrics</h6>
-                                <div class="list-group" id="availableMetrics">
-                                    <!-- Populated via JavaScript -->
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <h6>Selected Metrics</h6>
-                                <div class="list-group" id="selectedMetrics">
-                                    <!-- Populated via JavaScript -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Charts Tab -->
-                    <div class="tab-pane fade" id="chartsTab">
-                        <div class="row" id="chartCustomizations">
-                            <!-- Populated via JavaScript -->
-                        </div>
-                    </div>
-                    
-                    <!-- Filters Tab -->
-                    <div class="tab-pane fade" id="filtersTab">
-                        <div class="mb-3">
-                            <label class="form-label">Default Time Range</label>
-                            <select class="form-select" id="defaultTimeRange">
-                                <option value="7">Last 7 Days</option>
-                                <option value="30">Last 30 Days</option>
-                                <option value="90">Last 90 Days</option>
-                                <option value="custom">Custom</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Additional Filters</label>
-                            <div id="additionalFilters">
-                                <!-- Populated via JavaScript -->
-                            </div>
-                        </div>
-                    </div>
+                <!-- Metrics Selection -->
+                <div class="mb-4">
+                    <label class="form-label">Select Metrics</label>
+                    <select class="form-select" id="customMetricSelect" multiple>
+                        <optgroup label="Ticket Overview">
+                            <option value="tickets_by_category">Tickets by Category (Pie Chart)</option>
+                            <option value="tickets_by_priority">Tickets by Priority (Bar Chart)</option>
+                            <option value="tickets_by_department">Tickets by Department (Pie Chart)</option>
+                            <option value="tickets_by_status">Tickets by Status (Pie Chart)</option>
+                        </optgroup>
+                        <optgroup label="Time Analysis">
+                            <option value="avg_response_by_priority">Response Time by Priority (Bar Chart)</option>
+                            <option value="avg_resolution_by_category">Resolution Time by Category (Bar Chart)</option>
+                            <option value="response_time_trend">Response Time Trend (Line Chart)</option>
+                            <option value="resolution_time_trend">Resolution Time Trend (Line Chart)</option>
+                        </optgroup>
+                        <optgroup label="SLA Metrics">
+                            <option value="sla_by_priority">SLA Compliance by Priority (Bar Chart)</option>
+                            <option value="sla_trend">SLA Compliance Over Time (Line Chart)</option>
+                            <option value="breached_tickets">SLA Breached Tickets (Pie Chart)</option>
+                        </optgroup>
+                        <optgroup label="Agent Performance">
+                            <option value="tickets_per_agent">Tickets per Agent (Bar Chart)</option>
+                            <option value="resolution_by_agent">Resolution Time by Agent (Bar Chart)</option>
+                            <option value="agent_sla_compliance">Agent SLA Compliance (Bar Chart)</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <!-- Date Range Selection (matching Export Raw Data) -->
+                <div class="mb-4">
+                    <label class="form-label">Date Range</label>
+                    <input type="text" class="form-control daterangepicker-input" id="metricDateRange" placeholder="Select date range">
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveCustomizations()">Save Changes</button>
+                <button type="button" class="btn btn-primary" id="addMetricsBtn">Add Selected Metrics</button>
             </div>
         </div>
     </div>

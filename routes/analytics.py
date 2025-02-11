@@ -1,11 +1,12 @@
 from flask import Blueprint, render_template, jsonify, current_app, request, send_file
 from flask_login import login_required, current_user
 from services.analytics_service import AnalyticsService
-from models import Dashboard, ReportConfig, AnalyticsDashboard
+from models import Dashboard, ReportConfig, AnalyticsDashboard, Ticket, User, SLAPolicy, TicketComment
 import csv
 from io import StringIO, BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 from extensions import db
+from sqlalchemy import func, case
 
 analytics = Blueprint('analytics', __name__)
 
@@ -313,4 +314,156 @@ def get_dashboard_config():
         })
     except Exception as e:
         current_app.logger.error(f"Error getting dashboard config: {str(e)}")
-        return jsonify({'error': str(e)}), 400 
+        return jsonify({'error': str(e)}), 400
+
+@analytics.route('/api/custom/tickets-by-category')
+@login_required
+def tickets_by_category():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    tickets = Ticket.query.filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).with_entities(
+        Ticket.category,
+        func.count(Ticket.id)
+    ).group_by(Ticket.category).all()
+    
+    return jsonify({
+        'labels': [t[0] or 'Uncategorized' for t in tickets],
+        'datasets': [{
+            'data': [t[1] for t in tickets],
+            'backgroundColor': ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b']
+        }]
+    })
+
+@analytics.route('/api/custom/tickets-by-priority')
+@login_required
+def tickets_by_priority():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    tickets = Ticket.query.filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).with_entities(
+        Ticket.priority,
+        func.count(Ticket.id)
+    ).group_by(Ticket.priority).all()
+    
+    return jsonify({
+        'labels': [t[0].capitalize() for t in tickets],
+        'datasets': [{
+            'data': [t[1] for t in tickets],
+            'backgroundColor': ['#4e73df', '#1cc88a', '#36b9cc']
+        }]
+    })
+
+@analytics.route('/api/custom/response-time-trend')
+@login_required
+def response_time_trend():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    # Calculate daily average response times
+    response_times = db.session.query(
+        func.date(Ticket.created_at).label('date'),
+        func.avg(TicketComment.created_at - Ticket.created_at).label('avg_response_time')
+    ).join(
+        TicketComment, 
+        Ticket.id == TicketComment.ticket_id
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date),
+        TicketComment.is_first_response == True
+    ).group_by(
+        func.date(Ticket.created_at)
+    ).order_by(
+        func.date(Ticket.created_at)
+    ).all()
+    
+    return jsonify({
+        'labels': [rt.date.strftime('%Y-%m-%d') for rt in response_times],
+        'datasets': [{
+            'label': 'Average Response Time (hours)',
+            'data': [float(rt.avg_response_time.total_seconds() / 3600) for rt in response_times],
+            'borderColor': '#4e73df',
+            'fill': False
+        }]
+    })
+
+@analytics.route('/api/custom/sla-by-priority')
+@login_required
+def sla_by_priority():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    # Calculate SLA compliance by priority
+    sla_stats = db.session.query(
+        Ticket.priority,
+        func.count(Ticket.id).label('total'),
+        func.sum(case([(Ticket.sla_breached == False, 1)], else_=0)).label('compliant')
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(Ticket.priority).all()
+    
+    priorities = [stat.priority.capitalize() for stat in sla_stats]
+    compliance_rates = [
+        (stat.compliant / stat.total * 100) if stat.total > 0 else 0 
+        for stat in sla_stats
+    ]
+    
+    return jsonify({
+        'labels': priorities,
+        'datasets': [{
+            'label': 'SLA Compliance Rate (%)',
+            'data': compliance_rates,
+            'backgroundColor': ['#4e73df', '#1cc88a', '#36b9cc']
+        }]
+    })
+
+@analytics.route('/api/custom/agent-performance')
+@login_required
+def agent_performance():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    # Get agent performance metrics
+    performance = db.session.query(
+        User.name,
+        func.count(Ticket.id).label('tickets_handled'),
+        func.avg(case([(Ticket.sla_breached == False, 1)], else_=0)).label('sla_compliance'),
+        func.avg(Ticket.resolution_time).label('avg_resolution_time')
+    ).join(
+        Ticket, User.id == Ticket.assigned_to
+    ).filter(
+        User.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(User.id, User.name).all()
+    
+    return jsonify({
+        'labels': [p.name for p in performance],
+        'datasets': [{
+            'label': 'Tickets Handled',
+            'data': [p.tickets_handled for p in performance],
+            'backgroundColor': '#4e73df'
+        }, {
+            'label': 'SLA Compliance Rate (%)',
+            'data': [float(p.sla_compliance * 100) for p in performance],
+            'backgroundColor': '#1cc88a'
+        }]
+    })
+
+def parse_date_range(date_range):
+    """Parse date range string into start and end dates"""
+    if not date_range:
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=30)
+        return start_date, end_date
+    
+    start_str, end_str = date_range.split(' - ')
+    start_date = datetime.strptime(start_str, '%Y-%m-%d')
+    end_date = datetime.strptime(end_str, '%Y-%m-%d') + timedelta(days=1)  # Include the end date
+    return start_date, end_date 
