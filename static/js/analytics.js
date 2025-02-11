@@ -33,23 +33,16 @@ const customMetricConfigs = {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize grid exactly like the default charts
-    grid = GridStack.init({
-        cellHeight: 100,
-        minRow: 1,
-        margin: 10,
-        draggable: {
-            handle: '.handle'
-        },
-        float: true
+    // Initialize Select2
+    $('#customMetricSelect').select2({
+        dropdownParent: $('#metricsModal'),
+        placeholder: 'Select metrics...',
+        width: '100%'
     });
 
-    // Initialize date range picker exactly like Export Raw Data
+    // Initialize date range picker
     $('#metricDateRange').daterangepicker({
         autoUpdateInput: false,
-        locale: {
-            format: 'YYYY-MM-DD'
-        },
         ranges: {
             'Today': [moment(), moment()],
             'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
@@ -60,6 +53,27 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Handle date range selection
+    $('#metricDateRange').on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+    });
+
+    $('#metricDateRange').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+    });
+
+    // Initialize grid
+    grid = GridStack.init({
+        cellHeight: 100,
+        minRow: 1,
+        margin: 10,
+        draggable: {
+            handle: '.handle'
+        },
+        float: true
+    });
+
+    // Handle add metrics button click
     $('#addMetricsBtn').on('click', async function() {
         const selectedMetrics = $('#customMetricSelect').val();
         const dateRange = $('#metricDateRange').val();
@@ -74,44 +88,46 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Add each selected metric as a new chart
-        for (const metricId of selectedMetrics) {
-            const config = customMetricConfigs[metricId];
-            const widgetHtml = `
-                <div class="grid-stack-item-content">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-transparent d-flex justify-content-between align-items-center handle">
-                            <h6 class="mb-0">${config.label}</h6>
-                            <div>
-                                <button class="btn btn-sm" onclick="removeWidget(this)">
-                                    <i class="fas fa-times"></i>
-                                </button>
+        try {
+            for (const metricId of selectedMetrics) {
+                const config = customMetricConfigs[metricId];
+                const widgetHtml = `
+                    <div class="grid-stack-item-content">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-transparent d-flex justify-content-between align-items-center handle">
+                                <h6 class="mb-0">${config.label}</h6>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-icon" onclick="removeWidget(this)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="card-body">
-                            <div class="chart-container">
-                                <canvas id="${metricId}Chart"></canvas>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="${metricId}Chart"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
 
-            // Add widget to grid
-            const node = grid.addWidget({
-                w: 6,
-                h: 4,
-                content: widgetHtml
-            });
+                grid.addWidget({
+                    w: 6,
+                    h: 4,
+                    content: widgetHtml
+                });
 
-            // Initialize chart
-            await initializeCustomChart(metricId, config, dateRange);
+                await initializeCustomChart(metricId, config, dateRange);
+            }
+
+            // Reset form and close modal
+            $('#metricsModal').modal('hide');
+            $('#customMetricSelect').val(null).trigger('change');
+            $('#metricDateRange').val('');
+        } catch (error) {
+            console.error('Error adding metrics:', error);
+            alert('Failed to add metrics. Please try again.');
         }
-
-        // Close modal and reset form
-        $('#metricsModal').modal('hide');
-        $('#customMetricSelect').val(null).trigger('change');
-        $('#metricDateRange').val('');
     });
 });
 

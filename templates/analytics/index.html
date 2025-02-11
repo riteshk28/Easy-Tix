@@ -121,7 +121,7 @@
     </div>
 </div>
 
-<!-- Update the metrics modal -->
+<!-- Metrics Modal -->
 <div class="modal fade" id="metricsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -130,40 +130,23 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <!-- Metrics Selection -->
-                <div class="mb-4">
-                    <label class="form-label">Select Metrics</label>
-                    <select class="form-select" id="customMetricSelect" multiple>
-                        <optgroup label="Ticket Overview">
-                            <option value="tickets_by_category">Tickets by Category (Pie Chart)</option>
-                            <option value="tickets_by_priority">Tickets by Priority (Bar Chart)</option>
-                            <option value="tickets_by_department">Tickets by Department (Pie Chart)</option>
-                            <option value="tickets_by_status">Tickets by Status (Pie Chart)</option>
-                        </optgroup>
-                        <optgroup label="Time Analysis">
-                            <option value="avg_response_by_priority">Response Time by Priority (Bar Chart)</option>
-                            <option value="avg_resolution_by_category">Resolution Time by Category (Bar Chart)</option>
-                            <option value="response_time_trend">Response Time Trend (Line Chart)</option>
-                            <option value="resolution_time_trend">Resolution Time Trend (Line Chart)</option>
-                        </optgroup>
-                        <optgroup label="SLA Metrics">
-                            <option value="sla_by_priority">SLA Compliance by Priority (Bar Chart)</option>
-                            <option value="sla_trend">SLA Compliance Over Time (Line Chart)</option>
-                            <option value="breached_tickets">SLA Breached Tickets (Pie Chart)</option>
-                        </optgroup>
-                        <optgroup label="Agent Performance">
-                            <option value="tickets_per_agent">Tickets per Agent (Bar Chart)</option>
-                            <option value="resolution_by_agent">Resolution Time by Agent (Bar Chart)</option>
-                            <option value="agent_sla_compliance">Agent SLA Compliance (Bar Chart)</option>
-                        </optgroup>
-                    </select>
-                </div>
-
-                <!-- Date Range Selection (matching Export Raw Data) -->
-                <div class="mb-4">
-                    <label class="form-label">Date Range</label>
-                    <input type="text" class="form-control daterangepicker-input" id="metricDateRange" placeholder="Select date range">
-                </div>
+                <form id="addMetricsForm">
+                    <div class="mb-3">
+                        <label class="form-label">Select Metrics</label>
+                        <select class="form-select" id="customMetricSelect" multiple>
+                            <option value="tickets_by_status">Tickets by Status</option>
+                            <option value="tickets_by_priority">Tickets by Priority</option>
+                            <option value="tickets_by_agent">Tickets by Agent</option>
+                            <option value="response_time">Response Time Analysis</option>
+                            <option value="resolution_time">Resolution Time Analysis</option>
+                            <option value="ticket_volume">Ticket Volume Trend</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date Range</label>
+                        <input type="text" class="form-control" id="metricDateRange" readonly>
+                    </div>
+                </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
