@@ -366,17 +366,16 @@ def response_time_trend():
     date_range = request.args.get('dateRange')
     start_date, end_date = parse_date_range(date_range)
     
-    # Calculate daily average response times
     response_times = db.session.query(
         func.date(Ticket.created_at).label('date'),
-        func.avg(TicketComment.created_at - Ticket.created_at).label('avg_response_time')
+        func.avg(TicketComment.created_at - Ticket.created_at).label('avg_response')
     ).join(
-        TicketComment, 
+        TicketComment,
         Ticket.id == TicketComment.ticket_id
     ).filter(
         Ticket.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date),
-        TicketComment.is_response == True  # Changed from is_first_response
+        TicketComment.is_response == True
     ).group_by(
         func.date(Ticket.created_at)
     ).order_by(
@@ -387,7 +386,8 @@ def response_time_trend():
         'labels': [rt.date.strftime('%Y-%m-%d') for rt in response_times],
         'datasets': [{
             'label': 'Average Response Time (hours)',
-            'data': [float(rt.avg_response_time.total_seconds() / 3600) if rt.avg_response_time else 0 for rt in response_times],
+            'data': [float(rt.avg_response.total_seconds() / 3600) if rt.avg_response else 0 
+                    for rt in response_times],
             'borderColor': '#4e73df',
             'fill': False
         }]

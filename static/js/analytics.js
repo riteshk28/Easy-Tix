@@ -3,47 +3,32 @@ const charts = {};
 let grid;
 let currentDays = 30;
 
-// Define available metrics based on DB schema
+// Define available metrics based on actual DB fields
 const customMetricConfigs = {
-    tickets_by_source: {
-        label: 'Tickets by Source (Email/Web/API)',
+    tickets_by_status: {
+        label: 'Tickets by Status',
         type: 'pie',
-        endpoint: '/analytics/api/custom/tickets-by-source'
-    },
-    tickets_by_type: {
-        label: 'Tickets by Type (Bug/Feature/Support)',
-        type: 'pie',
-        endpoint: '/analytics/api/custom/tickets-by-type'
+        endpoint: '/analytics/api/custom/tickets-by-status'
     },
     tickets_by_priority: {
-        label: 'Tickets by Priority (Low/Medium/High)',
+        label: 'Tickets by Priority',
         type: 'bar',
         endpoint: '/analytics/api/custom/tickets-by-priority'
-    },
-    tickets_by_department: {
-        label: 'Tickets by Department',
-        type: 'pie',
-        endpoint: '/analytics/api/custom/tickets-by-department'
-    },
-    resolution_time_by_priority: {
-        label: 'Resolution Time by Priority',
-        type: 'bar',
-        endpoint: '/analytics/api/custom/resolution-time-by-priority'
-    },
-    first_response_time_trend: {
-        label: 'First Response Time Trend',
-        type: 'line',
-        endpoint: '/analytics/api/custom/first-response-trend'
     },
     tickets_by_assignee: {
         label: 'Tickets by Assignee',
         type: 'bar',
         endpoint: '/analytics/api/custom/tickets-by-assignee'
     },
-    open_tickets_age: {
-        label: 'Age of Open Tickets',
-        type: 'bar',
-        endpoint: '/analytics/api/custom/open-tickets-age'
+    response_time_trend: {
+        label: 'Response Time Trend',
+        type: 'line',
+        endpoint: '/analytics/api/custom/response-time-trend'
+    },
+    resolution_time_trend: {
+        label: 'Resolution Time Trend',
+        type: 'line',
+        endpoint: '/analytics/api/custom/resolution-time-trend'
     }
 };
 
@@ -82,6 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     $('#metricDateRange').on('apply.daterangepicker', function(ev, picker) {
         $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+        // Update any existing custom charts with new date range
+        updateExistingCharts($(this).val());
     });
 
     $('#metricDateRange').on('cancel.daterangepicker', function(ev, picker) {
@@ -120,13 +107,33 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Function to update existing charts with new date range
+async function updateExistingCharts(dateRange) {
+    for (const [metricId, chart] of Object.entries(charts)) {
+        const config = customMetricConfigs[metricId];
+        if (config) {
+            try {
+                const response = await fetch(`${config.endpoint}?dateRange=${dateRange}`);
+                if (!response.ok) throw new Error('Failed to fetch chart data');
+                
+                const chartData = await response.json();
+                chart.data = chartData;
+                chart.update();
+            } catch (error) {
+                console.error(`Error updating chart ${metricId}:`, error);
+            }
+        }
+    }
+}
+
+// Update addCustomMetric function to store date range with chart
 async function addCustomMetric(metricId, dateRange) {
     const config = customMetricConfigs[metricId];
     if (!config) return;
 
-    // Create widget HTML
+    // Create widget HTML with date range stored as data attribute
     const widgetHtml = `
-        <div class="grid-stack-item-content">
+        <div class="grid-stack-item-content" data-date-range="${dateRange}">
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0 handle d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">${config.label}</h5>
