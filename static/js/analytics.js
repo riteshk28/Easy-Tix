@@ -58,6 +58,9 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#addMetricsBtn').on('click', async function() {
         const selectedMetrics = $('#customMetricSelect').val();
         const dateRange = $('#metricDateRange').val();
+        
+        console.log('Selected metrics:', selectedMetrics);
+        console.log('Date range:', dateRange);
 
         if (!selectedMetrics || selectedMetrics.length === 0) {
             alert('Please select at least one metric');
@@ -71,7 +74,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             for (const metricId of selectedMetrics) {
+                console.log('Adding metric:', metricId);
                 const config = customMetricConfigs[metricId];
+                if (!config) {
+                    console.error('No config found for metric:', metricId);
+                    continue;
+                }
+
                 const widgetHtml = `
                     <div class="grid-stack-item-content">
                         <div class="card shadow-sm">
@@ -92,19 +101,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
 
-                grid.addWidget({
+                console.log('Adding widget to grid');
+                const widget = grid.addWidget({
                     w: 6,
                     h: 4,
                     content: widgetHtml
                 });
+                console.log('Widget added:', widget);
 
+                console.log('Initializing chart:', metricId);
                 await initializeCustomChart(metricId, config, dateRange);
             }
 
             // Reset form and close modal
             $('#customMetricSelect').val(null).trigger('change');
             $('#metricDateRange').val('');
-            metricsModal.hide(); // Use Bootstrap's modal method to hide
+            metricsModal.hide();
         } catch (error) {
             console.error('Error adding metrics:', error);
             alert('Failed to add metrics. Please try again.');
@@ -120,15 +132,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Function to initialize custom chart
 async function initializeCustomChart(metricId, config, dateRange) {
-    const ctx = document.getElementById(`${metricId}Chart`).getContext('2d');
-    const container = ctx.canvas.closest('.chart-container');
+    console.log('Starting chart initialization:', metricId);
+    const canvas = document.getElementById(`${metricId}Chart`);
+    if (!canvas) {
+        console.error('Canvas not found for:', metricId);
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    const container = canvas.closest('.chart-container');
     
     try {
         container.classList.add('loading');
+        console.log('Fetching data from:', config.endpoint);
         const response = await fetch(`${config.endpoint}?dateRange=${dateRange}`);
-        if (!response.ok) throw new Error('Failed to fetch data');
+        if (!response.ok) {
+            console.error('API response not ok:', response.status);
+            throw new Error('Failed to fetch data');
+        }
         
         const data = await response.json();
+        console.log('Received data:', data);
+        
         charts[metricId] = new Chart(ctx, {
             type: config.type,
             data: data,
@@ -142,8 +167,9 @@ async function initializeCustomChart(metricId, config, dateRange) {
                 }
             }
         });
+        console.log('Chart created:', metricId);
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error creating chart:', error);
         container.innerHTML = '<div class="alert alert-danger">Failed to load chart</div>';
     } finally {
         container.classList.remove('loading');
@@ -169,4 +195,20 @@ function downloadChart(metricId) {
         link.href = canvas.toDataURL('image/png');
         link.click();
     }
-} 
+}
+
+// Add this function to handle widget removal
+window.removeWidget = function(button) {
+    const gridItem = button.closest('.grid-stack-item');
+    const canvas = gridItem.querySelector('canvas');
+    const chartId = canvas.id.replace('Chart', '');
+    
+    // Remove from grid
+    grid.removeWidget(gridItem);
+    
+    // Destroy chart instance
+    if (charts[chartId]) {
+        charts[chartId].destroy();
+        delete charts[chartId];
+    }
+}; 
