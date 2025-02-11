@@ -144,16 +144,27 @@ async function initializeCustomChart(metricId, config, dateRange) {
     
     try {
         container.classList.add('loading');
-        console.log('Fetching data from:', config.endpoint);
-        const response = await fetch(`${config.endpoint}?dateRange=${dateRange}`);
+        const url = `${config.endpoint}?dateRange=${dateRange}`;
+        console.log('Fetching data from:', url);
+        
+        const response = await fetch(url);
+        console.log('Response status:', response.status);
+        
         if (!response.ok) {
-            console.error('API response not ok:', response.status);
+            const errorText = await response.text();
+            console.error('API response not ok:', response.status, errorText);
             throw new Error('Failed to fetch data');
         }
         
         const data = await response.json();
-        console.log('Received data:', data);
+        console.log('Received data for', metricId, ':', data);
         
+        if (charts[metricId]) {
+            console.log('Destroying existing chart:', metricId);
+            charts[metricId].destroy();
+        }
+        
+        console.log('Creating new chart:', metricId);
         charts[metricId] = new Chart(ctx, {
             type: config.type,
             data: data,
@@ -167,7 +178,7 @@ async function initializeCustomChart(metricId, config, dateRange) {
                 }
             }
         });
-        console.log('Chart created:', metricId);
+        console.log('Chart created successfully:', metricId);
     } catch (error) {
         console.error('Error creating chart:', error);
         container.innerHTML = '<div class="alert alert-danger">Failed to load chart</div>';

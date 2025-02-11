@@ -555,6 +555,98 @@ def open_tickets_age():
         }]
     })
 
+@analytics.route('/api/custom/tickets-by-status')
+@login_required
+def tickets_by_status_api():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    tickets = db.session.query(
+        Ticket.status,
+        func.count(Ticket.id)
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(Ticket.status).all()
+    
+    return jsonify({
+        'labels': [t[0].capitalize() for t in tickets],
+        'datasets': [{
+            'data': [t[1] for t in tickets],
+            'backgroundColor': ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e']
+        }]
+    })
+
+@analytics.route('/api/custom/tickets-by-priority')
+@login_required
+def tickets_by_priority_api():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    tickets = db.session.query(
+        Ticket.priority,
+        func.count(Ticket.id)
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(Ticket.priority).all()
+    
+    return jsonify({
+        'labels': [t[0].capitalize() for t in tickets],
+        'datasets': [{
+            'data': [t[1] for t in tickets],
+            'backgroundColor': ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e']
+        }]
+    })
+
+@analytics.route('/api/custom/agent-performance')
+@login_required
+def agent_performance_api():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    performance = db.session.query(
+        User.email,
+        func.count(Ticket.id)
+    ).join(
+        Ticket, User.id == Ticket.assigned_to_id
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(User.email).all()
+    
+    return jsonify({
+        'labels': [p[0] for p in performance],
+        'datasets': [{
+            'data': [p[1] for p in performance],
+            'backgroundColor': '#4e73df'
+        }]
+    })
+
+@analytics.route('/api/custom/resolution-time-by-priority')
+@login_required
+def resolution_time_by_priority():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    resolution_times = db.session.query(
+        Ticket.priority,
+        func.avg(func.extract('epoch', Ticket.resolved_at - Ticket.created_at) / 3600)
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date),
+        Ticket.resolved_at.isnot(None)
+    ).group_by(Ticket.priority).all()
+    
+    return jsonify({
+        'labels': [rt[0].capitalize() for rt in resolution_times],
+        'datasets': [{
+            'label': 'Average Resolution Time (hours)',
+            'data': [float(rt[1]) if rt[1] else 0 for rt in resolution_times],
+            'backgroundColor': '#4e73df'
+        }]
+    })
+
 def parse_date_range(date_range):
     """Parse date range string into start and end dates"""
     if not date_range:
