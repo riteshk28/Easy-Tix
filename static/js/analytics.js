@@ -1,7 +1,3 @@
-// Keep existing chart initialization code at the top
-let grid;
-let currentDays = 30;
-
 // Define available metrics based on actual DB fields
 const customMetricConfigs = {
     tickets_by_status: {
@@ -55,21 +51,24 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeDashboard();
     initializeEventListeners();
 
-    // Initialize grid with proper options
-    grid = GridStack.init({
-        cellHeight: 100,
-        minRow: 1,
-        margin: 10,
-        draggable: {
-            handle: '.handle'
-        },
-        float: true,
-        column: 12,
-        animate: true,
-        resizable: {
-            handles: 'e,se,s,sw,w'
-        }
-    });
+    // Initialize grid only if container exists
+    const gridContainer = document.querySelector('.grid-stack');
+    if (gridContainer) {
+        grid = GridStack.init({
+            cellHeight: 100,
+            minRow: 1,
+            margin: 10,
+            draggable: {
+                handle: '.handle'
+            },
+            float: true,
+            column: 12,
+            animate: true,
+            resizable: {
+                handles: 'e,se,s,sw,w'
+            }
+        });
+    }
 
     // Get the modal instance
     const metricsModal = new bootstrap.Modal(document.getElementById('metricsModal'));

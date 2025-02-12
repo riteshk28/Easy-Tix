@@ -560,26 +560,37 @@ def get_dashboard_data():
 
 def get_summary_metrics(start_date, end_date):
     """Get summary metrics for dashboard"""
+    # First get the first response time for each ticket
+    first_response_subquery = db.session.query(
+        Ticket.id,
+        func.min(TicketComment.created_at).label('first_response_time')
+    ).join(
+        TicketComment,
+        Ticket.id == TicketComment.ticket_id
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(Ticket.id).subquery()
+
+    # Then calculate the average response time
+    avg_response_time = db.session.query(
+        func.avg(
+            func.extract('epoch', 
+                first_response_subquery.c.first_response_time - Ticket.created_at
+            ) / 3600
+        )
+    ).join(
+        first_response_subquery,
+        Ticket.id == first_response_subquery.c.id
+    ).scalar() or 0
+
     return {
         'openTickets': db.session.query(func.count(Ticket.id)).filter(
             Ticket.tenant_id == current_user.tenant_id,
             Ticket.status == 'open'
         ).scalar() or 0,
         
-        'avgResponseTime': db.session.query(
-            func.avg(
-                func.extract('epoch', 
-                    func.min(TicketComment.created_at) - Ticket.created_at
-                ) / 3600
-            )
-        ).select_from(Ticket).join(
-            TicketComment,
-            Ticket.id == TicketComment.ticket_id
-        ).filter(
-            Ticket.tenant_id == current_user.tenant_id,
-            Ticket.created_at.between(start_date, end_date)
-        ).scalar() or 0,
-        
+        'avgResponseTime': avg_response_time,
         'resolutionRate': calculate_resolution_rate(start_date, end_date),
         'slaCompliance': calculate_sla_compliance(start_date, end_date)
     }
