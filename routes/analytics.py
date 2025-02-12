@@ -574,9 +574,7 @@ def get_summary_metrics(start_date, end_date):
             )
         ).select_from(Ticket).join(
             TicketComment,
-            (Ticket.id == TicketComment.ticket_id) & 
-            (TicketComment.is_internal == True) &
-            ~TicketComment.is_customer
+            Ticket.id == TicketComment.ticket_id
         ).filter(
             Ticket.tenant_id == current_user.tenant_id,
             Ticket.created_at.between(start_date, end_date)
@@ -688,9 +686,7 @@ def get_response_time_data(start_date, end_date):
         ).label('response_time')
     ).join(
         TicketComment,
-        (Ticket.id == TicketComment.ticket_id) & 
-        (TicketComment.is_internal == True) &
-        ~TicketComment.is_customer
+        Ticket.id == TicketComment.ticket_id
     ).filter(
         Ticket.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date)

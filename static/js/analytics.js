@@ -1,5 +1,4 @@
 // Keep existing chart initialization code at the top
-const charts = {};
 let grid;
 let currentDays = 30;
 
@@ -43,15 +42,18 @@ const colors = {
 
 // Initialize everything when the document is ready
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Select2 only if the element exists
+    const customMetricSelect = $('#customMetricSelect');
+    if (customMetricSelect.length) {
+        customMetricSelect.select2({
+            dropdownParent: $('#metricsModal'),
+            placeholder: 'Select metrics...',
+            width: '100%'
+        });
+    }
+
     initializeDashboard();
     initializeEventListeners();
-
-    // Initialize Select2
-    $('#customMetricSelect').select2({
-        dropdownParent: $('#metricsModal'),
-        placeholder: 'Select metrics...',
-        width: '100%'
-    });
 
     // Initialize grid with proper options
     grid = GridStack.init({
@@ -203,11 +205,17 @@ function initializeEventListeners() {
 }
 
 async function fetchDashboardData() {
-    const response = await fetch(`/analytics/data/dashboard?days=${currentDays}`);
-    if (!response.ok) {
-        throw new Error('Failed to fetch dashboard data');
+    try {
+        const response = await fetch(`/analytics/data/dashboard?days=${currentDays}`);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to fetch dashboard data');
+        }
+        return response.json();
+    } catch (error) {
+        console.error('Fetch error:', error);
+        throw error;
     }
-    return response.json();
 }
 
 function showLoading() {

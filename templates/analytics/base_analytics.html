@@ -3,6 +3,7 @@
 {% block head %}
 {{ super() }}
 <link href="https://cdn.jsdelivr.net/npm/gridstack@7.3.0/dist/gridstack.min.css" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <style>
 .grid-stack-item-content {
@@ -47,5 +48,6 @@
 {{ super() }}
 <script src="https://cdn.jsdelivr.net/npm/gridstack@7.3.0/dist/gridstack-all.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
 {% endblock %} 
