@@ -799,4 +799,120 @@ def export_filtered_data():
         )
     except Exception as e:
         current_app.logger.error(f"Export error: {str(e)}")
-        return jsonify({'error': str(e)}), 500 
+        return jsonify({'error': str(e)}), 500
+
+@analytics.route('/api/custom/sla-breach-priority')
+@login_required
+def sla_breach_by_priority():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    breaches = db.session.query(
+        Ticket.priority,
+        func.count(Ticket.id).label('total'),
+        func.sum(case(
+            (Ticket.sla_response_met == False, 1),
+            else_=0
+        )).label('response_breaches'),
+        func.sum(case(
+            (Ticket.sla_resolution_met == False, 1),
+            else_=0
+        )).label('resolution_breaches')
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(Ticket.priority).all()
+    
+    return jsonify({
+        'type': 'bar',
+        'x': [b.priority for b in breaches],
+        'y': [b.response_breaches for b in breaches],
+        'name': 'Response SLA Breaches',
+        'marker': {'color': '#e74a3b'}
+    })
+
+@analytics.route('/api/custom/first-response-sla')
+@login_required
+def first_response_vs_sla():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    response_times = db.session.query(
+        func.date(Ticket.created_at).label('date'),
+        func.avg(
+            func.extract('epoch', Ticket.first_response_at - Ticket.created_at)
+        ).label('avg_response'),
+        func.avg(Ticket.sla_response_time).label('sla_target')
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date),
+        Ticket.first_response_at.isnot(None)
+    ).group_by(
+        func.date(Ticket.created_at)
+    ).order_by(
+        func.date(Ticket.created_at)
+    ).all()
+    
+    return jsonify({
+        'type': 'scatter',
+        'mode': 'lines',
+        'x': [rt.date.strftime('%Y-%m-%d') for rt in response_times],
+        'y': [float(rt.avg_response/3600) for rt in response_times],
+        'name': 'Actual Response Time',
+        'line': {'color': '#4e73df'}
+    })
+
+@analytics.route('/api/custom/source-distribution')
+@login_required
+def source_distribution():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    sources = db.session.query(
+        Ticket.source,
+        func.count(Ticket.id).label('count')
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(Ticket.source).all()
+    
+    return jsonify({
+        'type': 'pie',
+        'labels': [s.source for s in sources],
+        'values': [s.count for s in sources],
+        'marker': {
+            'colors': ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e']
+        }
+    })
+
+@analytics.route('/api/custom/word-cloud')
+@login_required
+def ticket_subjects_wordcloud():
+    date_range = request.args.get('dateRange')
+    start_date, end_date = parse_date_range(date_range)
+    
+    tickets = Ticket.query.filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).with_entities(Ticket.title).all()
+    
+    # Combine all titles
+    text = ' '.join([t.title for t in tickets])
+    
+    # Simple word frequency (you might want to use NLTK for better processing)
+    words = text.lower().split()
+    word_freq = {}
+    for word in words:
+        if len(word) > 3:  # Skip short words
+            word_freq[word] = word_freq.get(word, 0) + 1
+    
+    return jsonify({
+        'type': 'scatter',
+        'mode': 'text',
+        'text': list(word_freq.keys()),
+        'x': list(range(len(word_freq))),
+        'y': list(word_freq.values()),
+        'textfont': {
+            'size': [v * 10 for v in word_freq.values()]  # Size based on frequency
+        }
+    }) 

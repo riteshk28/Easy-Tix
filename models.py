@@ -354,11 +354,12 @@ class Ticket(db.Model):
 
 class TicketComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    content = db.Column(db.Text, nullable=False)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    content = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    type = db.Column(db.String(50))  # This is likely the correct column name
+    is_internal = db.Column(db.Boolean, default=False)
+    is_customer = db.Column(db.Boolean, default=False)
 
 class SubscriptionPayment(db.Model):
     __tablename__ = 'subscription_payments'  # SQLAlchemy convention is plural

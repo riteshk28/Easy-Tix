@@ -29,6 +29,31 @@ const customMetricConfigs = {
         label: 'Resolution Time by Priority',
         type: 'bar',
         endpoint: '/analytics/api/custom/resolution-time-by-priority'
+    },
+    sla_breach_priority: {
+        label: 'SLA Breach by Priority',
+        type: 'bar',
+        endpoint: '/analytics/api/custom/sla-breach-priority'
+    },
+    first_response_sla: {
+        label: 'First Response vs SLA',
+        type: 'line',
+        endpoint: '/analytics/api/custom/first-response-sla'
+    },
+    resolution_sla: {
+        label: 'Resolution Time vs SLA',
+        type: 'line',
+        endpoint: '/analytics/api/custom/resolution-sla'
+    },
+    source_distribution: {
+        label: 'Source Distribution',
+        type: 'pie',
+        endpoint: '/analytics/api/custom/source-distribution'
+    },
+    word_cloud: {
+        label: 'Common Ticket Subjects',
+        type: 'wordcloud',
+        endpoint: '/analytics/api/custom/word-cloud'
     }
 };
 
@@ -540,4 +565,17 @@ function setDateRange(range) {
             break;
     }
     $('#dateRange').val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+}
+
+// Add this function to handle word cloud specifically
+function createWordCloud(container, data) {
+    const layout = {
+        margin: { t: 20, r: 20, l: 20, b: 20 },
+        showlegend: false,
+        hovermode: 'closest',
+        xaxis: { showgrid: false, showticklabels: false },
+        yaxis: { showgrid: false, showticklabels: false }
+    };
+    
+    Plotly.newPlot(container, [data], layout, {responsive: true});
 } 
