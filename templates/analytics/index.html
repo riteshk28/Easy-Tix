@@ -10,9 +10,9 @@
             Last 30 Days
         </button>
         <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="#" onclick="updateTimeRange(7)">Last 7 Days</a></li>
-            <li><a class="dropdown-item" href="#" onclick="updateTimeRange(30)">Last 30 Days</a></li>
-            <li><a class="dropdown-item" href="#" onclick="updateTimeRange(90)">Last 90 Days</a></li>
+            <li><a class="dropdown-item" href="#" data-time-range="7">Last 7 Days</a></li>
+            <li><a class="dropdown-item" href="#" data-time-range="30">Last 30 Days</a></li>
+            <li><a class="dropdown-item" href="#" data-time-range="90">Last 90 Days</a></li>
         </ul>
         <button class="btn btn-primary ms-2" type="button" data-bs-toggle="modal" data-bs-target="#exportModal">
             <i class="fas fa-file-export"></i> Export Raw Data
@@ -147,7 +147,7 @@
 <!-- Summary Metrics -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
-        <div class="card h-100 border-0 shadow-sm">
+        <div class="card border-0 shadow-sm summary-tile">
             <div class="card-body">
                 <h6 class="card-title text-muted mb-0">Open Tickets</h6>
                 <h2 class="mb-0" id="openTicketsCount">-</h2>
@@ -155,7 +155,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card h-100 border-0 shadow-sm">
+        <div class="card border-0 shadow-sm summary-tile">
             <div class="card-body">
                 <h6 class="card-title text-muted mb-0">Avg Response Time</h6>
                 <h2 class="mb-0" id="avgResponseTime">-</h2>
@@ -163,81 +163,69 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="card-title text-muted mb-0">SLA Compliance</h6>
-                <h2 class="mb-0" id="slaComplianceRate">-</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card h-100 border-0 shadow-sm">
+        <div class="card border-0 shadow-sm summary-tile">
             <div class="card-body">
                 <h6 class="card-title text-muted mb-0">Resolution Rate</h6>
                 <h2 class="mb-0" id="resolutionRate">-</h2>
             </div>
         </div>
     </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm summary-tile">
+            <div class="card-body">
+                <h6 class="card-title text-muted mb-0">SLA Compliance</h6>
+                <h2 class="mb-0" id="slaCompliance">-</h2>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Charts Grid -->
-<div class="grid-stack">
-    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="0" gs-y="0" id="ticketStatusItem">
-        <div class="grid-stack-item-content">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 handle">
-                    <h5 class="mb-0">Tickets by Status</h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="ticketStatusChart"></canvas>
-                    </div>
-                </div>
+<!-- Main Charts Grid -->
+<div class="row g-3">
+    <!-- Ticket Trend Chart -->
+    <div class="col-xl-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0">Ticket Volume Trend</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" id="ticketTrendContainer"></div>
             </div>
         </div>
     </div>
 
-    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="0" id="responseTimeItem">
-        <div class="grid-stack-item-content">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 handle">
-                    <h5 class="mb-0">Response Times</h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="responseTimeChart"></canvas>
-                    </div>
-                </div>
+    <!-- Status Distribution -->
+    <div class="col-xl-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0">Status Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" id="statusDistributionContainer"></div>
             </div>
         </div>
     </div>
 
-    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="0" gs-y="4" id="slaComplianceItem">
-        <div class="grid-stack-item-content">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 handle">
-                    <h5 class="mb-0">SLA Compliance</h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="slaComplianceChart"></canvas>
-                    </div>
-                </div>
+    <!-- Agent Performance -->
+    <div class="col-xl-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0">Agent Performance</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" id="agentPerformanceContainer"></div>
             </div>
         </div>
     </div>
 
-    <div class="grid-stack-item" gs-w="6" gs-h="4" gs-x="6" gs-y="4" id="agentPerformanceItem">
-        <div class="grid-stack-item-content">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-transparent border-0 handle">
-                    <h5 class="mb-0">Agent Performance</h5>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <canvas id="agentPerformanceChart"></canvas>
-                    </div>
-                </div>
+    <!-- Response Time Analysis -->
+    <div class="col-xl-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0">
+                <h5 class="mb-0">Response Time Analysis</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" id="responseTimeContainer"></div>
             </div>
         </div>
     </div>
@@ -417,7 +405,7 @@ function updateSummaryMetrics(data) {
     const elements = {
         'openTicketsCount': data.open_tickets,
         'avgResponseTime': data.avg_response_time ? `${data.avg_response_time}h` : null,
-        'slaComplianceRate': data.sla_compliance_rate ? `${data.sla_compliance_rate}%` : null,
+        'slaCompliance': data.sla_compliance ? `${data.sla_compliance}%` : null,
         'resolutionRate': data.resolution_rate ? `${data.resolution_rate}%` : null
     };
 
@@ -451,7 +439,7 @@ async function loadCharts() {
         if (summaryData) {
             document.getElementById('openTicketsCount').textContent = summaryData.open_tickets || '0';
             document.getElementById('avgResponseTime').textContent = `${summaryData.avg_response_time || 0}h`;
-            document.getElementById('slaComplianceRate').textContent = `${summaryData.sla_compliance || 0}%`;
+            document.getElementById('slaCompliance').textContent = `${summaryData.sla_compliance || 0}%`;
             document.getElementById('resolutionRate').textContent = `${summaryData.resolution_rate || 0}%`;
         }
 
@@ -472,9 +460,9 @@ async function loadCharts() {
         await new Promise(resolve => setTimeout(resolve, 100));
 
         // Create new charts
-        if (ticketStatus && document.getElementById('ticketStatusChart')) {
-            charts.ticketStatusChart = new Chart(document.getElementById('ticketStatusChart'), {
-                type: 'pie',
+        if (ticketStatus && document.getElementById('ticketTrendContainer')) {
+            charts.ticketStatusChart = new Chart(document.getElementById('ticketTrendContainer'), {
+                type: 'line',
                 data: ticketStatus,
                 options: {
                     responsive: true,
@@ -488,8 +476,8 @@ async function loadCharts() {
             });
         }
 
-        if (responseTimes && document.getElementById('responseTimeChart')) {
-            charts.responseTimeChart = new Chart(document.getElementById('responseTimeChart'), {
+        if (responseTimes && document.getElementById('responseTimeContainer')) {
+            charts.responseTimeChart = new Chart(document.getElementById('responseTimeContainer'), {
                 type: 'line',
                 data: responseTimes,
                 options: {
@@ -509,8 +497,8 @@ async function loadCharts() {
             });
         }
 
-        if (slaCompliance && document.getElementById('slaComplianceChart')) {
-            charts.slaComplianceChart = new Chart(document.getElementById('slaComplianceChart'), {
+        if (slaCompliance && document.getElementById('slaComplianceContainer')) {
+            charts.slaComplianceChart = new Chart(document.getElementById('slaComplianceContainer'), {
                 type: 'line',
                 data: slaCompliance,
                 options: {
@@ -531,8 +519,8 @@ async function loadCharts() {
             });
         }
 
-        if (agentPerformance && document.getElementById('agentPerformanceChart')) {
-            charts.agentPerformanceChart = new Chart(document.getElementById('agentPerformanceChart'), {
+        if (agentPerformance && document.getElementById('agentPerformanceContainer')) {
+            charts.agentPerformanceChart = new Chart(document.getElementById('agentPerformanceContainer'), {
                 type: 'bar',
                 data: agentPerformance,
                 options: {

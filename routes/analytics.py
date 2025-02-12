@@ -511,6 +511,85 @@ def open_tickets_age():
         }]
     })
 
+@analytics.route('/data/dashboard')
+@login_required
+@handle_analytics_errors
+def get_dashboard_data():
+    """Get all dashboard data in a single request"""
+    try:
+        days = request.args.get('days', 30, type=int)
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+
+        # Get summary metrics
+        summary = get_summary_metrics(start_date, end_date)
+        
+        # Get chart data
+        charts = {
+            'ticketTrend': get_ticket_trend_data(start_date, end_date),
+            'agentPerformance': get_agent_performance_data(start_date, end_date),
+            'statusDistribution': get_status_distribution_data(start_date, end_date),
+            'priorityAnalysis': get_priority_analysis_data(start_date, end_date),
+            'responseTime': get_response_time_data(start_date, end_date),
+            'categoryDistribution': get_category_distribution_data(start_date, end_date)
+        }
+
+        return jsonify({
+            'summary': summary,
+            'charts': charts
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Error getting dashboard data: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+def get_summary_metrics(start_date, end_date):
+    """Get summary metrics for dashboard"""
+    return {
+        'openTickets': db.session.query(func.count(Ticket.id)).filter(
+            Ticket.tenant_id == current_user.tenant_id,
+            Ticket.status == 'open'
+        ).scalar() or 0,
+        
+        'avgResponseTime': db.session.query(
+            func.avg(
+                func.extract('epoch', 
+                    func.min(TicketComment.created_at) - Ticket.created_at
+                ) / 3600
+            )
+        ).select_from(Ticket).join(
+            TicketComment,
+            (Ticket.id == TicketComment.ticket_id) & 
+            (TicketComment.is_response == True)
+        ).filter(
+            Ticket.tenant_id == current_user.tenant_id,
+            Ticket.created_at.between(start_date, end_date)
+        ).scalar() or 0,
+        
+        'resolutionRate': calculate_resolution_rate(start_date, end_date),
+        'slaCompliance': calculate_sla_compliance(start_date, end_date)
+    }
+
+def get_ticket_trend_data(start_date, end_date):
+    """Get ticket trend data for line chart"""
+    daily_tickets = db.session.query(
+        func.date(Ticket.created_at).label('date'),
+        func.count(Ticket.id).label('count')
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(
+        func.date(Ticket.created_at)
+    ).order_by('date').all()
+
+    return {
+        'x': [dt.date.strftime('%Y-%m-%d') for dt in daily_tickets],
+        'y': [dt.count for dt in daily_tickets],
+        'type': 'scatter',
+        'mode': 'lines+markers',
+        'name': 'Daily Tickets'
+    }
+
 def parse_date_range(date_range):
     """Parse date range string into start and end dates"""
     if not date_range:
@@ -522,3 +601,153 @@ def parse_date_range(date_range):
     start_date = datetime.strptime(start_str, '%Y-%m-%d')
     end_date = datetime.strptime(end_str, '%Y-%m-%d') + timedelta(days=1)  # Include the end date
     return start_date, end_date 
+
+def get_agent_performance_data(start_date, end_date):
+    """Get agent performance data for bar chart"""
+    performance = db.session.query(
+        User.name,
+        func.count(Ticket.id).label('tickets_handled'),
+        func.avg(case([(Ticket.status == 'closed', 1)], else_=0)).label('resolution_rate')
+    ).join(
+        Ticket, User.id == Ticket.assigned_to
+    ).filter(
+        User.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(User.id, User.name).all()
+
+    return {
+        'type': 'bar',
+        'x': [p.name for p in performance],
+        'y': [p.tickets_handled for p in performance],
+        'name': 'Tickets Handled',
+        'marker': {
+            'color': '#4e73df'
+        }
+    }
+
+def get_status_distribution_data(start_date, end_date):
+    """Get status distribution data for pie chart"""
+    status_counts = db.session.query(
+        Ticket.status,
+        func.count(Ticket.id).label('count')
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(Ticket.status).all()
+
+    return {
+        'type': 'pie',
+        'labels': [s.status.capitalize() for s in status_counts],
+        'values': [s.count for s in status_counts],
+        'marker': {
+            'colors': ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e']
+        }
+    }
+
+def get_priority_analysis_data(start_date, end_date):
+    """Get priority analysis data for bar chart"""
+    priority_data = db.session.query(
+        Ticket.priority,
+        func.count(Ticket.id).label('count')
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(Ticket.priority).all()
+
+    return {
+        'type': 'bar',
+        'x': [p.priority.capitalize() for p in priority_data],
+        'y': [p.count for p in priority_data],
+        'marker': {
+            'color': ['#e74a3b', '#f6c23e', '#1cc88a']  # High, Medium, Low
+        }
+    }
+
+def get_response_time_data(start_date, end_date):
+    """Get response time analysis data for box plot"""
+    response_times = db.session.query(
+        Ticket.priority,
+        func.extract('epoch', 
+            func.min(TicketComment.created_at) - Ticket.created_at
+        ).label('response_time')
+    ).join(
+        TicketComment,
+        (Ticket.id == TicketComment.ticket_id) & 
+        (TicketComment.is_response == True)
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(
+        Ticket.id,
+        Ticket.priority
+    ).all()
+
+    # Organize data by priority
+    data_by_priority = {}
+    for rt in response_times:
+        if rt.priority not in data_by_priority:
+            data_by_priority[rt.priority] = []
+        data_by_priority[rt.priority].append(rt.response_time / 3600)  # Convert to hours
+
+    return {
+        'type': 'box',
+        'x': list(data_by_priority.keys()),
+        'y': list(data_by_priority.values()),
+        'marker': {
+            'color': '#4e73df'
+        }
+    }
+
+def get_category_distribution_data(start_date, end_date):
+    """Get category distribution data for treemap"""
+    categories = db.session.query(
+        Ticket.category,
+        Ticket.priority,
+        func.count(Ticket.id).label('count')
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).group_by(
+        Ticket.category,
+        Ticket.priority
+    ).all()
+
+    return {
+        'type': 'treemap',
+        'labels': [f"{c.category or 'Uncategorized'} - {c.priority}" for c in categories],
+        'parents': [c.category or 'Uncategorized' for c in categories],
+        'values': [c.count for c in categories],
+        'marker': {
+            'colors': ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b']
+        }
+    }
+
+def calculate_resolution_rate(start_date, end_date):
+    """Calculate ticket resolution rate"""
+    total = db.session.query(func.count(Ticket.id)).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).scalar() or 0
+    
+    resolved = db.session.query(func.count(Ticket.id)).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.status == 'closed',
+        Ticket.created_at.between(start_date, end_date)
+    ).scalar() or 0
+    
+    return resolved / total if total > 0 else 0
+
+def calculate_sla_compliance(start_date, end_date):
+    """Calculate SLA compliance rate"""
+    total = db.session.query(func.count(Ticket.id)).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date)
+    ).scalar() or 0
+    
+    compliant = db.session.query(func.count(Ticket.id)).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date),
+        Ticket.sla_breach.is_(False)
+    ).scalar() or 0
+    
+    return compliant / total if total > 0 else 0 

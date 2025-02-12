@@ -32,7 +32,20 @@ const customMetricConfigs = {
     }
 };
 
+// Color scheme
+const colors = {
+    primary: '#4e73df',
+    success: '#1cc88a',
+    info: '#36b9cc',
+    warning: '#f6c23e',
+    danger: '#e74a3b'
+};
+
+// Initialize everything when the document is ready
 document.addEventListener('DOMContentLoaded', function() {
+    initializeDashboard();
+    initializeEventListeners();
+
     // Initialize Select2
     $('#customMetricSelect').select2({
         dropdownParent: $('#metricsModal'),
@@ -167,6 +180,175 @@ document.addEventListener('DOMContentLoaded', function() {
         $('#metricDateRange').val('');
     });
 });
+
+async function initializeDashboard() {
+    try {
+        showLoading();
+        const data = await fetchDashboardData();
+        updateDashboard(data);
+    } catch (error) {
+        console.error('Error initializing dashboard:', error);
+        showError();
+    }
+}
+
+function initializeEventListeners() {
+    // Time range selector
+    document.querySelectorAll('[data-time-range]').forEach(button => {
+        button.addEventListener('click', function() {
+            const days = this.dataset.timeRange;
+            updateTimeRange(days);
+        });
+    });
+}
+
+async function fetchDashboardData() {
+    const response = await fetch(`/analytics/data/dashboard?days=${currentDays}`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch dashboard data');
+    }
+    return response.json();
+}
+
+function showLoading() {
+    // Show loading state for summary tiles
+    document.querySelectorAll('.summary-tile h2').forEach(el => {
+        el.textContent = '...';
+    });
+    
+    // Show loading state for charts
+    document.querySelectorAll('.chart-container').forEach(container => {
+        container.innerHTML = `
+            <div class="d-flex justify-content-center align-items-center h-100">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function showError() {
+    document.querySelectorAll('.summary-tile h2').forEach(el => {
+        el.textContent = 'Error';
+    });
+    
+    document.querySelectorAll('.chart-container').forEach(container => {
+        container.innerHTML = `
+            <div class="alert alert-danger m-3">
+                Failed to load data. Please try again later.
+            </div>
+        `;
+    });
+}
+
+function updateDashboard(data) {
+    updateSummaryTiles(data.summary);
+    initializeCharts(data.charts);
+}
+
+function updateSummaryTiles(summary) {
+    // Update summary tiles with formatted values
+    if (summary.openTickets !== undefined) {
+        document.getElementById('openTicketsCount').textContent = summary.openTickets;
+    }
+    if (summary.avgResponseTime !== undefined) {
+        document.getElementById('avgResponseTime').textContent = 
+            formatDuration(summary.avgResponseTime);
+    }
+    if (summary.resolutionRate !== undefined) {
+        document.getElementById('resolutionRate').textContent = 
+            `${(summary.resolutionRate * 100).toFixed(1)}%`;
+    }
+    if (summary.slaCompliance !== undefined) {
+        document.getElementById('slaCompliance').textContent = 
+            `${(summary.slaCompliance * 100).toFixed(1)}%`;
+    }
+}
+
+function initializeCharts(chartData) {
+    // Initialize each chart with Plotly
+    if (chartData.ticketTrend) {
+        initializeTicketTrendChart(chartData.ticketTrend);
+    }
+    if (chartData.statusDistribution) {
+        initializeStatusDistributionChart(chartData.statusDistribution);
+    }
+    if (chartData.agentPerformance) {
+        initializeAgentPerformanceChart(chartData.agentPerformance);
+    }
+    if (chartData.responseTime) {
+        initializeResponseTimeChart(chartData.responseTime);
+    }
+}
+
+// Chart initialization functions
+function initializeTicketTrendChart(data) {
+    const layout = {
+        margin: { t: 20, r: 20, l: 40, b: 40 },
+        showlegend: true,
+        hovermode: 'x unified',
+        xaxis: {
+            showgrid: false,
+            zeroline: false
+        },
+        yaxis: {
+            showgrid: true,
+            zeroline: false
+        }
+    };
+
+    Plotly.newPlot('ticketTrendContainer', [data], layout, {responsive: true});
+}
+
+function initializeStatusDistributionChart(data) {
+    const layout = {
+        margin: { t: 20, r: 20, l: 20, b: 20 },
+        showlegend: true
+    };
+
+    Plotly.newPlot('statusDistributionContainer', [data], layout, {responsive: true});
+}
+
+function initializeAgentPerformanceChart(data) {
+    const layout = {
+        margin: { t: 20, r: 20, l: 40, b: 100 },
+        showlegend: true,
+        xaxis: {
+            tickangle: -45
+        }
+    };
+
+    Plotly.newPlot('agentPerformanceContainer', [data], layout, {responsive: true});
+}
+
+function initializeResponseTimeChart(data) {
+    const layout = {
+        margin: { t: 20, r: 20, l: 40, b: 40 },
+        showlegend: false,
+        yaxis: {
+            title: 'Response Time (hours)'
+        }
+    };
+
+    Plotly.newPlot('responseTimeContainer', [data], layout, {responsive: true});
+}
+
+// Utility functions
+function formatDuration(hours) {
+    if (hours < 1) return `${Math.round(hours * 60)}m`;
+    if (hours < 24) return `${Math.round(hours)}h`;
+    return `${Math.round(hours / 24)}d`;
+}
+
+async function updateTimeRange(days) {
+    currentDays = days;
+    const btn = document.getElementById('timeRangeBtn');
+    if (btn) {
+        btn.textContent = `Last ${days} Days`;
+    }
+    await initializeDashboard();
+}
 
 // Function to initialize custom chart
 async function initializeCustomChart(metricId, config, dateRange) {
