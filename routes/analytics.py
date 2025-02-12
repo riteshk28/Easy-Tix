@@ -393,7 +393,7 @@ def agent_performance():
     
     # Get agent performance metrics
     performance = db.session.query(
-        User.name,
+        User.username.label('name'),
         func.count(Ticket.id).label('tickets_handled'),
         func.avg(case([(Ticket.status == 'closed', 1)], else_=0)).label('resolution_rate')
     ).join(
@@ -401,7 +401,7 @@ def agent_performance():
     ).filter(
         User.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date)
-    ).group_by(User.id, User.name).all()
+    ).group_by(User.id, User.username).all()
     
     return jsonify({
         'labels': [p.name for p in performance],
@@ -630,7 +630,7 @@ def parse_date_range(date_range):
 def get_agent_performance_data(start_date, end_date):
     """Get agent performance data for bar chart"""
     performance = db.session.query(
-        User.name,
+        User.username.label('name'),
         func.count(Ticket.id).label('tickets_handled'),
         func.avg(case([(Ticket.status == 'closed', 1)], else_=0)).label('resolution_rate')
     ).join(
@@ -638,7 +638,7 @@ def get_agent_performance_data(start_date, end_date):
     ).filter(
         User.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date)
-    ).group_by(User.id, User.name).all()
+    ).group_by(User.id, User.username).all()
 
     return {
         'type': 'bar',

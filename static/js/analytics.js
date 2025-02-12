@@ -43,7 +43,6 @@ const colors = {
 
 // Initialize everything when the document is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Remove Select2 initialization since we're not using it
     initializeDashboard();
     initializeEventListeners();
 
@@ -57,16 +56,6 @@ document.addEventListener('DOMContentLoaded', function() {
             float: true,
             column: 12,
             animate: true
-        });
-
-        // Add resize handler for Plotly
-        grid.on('resizestop', function() {
-            const containers = document.querySelectorAll('.chart-container');
-            containers.forEach(container => {
-                if (container.firstChild) {
-                    Plotly.Plots.resize(container.firstChild);
-                }
-            });
         });
     }
 
@@ -274,8 +263,9 @@ function updateSummaryTiles(summary) {
 }
 
 function initializeCharts(chartData) {
+    // Ticket Trend
     if (chartData.ticketTrend) {
-        const layout = {
+        const trendLayout = {
             margin: { t: 20, r: 20, l: 40, b: 40 },
             showlegend: true,
             hovermode: 'x unified',
@@ -289,23 +279,21 @@ function initializeCharts(chartData) {
                 title: 'Number of Tickets'
             }
         };
-        
-        const container = document.getElementById('ticketTrendContainer');
-        if (container) {
-            Plotly.newPlot(container, [chartData.ticketTrend], layout, {responsive: true});
-        }
+        Plotly.newPlot('ticketTrendContainer', [chartData.ticketTrend], trendLayout, {responsive: true});
     }
 
+    // Status Distribution
     if (chartData.statusDistribution) {
-        const layout = {
+        const pieLayout = {
             margin: { t: 20, r: 20, l: 20, b: 20 },
             showlegend: true
         };
-        Plotly.newPlot('statusDistributionContainer', [chartData.statusDistribution], layout, {responsive: true});
+        Plotly.newPlot('statusDistributionContainer', [chartData.statusDistribution], pieLayout, {responsive: true});
     }
 
+    // Agent Performance
     if (chartData.agentPerformance) {
-        const layout = {
+        const barLayout = {
             margin: { t: 20, r: 20, l: 40, b: 100 },
             showlegend: true,
             xaxis: {
@@ -315,18 +303,19 @@ function initializeCharts(chartData) {
                 title: 'Tickets Handled'
             }
         };
-        Plotly.newPlot('agentPerformanceContainer', [chartData.agentPerformance], layout, {responsive: true});
+        Plotly.newPlot('agentPerformanceContainer', [chartData.agentPerformance], barLayout, {responsive: true});
     }
 
+    // Response Time
     if (chartData.responseTime) {
-        const layout = {
+        const boxLayout = {
             margin: { t: 20, r: 20, l: 40, b: 40 },
             showlegend: false,
             yaxis: {
                 title: 'Response Time (hours)'
             }
         };
-        Plotly.newPlot('responseTimeContainer', [chartData.responseTime], layout, {responsive: true});
+        Plotly.newPlot('responseTimeContainer', [chartData.responseTime], boxLayout, {responsive: true});
     }
 }
 
@@ -414,4 +403,14 @@ window.removeWidget = function(button) {
         charts[chartId].destroy();
         delete charts[chartId];
     }
-}; 
+};
+
+// Add window resize handler
+window.addEventListener('resize', function() {
+    const containers = document.querySelectorAll('.chart-container');
+    containers.forEach(container => {
+        if (container.firstChild) {
+            Plotly.Plots.resize(container);
+        }
+    });
+}); 
