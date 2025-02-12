@@ -223,6 +223,31 @@ async function initializeDashboard() {
         showLoading();
         const data = await fetchDashboardData();
         updateDashboard(data);
+        
+        // Initialize new charts
+        const slaBreachData = await fetchData('/analytics/api/custom/sla-breach-priority');
+        const responseVsSLAData = await fetchData('/analytics/api/custom/first-response-sla');
+        const sourceDistData = await fetchData('/analytics/api/custom/source-distribution');
+        const wordCloudData = await fetchData('/analytics/api/custom/word-cloud');
+
+        // Create the new charts
+        Plotly.newPlot('slaBreachContainer', [slaBreachData], {
+            title: 'SLA Breaches by Priority',
+            showlegend: true
+        });
+
+        Plotly.newPlot('responseVsSLAContainer', [responseVsSLAData], {
+            title: 'Response Time vs SLA Target',
+            showlegend: true
+        });
+
+        Plotly.newPlot('sourceDistributionContainer', [sourceDistData], {
+            title: 'Ticket Sources',
+            showlegend: true
+        });
+
+        createWordCloud('wordCloudContainer', wordCloudData);
+
     } catch (error) {
         console.error('Error initializing dashboard:', error);
         showError();

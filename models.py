@@ -354,12 +354,22 @@ class Ticket(db.Model):
 
 class TicketComment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    content = db.Column(db.Text)
+    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))  # Can be null for customer comments
+    content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_internal = db.Column(db.Boolean, default=False)
     is_customer = db.Column(db.Boolean, default=False)
+
+    # Add back the user relationship
+    user = db.relationship('User', backref='comments')
+
+    @property
+    def author_name(self):
+        """Get the name of the comment author"""
+        if self.is_customer:
+            return "Customer"
+        return self.user.full_name if self.user else "System"
 
 class SubscriptionPayment(db.Model):
     __tablename__ = 'subscription_payments'  # SQLAlchemy convention is plural

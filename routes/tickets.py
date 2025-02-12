@@ -183,9 +183,10 @@ def add_comment(ticket_id):
     
     comment = TicketComment(
         ticket_id=ticket_id,
-        user_id=current_user.id,
+        user_id=current_user.id,  # Always set for logged-in users
         content=request.form['content'],
-        is_internal=is_internal
+        is_internal=is_internal,
+        is_customer=False  # Staff comments are never customer comments
     )
     
     db.session.add(comment)
@@ -220,7 +221,8 @@ def track(portal_key, ticket_id):
             comment = TicketComment(
                 content=content,
                 ticket_id=ticket.id,
-                is_customer=True
+                is_customer=True,  # This is a customer comment
+                is_internal=False  # Customer comments are never internal
             )
             db.session.add(comment)
             db.session.commit()
