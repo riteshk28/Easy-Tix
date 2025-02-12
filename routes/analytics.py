@@ -391,7 +391,6 @@ def agent_performance():
     date_range = request.args.get('dateRange')
     start_date, end_date = parse_date_range(date_range)
     
-    # Get agent performance metrics
     performance = db.session.query(
         User.email.label('name'),
         func.count(Ticket.id).label('tickets_handled'),
@@ -402,7 +401,8 @@ def agent_performance():
             )
         ).label('resolution_rate')
     ).join(
-        Ticket, User.id == Ticket.assigned_to
+        Ticket,
+        User.id == Ticket.assigned_to_id
     ).filter(
         User.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date)
@@ -644,7 +644,8 @@ def get_agent_performance_data(start_date, end_date):
             )
         ).label('resolution_rate')
     ).join(
-        Ticket, User.id == Ticket.assigned_to
+        Ticket,
+        User.id == Ticket.assigned_to_id
     ).filter(
         User.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date)
@@ -709,9 +710,6 @@ def get_response_time_data(start_date, end_date):
         Ticket.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date),
         Ticket.first_response_at.isnot(None)
-    ).group_by(
-        Ticket.id,
-        Ticket.priority
     ).all()
 
     # Organize data by priority
