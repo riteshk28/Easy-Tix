@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedMetrics = $('#customMetricSelect').val();
         const dateRange = $('#metricDateRange').val();
         
+        console.log('Button clicked');
         console.log('Selected metrics:', selectedMetrics);
         console.log('Date range:', dateRange);
 
@@ -80,19 +81,26 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             // Get current grid items to calculate next position
             const items = grid.engine.nodes;
+            console.log('Current grid items:', items);
+            
             let nextY = 0;
             if (items.length > 0) {
                 const maxY = Math.max(...items.map(item => item.y + item.h));
                 nextY = maxY;
             }
+            console.log('Next Y position:', nextY);
 
             for (const metricId of selectedMetrics) {
-                console.log('Adding metric:', metricId);
+                console.log('Processing metric:', metricId);
                 const config = customMetricConfigs[metricId];
                 if (!config) {
                     console.error('No config found for metric:', metricId);
                     continue;
                 }
+
+                // Create unique ID for this instance
+                const uniqueId = `${metricId}_${Date.now()}`;
+                console.log('Generated unique ID:', uniqueId);
 
                 const widgetHtml = `
                     <div class="grid-stack-item-content">
@@ -106,8 +114,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                             </div>
                             <div class="card-body">
-                                <div class="chart-container">
-                                    <canvas id="${metricId}Chart"></canvas>
+                                <div class="chart-container" style="position: relative; height: 100%; width: 100%;">
+                                    <canvas id="${uniqueId}Chart"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -119,27 +127,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     w: 6,
                     h: 4,
                     y: nextY,
-                    x: nextY % 2 * 6, // Alternate between left and right
-                    content: widgetHtml
+                    x: nextY % 2 * 6,
+                    content: widgetHtml,
+                    id: uniqueId
                 });
                 console.log('Widget added:', widget);
 
-                // Wait a bit for the DOM to update
+                // Wait for DOM update
                 await new Promise(resolve => setTimeout(resolve, 100));
 
-                console.log('Initializing chart:', metricId);
-                await initializeCustomChart(metricId, config, dateRange);
+                // Initialize chart with the unique ID
+                console.log('Initializing chart with ID:', uniqueId);
+                await initializeCustomChart(uniqueId, config, dateRange);
                 
-                // Update nextY for next widget
                 nextY = nextY + (nextY % 2 === 1 ? 4 : 0);
             }
 
-            // Reset form and close modal
+            // Success handling
             $('#customMetricSelect').val(null).trigger('change');
             $('#metricDateRange').val('');
             metricsModal.hide();
 
-            // Show success message
             const toast = document.createElement('div');
             toast.className = 'alert alert-success position-fixed bottom-0 end-0 m-3';
             toast.style.zIndex = '1050';
