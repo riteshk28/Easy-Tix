@@ -737,9 +737,9 @@ def calculate_sla_compliance(start_date, end_date):
     
     return compliant / total if total > 0 else 0
 
-@analytics.route('/analytics/export', methods=['POST'])
+@analytics.route('/export', methods=['POST'])
 @login_required
-def export_data():
+def export_filtered_data():
     try:
         data = request.get_json()
         start_date, end_date = parse_date_range(data['dateRange'])
