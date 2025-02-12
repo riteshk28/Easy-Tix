@@ -149,6 +149,47 @@
 {% endblock %}
 
 {% block analytics_content %}
+<!-- Add this near the top of your analytics content -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Analytics Dashboard</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#chartsModal">
+        <i class="fas fa-plus"></i> Add/Remove Charts
+    </button>
+</div>
+
+<!-- Add this modal for managing charts -->
+<div class="modal fade" id="chartsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Manage Charts</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="list-group">
+                    <label class="list-group-item">
+                        <input class="form-check-input me-1" type="checkbox" value="ticketTrend" checked>
+                        Ticket Volume Trend
+                    </label>
+                    <label class="list-group-item">
+                        <input class="form-check-input me-1" type="checkbox" value="statusDistribution" checked>
+                        Status Distribution
+                    </label>
+                    <label class="list-group-item">
+                        <input class="form-check-input me-1" type="checkbox" value="agentPerformance" checked>
+                        Agent Performance
+                    </label>
+                    <!-- Add other charts -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="updateVisibleCharts()">Apply Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Summary Metrics -->
 <div class="row mb-4">
     <!-- Open Tickets -->
@@ -226,8 +267,11 @@
     <div class="grid-stack-item" gs-w="8" gs-h="4">
         <div class="grid-stack-item-content">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-transparent border-0">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Ticket Volume Trend</h5>
+                    <button type="button" class="btn btn-sm btn-icon" onclick="removeChartWidget(this)">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
                 <div class="card-body">
                     <div id="ticketTrendContainer" class="chart-container"></div>

@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeDashboard();
     initializeEventListeners();
 
-    // Initialize grid only if container exists
+    // Initialize grid with draggable and removable options
     const gridContainer = document.querySelector('.grid-stack');
     if (gridContainer) {
         grid = GridStack.init({
@@ -80,7 +80,10 @@ document.addEventListener('DOMContentLoaded', function() {
             margin: 10,
             float: true,
             column: 12,
-            animate: true
+            animate: true,
+            draggable: {
+                handle: '.card-header'  // Make cards draggable by header
+            }
         });
     }
 
@@ -603,4 +606,49 @@ function createWordCloud(container, data) {
     };
     
     Plotly.newPlot(container, [data], layout, {responsive: true});
+}
+
+// Add this function near the other fetch functions
+async function fetchData(endpoint) {
+    try {
+        const response = await fetch(`${endpoint}?days=${currentDays}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch data');
+        }
+        return response.json();
+    } catch (error) {
+        console.error(`Error fetching from ${endpoint}:`, error);
+        throw error;
+    }
+}
+
+// Add this function to handle chart removal
+function removeChartWidget(button) {
+    const card = button.closest('.grid-stack-item');
+    if (card && grid) {
+        grid.removeWidget(card);
+        // Trigger resize event to adjust other charts
+        window.dispatchEvent(new Event('resize'));
+    }
+}
+
+function updateVisibleCharts() {
+    const checkboxes = document.querySelectorAll('#chartsModal input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        const chartContainer = document.querySelector(`.grid-stack-item[data-chart="${checkbox.value}"]`);
+        if (chartContainer) {
+            if (checkbox.checked) {
+                chartContainer.style.display = '';
+            } else {
+                chartContainer.style.display = 'none';
+            }
+        }
+    });
+    
+    // Trigger resize event to adjust visible charts
+    window.dispatchEvent(new Event('resize'));
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('chartsModal'));
+    modal.hide();
 } 
