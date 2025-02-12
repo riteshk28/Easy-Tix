@@ -1,3 +1,8 @@
+// Global variables
+let grid;
+const charts = {};
+let currentDays = 30;
+
 // Define available metrics based on actual DB fields
 const customMetricConfigs = {
     tickets_by_status: {
@@ -38,16 +43,7 @@ const colors = {
 
 // Initialize everything when the document is ready
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Select2 only if the element exists
-    const customMetricSelect = $('#customMetricSelect');
-    if (customMetricSelect.length) {
-        customMetricSelect.select2({
-            dropdownParent: $('#metricsModal'),
-            placeholder: 'Select metrics...',
-            width: '100%'
-        });
-    }
-
+    // Remove Select2 initialization since we're not using it
     initializeDashboard();
     initializeEventListeners();
 
@@ -58,15 +54,19 @@ document.addEventListener('DOMContentLoaded', function() {
             cellHeight: 100,
             minRow: 1,
             margin: 10,
-            draggable: {
-                handle: '.handle'
-            },
             float: true,
             column: 12,
-            animate: true,
-            resizable: {
-                handles: 'e,se,s,sw,w'
-            }
+            animate: true
+        });
+
+        // Add resize handler for Plotly
+        grid.on('resizestop', function() {
+            const containers = document.querySelectorAll('.chart-container');
+            containers.forEach(container => {
+                if (container.firstChild) {
+                    Plotly.Plots.resize(container.firstChild);
+                }
+            });
         });
     }
 
@@ -289,7 +289,11 @@ function initializeCharts(chartData) {
                 title: 'Number of Tickets'
             }
         };
-        Plotly.newPlot('ticketTrendContainer', [chartData.ticketTrend], layout, {responsive: true});
+        
+        const container = document.getElementById('ticketTrendContainer');
+        if (container) {
+            Plotly.newPlot(container, [chartData.ticketTrend], layout, {responsive: true});
+        }
     }
 
     if (chartData.statusDistribution) {
@@ -326,14 +330,6 @@ function initializeCharts(chartData) {
     }
 }
 
-// Update resize handler for Plotly
-grid.on('resizestop', function() {
-    const containers = document.querySelectorAll('.chart-container');
-    containers.forEach(container => {
-        Plotly.Plots.resize(container);
-    });
-});
-
 // Utility functions
 function formatDuration(hours) {
     if (hours < 1) return `${Math.round(hours * 60)}m`;
@@ -350,64 +346,36 @@ async function updateTimeRange(days) {
     await initializeDashboard();
 }
 
-// Function to initialize custom chart
+// Update initializeCustomChart to use Plotly instead of Chart.js
 async function initializeCustomChart(metricId, config, dateRange) {
-    console.log('Starting chart initialization:', metricId);
-    const canvas = document.getElementById(`${metricId}Chart`);
-    if (!canvas) {
-        console.error('Canvas not found for:', metricId);
+    const container = document.getElementById(`${metricId}Container`);
+    if (!container) {
+        console.error('Container not found for:', metricId);
         return;
     }
     
-    const ctx = canvas.getContext('2d');
-    const container = canvas.closest('.chart-container');
-    
     try {
-        container.classList.add('loading');
+        container.innerHTML = '<div class="loading-spinner">Loading...</div>';
         const url = `${config.endpoint}?dateRange=${dateRange}`;
-        console.log('Fetching data from:', url);
         
         const response = await fetch(url);
-        console.log('Response status:', response.status);
-        
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('API response not ok:', response.status, errorText);
             throw new Error('Failed to fetch data');
         }
         
         const data = await response.json();
-        console.log('Received data for', metricId, ':', data);
         
-        if (charts[metricId]) {
-            console.log('Destroying existing chart:', metricId);
-            charts[metricId].destroy();
-        }
-        
-        console.log('Creating new chart:', metricId);
-        charts[metricId] = new Chart(ctx, {
-            type: config.type,
-            data: data,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                },
-                animation: {
-                    duration: 750,
-                    easing: 'easeInOutQuart'
-                }
-            }
-        });
-        console.log('Chart created successfully:', metricId);
+        const layout = {
+            margin: { t: 20, r: 20, l: 40, b: 40 },
+            showlegend: true,
+            height: container.clientHeight,
+            width: container.clientWidth
+        };
+
+        Plotly.newPlot(container, [data], layout, {responsive: true});
     } catch (error) {
         console.error('Error creating chart:', error);
         container.innerHTML = '<div class="alert alert-danger">Failed to load chart</div>';
-    } finally {
-        container.classList.remove('loading');
     }
 }
 
