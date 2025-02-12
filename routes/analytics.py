@@ -7,8 +7,22 @@ from io import StringIO, BytesIO
 from datetime import datetime, timedelta
 from extensions import db
 from sqlalchemy import func, case
+from functools import wraps
 
 analytics = Blueprint('analytics', __name__)
+
+def handle_analytics_errors(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            current_app.logger.error(f"Analytics error: {str(e)}")
+            return jsonify({
+                'error': 'An error occurred while processing your request',
+                'details': str(e)
+            }), 500
+    return decorated_function
 
 @analytics.route('/', methods=['GET', 'POST'])
 @login_required
