@@ -345,7 +345,7 @@ def response_time_trend():
     ).filter(
         Ticket.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date),
-        TicketComment.is_response == True
+        TicketComment.is_internal == True and ~TicketComment.is_customer
     ).group_by(
         func.date(Ticket.created_at)
     ).order_by(
@@ -478,7 +478,8 @@ def first_response_trend():
     ).filter(
         Ticket.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date),
-        TicketComment.comment_type == 'response'
+        TicketComment.is_internal == True,
+        ~TicketComment.is_customer
     ).group_by(
         func.date(Ticket.created_at)
     ).order_by(
@@ -574,7 +575,8 @@ def get_summary_metrics(start_date, end_date):
         ).select_from(Ticket).join(
             TicketComment,
             (Ticket.id == TicketComment.ticket_id) & 
-            (TicketComment.comment_type == 'response')
+            (TicketComment.is_internal == True) &
+            ~TicketComment.is_customer
         ).filter(
             Ticket.tenant_id == current_user.tenant_id,
             Ticket.created_at.between(start_date, end_date)
@@ -687,7 +689,8 @@ def get_response_time_data(start_date, end_date):
     ).join(
         TicketComment,
         (Ticket.id == TicketComment.ticket_id) & 
-        (TicketComment.comment_type == 'response')
+        (TicketComment.is_internal == True) &
+        ~TicketComment.is_customer
     ).filter(
         Ticket.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date)
