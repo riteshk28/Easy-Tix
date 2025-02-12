@@ -169,6 +169,28 @@ document.addEventListener('DOMContentLoaded', function() {
         $('#customMetricSelect').val(null).trigger('change');
         $('#metricDateRange').val('');
     });
+
+    // Add this after your existing event listeners
+    $('#selectAllStatus').change(function() {
+        const isChecked = $(this).prop('checked');
+        $('input[name="status"]').prop('checked', isChecked).trigger('change');
+    });
+
+    $('#selectAllPriority').change(function() {
+        const isChecked = $(this).prop('checked');
+        $('input[name="priority"]').prop('checked', isChecked).trigger('change');
+    });
+
+    // Add change event for individual checkboxes to update "Select All"
+    $('input[name="status"]').change(function() {
+        const allChecked = $('input[name="status"]').length === $('input[name="status"]:checked').length;
+        $('#selectAllStatus').prop('checked', allChecked);
+    });
+
+    $('input[name="priority"]').change(function() {
+        const allChecked = $('input[name="priority"]').length === $('input[name="priority"]:checked').length;
+        $('#selectAllPriority').prop('checked', allChecked);
+    });
 });
 
 async function initializeDashboard() {
@@ -213,14 +235,14 @@ function showLoading() {
     });
     
     // Show loading state for charts
-    document.querySelectorAll('.chart-container').forEach(container => {
-        container.innerHTML = `
-            <div class="d-flex justify-content-center align-items-center h-100">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-        `;
+    const containers = ['ticketTrendContainer', 'statusDistributionContainer', 
+                       'agentPerformanceContainer', 'responseTimeContainer'];
+    
+    containers.forEach(id => {
+        const container = document.getElementById(id);
+        if (container) {
+            container.innerHTML = '<div class="loading-spinner">Loading...</div>';
+        }
     });
 }
 
@@ -263,7 +285,11 @@ function updateSummaryTiles(summary) {
 }
 
 function initializeCharts(chartData) {
-    // Ticket Trend
+    // Remove loading spinners first
+    document.querySelectorAll('.loading-spinner').forEach(spinner => {
+        spinner.remove();
+    });
+
     if (chartData.ticketTrend) {
         const trendLayout = {
             margin: { t: 20, r: 20, l: 40, b: 40 },
@@ -464,6 +490,7 @@ async function exportFilteredData() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
             },
             body: JSON.stringify({
                 dateRange,
