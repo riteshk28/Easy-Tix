@@ -500,7 +500,8 @@ async function exportFilteredData() {
         });
 
         if (!response.ok) {
-            throw new Error('Export failed');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Export failed');
         }
 
         const blob = await response.blob();
@@ -518,7 +519,7 @@ async function exportFilteredData() {
         modal.hide();
     } catch (error) {
         console.error('Export error:', error);
-        alert('Failed to export data. Please try again.');
+        alert(error.message || 'Failed to export data. Please try again.');
     }
 }
 

@@ -604,10 +604,22 @@ def parse_date_range(date_range):
         start_date = end_date - timedelta(days=30)
         return start_date, end_date
     
-    start_str, end_str = date_range.split(' - ')
-    start_date = datetime.strptime(start_str, '%Y-%m-%d')
-    end_date = datetime.strptime(end_str, '%Y-%m-%d') + timedelta(days=1)  # Include the end date
-    return start_date, end_date 
+    try:
+        start_str, end_str = date_range.split(' - ')
+        # Try both formats (MM/DD/YYYY and YYYY-MM-DD)
+        try:
+            start_date = datetime.strptime(start_str.strip(), '%m/%d/%Y')
+            end_date = datetime.strptime(end_str.strip(), '%m/%d/%Y')
+        except ValueError:
+            start_date = datetime.strptime(start_str.strip(), '%Y-%m-%d')
+            end_date = datetime.strptime(end_str.strip(), '%Y-%m-%d')
+        
+        # Include the entire end date
+        end_date = end_date + timedelta(days=1) - timedelta(seconds=1)
+        return start_date, end_date
+    except Exception as e:
+        current_app.logger.error(f"Date parsing error: {str(e)}")
+        raise ValueError(f"Invalid date format. Please use MM/DD/YYYY or YYYY-MM-DD. Error: {str(e)}")
 
 def get_agent_performance_data(start_date, end_date):
     """Get agent performance data for bar chart"""
@@ -742,7 +754,10 @@ def calculate_sla_compliance(start_date, end_date):
 def export_filtered_data():
     try:
         data = request.get_json()
-        start_date, end_date = parse_date_range(data['dateRange'])
+        try:
+            start_date, end_date = parse_date_range(data['dateRange'])
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
         
         tickets = Ticket.query.filter(
             Ticket.tenant_id == current_user.tenant_id,
