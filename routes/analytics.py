@@ -542,39 +542,49 @@ def get_dashboard_data():
 
 def get_summary_metrics(start_date, end_date):
     """Get summary metrics for dashboard"""
-    # First get the first response time for each ticket
-    first_response_subquery = db.session.query(
-        Ticket.id,
-        func.min(TicketComment.created_at).label('first_response_time')
-    ).join(
-        TicketComment,
-        Ticket.id == TicketComment.ticket_id
-    ).filter(
+    # Get open tickets count
+    open_tickets = db.session.query(func.count(Ticket.id)).filter(
         Ticket.tenant_id == current_user.tenant_id,
-        Ticket.created_at.between(start_date, end_date)
-    ).group_by(Ticket.id).subquery()
+        Ticket.status == 'open'
+    ).scalar() or 0
 
-    # Then calculate the average response time
-    avg_response_time = db.session.query(
+    # Get in progress tickets count
+    in_progress = db.session.query(func.count(Ticket.id)).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.status == 'in_progress'
+    ).scalar() or 0
+
+    # Calculate average response time
+    avg_response = db.session.query(
         func.avg(
             func.extract('epoch', 
-                first_response_subquery.c.first_response_time - Ticket.created_at
-            ) / 3600
+                Ticket.first_response_at - Ticket.created_at
+            ) / 3600  # Convert to hours
         )
-    ).join(
-        first_response_subquery,
-        Ticket.id == first_response_subquery.c.id
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date),
+        Ticket.first_response_at.isnot(None)
+    ).scalar() or 0
+
+    # Calculate average resolution time
+    avg_resolution = db.session.query(
+        func.avg(
+            func.extract('epoch', 
+                Ticket.resolved_at - Ticket.created_at
+            ) / 3600  # Convert to hours
+        )
+    ).filter(
+        Ticket.tenant_id == current_user.tenant_id,
+        Ticket.created_at.between(start_date, end_date),
+        Ticket.resolved_at.isnot(None)
     ).scalar() or 0
 
     return {
-        'openTickets': db.session.query(func.count(Ticket.id)).filter(
-            Ticket.tenant_id == current_user.tenant_id,
-            Ticket.status == 'open'
-        ).scalar() or 0,
-        
-        'avgResponseTime': avg_response_time,
-        'resolutionRate': calculate_resolution_rate(start_date, end_date),
-        'slaCompliance': calculate_sla_compliance(start_date, end_date)
+        'openTickets': open_tickets,
+        'inProgress': in_progress,
+        'avgResponseTime': round(avg_response, 1),
+        'avgResolutionTime': round(avg_resolution, 1)
     }
 
 def get_ticket_trend_data(start_date, end_date):

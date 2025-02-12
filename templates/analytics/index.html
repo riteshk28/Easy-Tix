@@ -145,36 +145,71 @@
 
 {% block analytics_content %}
 <!-- Summary Metrics -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm summary-tile">
+<div class="row mb-4">
+    <!-- Open Tickets -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2 summary-tile">
             <div class="card-body">
-                <h6 class="card-title text-muted mb-0">Open Tickets</h6>
-                <h2 class="mb-0" id="openTicketsCount">-</h2>
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Open Tickets</div>
+                        <div class="h2 mb-0 font-weight-bold text-gray-800" id="openTickets">0</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-ticket-alt fa-2x text-gray-300"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm summary-tile">
+
+    <!-- In Progress -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2 summary-tile">
             <div class="card-body">
-                <h6 class="card-title text-muted mb-0">Avg Response Time</h6>
-                <h2 class="mb-0" id="avgResponseTime">-</h2>
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">In Progress</div>
+                        <div class="h2 mb-0 font-weight-bold text-gray-800" id="inProgress">0</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-clock fa-2x text-gray-300"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm summary-tile">
+
+    <!-- Average Response Time -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2 summary-tile">
             <div class="card-body">
-                <h6 class="card-title text-muted mb-0">Resolution Rate</h6>
-                <h2 class="mb-0" id="resolutionRate">-</h2>
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Avg Response Time</div>
+                        <div class="h2 mb-0 font-weight-bold text-gray-800" id="avgResponseTime">0h</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-reply fa-2x text-gray-300"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm summary-tile">
+
+    <!-- Average Resolution Time -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2 summary-tile">
             <div class="card-body">
-                <h6 class="card-title text-muted mb-0">SLA Compliance</h6>
-                <h2 class="mb-0" id="slaCompliance">-</h2>
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Avg Resolution Time</div>
+                        <div class="h2 mb-0 font-weight-bold text-gray-800" id="avgResolutionTime">0h</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

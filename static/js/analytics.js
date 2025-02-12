@@ -261,26 +261,17 @@ function showError() {
 }
 
 function updateDashboard(data) {
-    updateSummaryTiles(data.summary);
-    initializeCharts(data.charts);
-}
+    // Update summary metrics
+    if (data.summary) {
+        document.getElementById('openTickets').textContent = data.summary.openTickets;
+        document.getElementById('inProgress').textContent = data.summary.inProgress;
+        document.getElementById('avgResponseTime').textContent = formatDuration(data.summary.avgResponseTime);
+        document.getElementById('avgResolutionTime').textContent = formatDuration(data.summary.avgResolutionTime);
+    }
 
-function updateSummaryTiles(summary) {
-    // Update summary tiles with formatted values
-    if (summary.openTickets !== undefined) {
-        document.getElementById('openTicketsCount').textContent = summary.openTickets;
-    }
-    if (summary.avgResponseTime !== undefined) {
-        document.getElementById('avgResponseTime').textContent = 
-            formatDuration(summary.avgResponseTime);
-    }
-    if (summary.resolutionRate !== undefined) {
-        document.getElementById('resolutionRate').textContent = 
-            `${(summary.resolutionRate * 100).toFixed(1)}%`;
-    }
-    if (summary.slaCompliance !== undefined) {
-        document.getElementById('slaCompliance').textContent = 
-            `${(summary.slaCompliance * 100).toFixed(1)}%`;
+    // Initialize charts
+    if (data.charts) {
+        initializeCharts(data.charts);
     }
 }
 
