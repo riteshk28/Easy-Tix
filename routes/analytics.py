@@ -286,28 +286,6 @@ def get_dashboard_config():
         current_app.logger.error(f"Error getting dashboard config: {str(e)}")
         return jsonify({'error': str(e)}), 400
 
-@analytics.route('/api/custom/tickets-by-category')
-@login_required
-def tickets_by_category():
-    date_range = request.args.get('dateRange')
-    start_date, end_date = parse_date_range(date_range)
-    
-    tickets = Ticket.query.filter(
-        Ticket.tenant_id == current_user.tenant_id,
-        Ticket.created_at.between(start_date, end_date)
-    ).with_entities(
-        Ticket.category,
-        func.count(Ticket.id)
-    ).group_by(Ticket.category).all()
-    
-    return jsonify({
-        'labels': [t[0] or 'Uncategorized' for t in tickets],
-        'datasets': [{
-            'data': [t[1] for t in tickets],
-            'backgroundColor': ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b']
-        }]
-    })
-
 @analytics.route('/api/custom/tickets-by-priority')
 @login_required
 def tickets_by_priority():
@@ -544,14 +522,13 @@ def get_dashboard_data():
         # Get summary metrics
         summary = get_summary_metrics(start_date, end_date)
         
-        # Get chart data
+        # Get chart data - remove categoryDistribution since category doesn't exist
         charts = {
             'ticketTrend': get_ticket_trend_data(start_date, end_date),
             'agentPerformance': get_agent_performance_data(start_date, end_date),
             'statusDistribution': get_status_distribution_data(start_date, end_date),
             'priorityAnalysis': get_priority_analysis_data(start_date, end_date),
-            'responseTime': get_response_time_data(start_date, end_date),
-            'categoryDistribution': get_category_distribution_data(start_date, end_date)
+            'responseTime': get_response_time_data(start_date, end_date)
         }
 
         return jsonify({
@@ -726,30 +703,6 @@ def get_response_time_data(start_date, end_date):
         'y': list(data_by_priority.values()),
         'marker': {
             'color': '#4e73df'
-        }
-    }
-
-def get_category_distribution_data(start_date, end_date):
-    """Get category distribution data for treemap"""
-    categories = db.session.query(
-        Ticket.category,
-        Ticket.priority,
-        func.count(Ticket.id).label('count')
-    ).filter(
-        Ticket.tenant_id == current_user.tenant_id,
-        Ticket.created_at.between(start_date, end_date)
-    ).group_by(
-        Ticket.category,
-        Ticket.priority
-    ).all()
-
-    return {
-        'type': 'treemap',
-        'labels': [f"{c.category or 'Uncategorized'} - {c.priority}" for c in categories],
-        'parents': [c.category or 'Uncategorized' for c in categories],
-        'values': [c.count for c in categories],
-        'marker': {
-            'colors': ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b']
         }
     }
 

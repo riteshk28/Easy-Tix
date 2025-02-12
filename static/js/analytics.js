@@ -437,4 +437,60 @@ $('#dateRange').on('apply.daterangepicker', function(ev, picker) {
 // Cancel handler for export modal
 $('#dateRange').on('cancel.daterangepicker', function(ev, picker) {
     $(this).val('');
-}); 
+});
+
+// Add this function for export functionality
+async function exportFilteredData() {
+    const dateRange = $('#dateRange').val();
+    const statuses = $('input[name="status"]:checked').map(function() {
+        return this.value;
+    }).get();
+    const priorities = $('input[name="priority"]:checked').map(function() {
+        return this.value;
+    }).get();
+
+    if (!dateRange) {
+        alert('Please select a date range');
+        return;
+    }
+
+    if (statuses.length === 0 || priorities.length === 0) {
+        alert('Please select at least one status and priority');
+        return;
+    }
+
+    try {
+        const response = await fetch('/analytics/export', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                dateRange,
+                statuses,
+                priorities
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Export failed');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ticket_data.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+        modal.hide();
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('Failed to export data. Please try again.');
+    }
+} 
