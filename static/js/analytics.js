@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
         width: '100%'
     });
 
-    // Initialize grid
+    // Initialize grid with proper options
     grid = GridStack.init({
         cellHeight: 100,
         minRow: 1,
@@ -48,7 +48,12 @@ document.addEventListener('DOMContentLoaded', function() {
         draggable: {
             handle: '.handle'
         },
-        float: true
+        float: true,
+        column: 12,
+        animate: true,
+        resizable: {
+            handles: 'e,se,s,sw,w'
+        }
     });
 
     // Get the modal instance
@@ -73,6 +78,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
+            // Get current grid items to calculate next position
+            const items = grid.engine.nodes;
+            let nextY = 0;
+            if (items.length > 0) {
+                const maxY = Math.max(...items.map(item => item.y + item.h));
+                nextY = maxY;
+            }
+
             for (const metricId of selectedMetrics) {
                 console.log('Adding metric:', metricId);
                 const config = customMetricConfigs[metricId];
@@ -83,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const widgetHtml = `
                     <div class="grid-stack-item-content">
-                        <div class="card shadow-sm">
+                        <div class="card h-100 border-0 shadow-sm">
                             <div class="card-header bg-transparent d-flex justify-content-between align-items-center handle">
                                 <h6 class="mb-0">${config.label}</h6>
                                 <div>
@@ -101,22 +114,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
 
-                console.log('Adding widget to grid');
+                console.log('Adding widget to grid at y:', nextY);
                 const widget = grid.addWidget({
                     w: 6,
                     h: 4,
+                    y: nextY,
+                    x: nextY % 2 * 6, // Alternate between left and right
                     content: widgetHtml
                 });
                 console.log('Widget added:', widget);
 
+                // Wait a bit for the DOM to update
+                await new Promise(resolve => setTimeout(resolve, 100));
+
                 console.log('Initializing chart:', metricId);
                 await initializeCustomChart(metricId, config, dateRange);
+                
+                // Update nextY for next widget
+                nextY = nextY + (nextY % 2 === 1 ? 4 : 0);
             }
 
             // Reset form and close modal
             $('#customMetricSelect').val(null).trigger('change');
             $('#metricDateRange').val('');
             metricsModal.hide();
+
+            // Show success message
+            const toast = document.createElement('div');
+            toast.className = 'alert alert-success position-fixed bottom-0 end-0 m-3';
+            toast.style.zIndex = '1050';
+            toast.textContent = 'Metrics added successfully';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+
         } catch (error) {
             console.error('Error adding metrics:', error);
             alert('Failed to add metrics. Please try again.');
@@ -175,6 +205,10 @@ async function initializeCustomChart(metricId, config, dateRange) {
                     legend: {
                         position: 'bottom'
                     }
+                },
+                animation: {
+                    duration: 750,
+                    easing: 'easeInOutQuart'
                 }
             }
         });
