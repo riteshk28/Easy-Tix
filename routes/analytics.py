@@ -237,50 +237,6 @@ def get_summary_data():
     data = AnalyticsService.get_summary_metrics(current_user.tenant_id, days)
     return jsonify(data)
 
-@analytics.route('/save-dashboard', methods=['POST'])
-@login_required
-def save_dashboard():
-    try:
-        data = request.json
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
-
-        dashboard = AnalyticsDashboard.query.filter_by(
-            tenant_id=current_user.tenant_id,
-            user_id=current_user.id,
-            is_default=True
-        ).first()
-        
-        if not dashboard:
-            dashboard = AnalyticsDashboard(
-                tenant_id=current_user.tenant_id,
-                user_id=current_user.id,
-                name='Default Dashboard',
-                is_default=True
-            )
-
-        # Update the dashboard configuration
-        if 'layout' in data:
-            dashboard.layout_config = data['layout']
-        
-        if not dashboard.chart_config:
-            dashboard.chart_config = {}
-            
-        if 'chartTypes' in data:
-            dashboard.chart_config['chartTypes'] = data['chartTypes']
-            
-        if 'metrics' in data:
-            dashboard.chart_config['metrics'] = data['metrics']
-
-        db.session.add(dashboard)
-        db.session.commit()
-        
-        return jsonify({'status': 'success'})
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error saving dashboard: {str(e)}")
-        return jsonify({'error': str(e)}), 400
-
 @analytics.route('/dashboard-config')
 @login_required
 def get_dashboard_config():
