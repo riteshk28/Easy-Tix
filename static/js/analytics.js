@@ -413,4 +413,23 @@ window.addEventListener('resize', function() {
             Plotly.Plots.resize(container);
         }
     });
+});
+
+// Initialize date range picker
+$(document).ready(function() {
+    $('.daterangepicker-input').daterangepicker({
+        autoUpdateInput: false,
+        locale: {
+            cancelLabel: 'Clear',
+            format: 'YYYY-MM-DD'
+        }
+    });
+
+    $('.daterangepicker-input').on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+    });
+
+    $('.daterangepicker-input').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+    });
 }); 

@@ -395,7 +395,12 @@ def agent_performance():
     performance = db.session.query(
         User.email.label('name'),
         func.count(Ticket.id).label('tickets_handled'),
-        func.avg(case([(Ticket.status == 'closed', 1)], else_=0)).label('resolution_rate')
+        func.avg(
+            case(
+                (Ticket.status == 'closed', 1),
+                else_=0
+            )
+        ).label('resolution_rate')
     ).join(
         Ticket, User.id == Ticket.assigned_to
     ).filter(
@@ -632,7 +637,12 @@ def get_agent_performance_data(start_date, end_date):
     performance = db.session.query(
         User.email.label('name'),
         func.count(Ticket.id).label('tickets_handled'),
-        func.avg(case([(Ticket.status == 'closed', 1)], else_=0)).label('resolution_rate')
+        func.avg(
+            case(
+                (Ticket.status == 'closed', 1),
+                else_=0
+            )
+        ).label('resolution_rate')
     ).join(
         Ticket, User.id == Ticket.assigned_to
     ).filter(
