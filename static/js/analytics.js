@@ -274,72 +274,65 @@ function updateSummaryTiles(summary) {
 }
 
 function initializeCharts(chartData) {
-    // Initialize each chart with Plotly
     if (chartData.ticketTrend) {
-        initializeTicketTrendChart(chartData.ticketTrend);
+        const layout = {
+            margin: { t: 20, r: 20, l: 40, b: 40 },
+            showlegend: true,
+            hovermode: 'x unified',
+            xaxis: {
+                showgrid: false,
+                zeroline: false
+            },
+            yaxis: {
+                showgrid: true,
+                zeroline: false,
+                title: 'Number of Tickets'
+            }
+        };
+        Plotly.newPlot('ticketTrendContainer', [chartData.ticketTrend], layout, {responsive: true});
     }
+
     if (chartData.statusDistribution) {
-        initializeStatusDistributionChart(chartData.statusDistribution);
+        const layout = {
+            margin: { t: 20, r: 20, l: 20, b: 20 },
+            showlegend: true
+        };
+        Plotly.newPlot('statusDistributionContainer', [chartData.statusDistribution], layout, {responsive: true});
     }
+
     if (chartData.agentPerformance) {
-        initializeAgentPerformanceChart(chartData.agentPerformance);
+        const layout = {
+            margin: { t: 20, r: 20, l: 40, b: 100 },
+            showlegend: true,
+            xaxis: {
+                tickangle: -45
+            },
+            yaxis: {
+                title: 'Tickets Handled'
+            }
+        };
+        Plotly.newPlot('agentPerformanceContainer', [chartData.agentPerformance], layout, {responsive: true});
     }
+
     if (chartData.responseTime) {
-        initializeResponseTimeChart(chartData.responseTime);
+        const layout = {
+            margin: { t: 20, r: 20, l: 40, b: 40 },
+            showlegend: false,
+            yaxis: {
+                title: 'Response Time (hours)'
+            }
+        };
+        Plotly.newPlot('responseTimeContainer', [chartData.responseTime], layout, {responsive: true});
     }
 }
 
-// Chart initialization functions
-function initializeTicketTrendChart(data) {
-    const layout = {
-        margin: { t: 20, r: 20, l: 40, b: 40 },
-        showlegend: true,
-        hovermode: 'x unified',
-        xaxis: {
-            showgrid: false,
-            zeroline: false
-        },
-        yaxis: {
-            showgrid: true,
-            zeroline: false
-        }
-    };
-
-    Plotly.newPlot('ticketTrendContainer', [data], layout, {responsive: true});
-}
-
-function initializeStatusDistributionChart(data) {
-    const layout = {
-        margin: { t: 20, r: 20, l: 20, b: 20 },
-        showlegend: true
-    };
-
-    Plotly.newPlot('statusDistributionContainer', [data], layout, {responsive: true});
-}
-
-function initializeAgentPerformanceChart(data) {
-    const layout = {
-        margin: { t: 20, r: 20, l: 40, b: 100 },
-        showlegend: true,
-        xaxis: {
-            tickangle: -45
-        }
-    };
-
-    Plotly.newPlot('agentPerformanceContainer', [data], layout, {responsive: true});
-}
-
-function initializeResponseTimeChart(data) {
-    const layout = {
-        margin: { t: 20, r: 20, l: 40, b: 40 },
-        showlegend: false,
-        yaxis: {
-            title: 'Response Time (hours)'
-        }
-    };
-
-    Plotly.newPlot('responseTimeContainer', [data], layout, {responsive: true});
-}
+// Update resize handler for Plotly
+grid.on('resizestop', function() {
+    const containers = document.querySelectorAll('.chart-container');
+    containers.forEach(container => {
+        Plotly.Plots.resize(container);
+    });
+});
 
 // Utility functions
 function formatDuration(hours) {

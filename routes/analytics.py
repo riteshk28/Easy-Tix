@@ -693,14 +693,12 @@ def get_response_time_data(start_date, end_date):
     response_times = db.session.query(
         Ticket.priority,
         func.extract('epoch', 
-            func.min(TicketComment.created_at) - Ticket.created_at
+            Ticket.first_response_at - Ticket.created_at
         ).label('response_time')
-    ).join(
-        TicketComment,
-        Ticket.id == TicketComment.ticket_id
     ).filter(
         Ticket.tenant_id == current_user.tenant_id,
-        Ticket.created_at.between(start_date, end_date)
+        Ticket.created_at.between(start_date, end_date),
+        Ticket.first_response_at.isnot(None)
     ).group_by(
         Ticket.id,
         Ticket.priority
@@ -772,7 +770,8 @@ def calculate_sla_compliance(start_date, end_date):
     compliant = db.session.query(func.count(Ticket.id)).filter(
         Ticket.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date),
-        Ticket.sla_breach.is_(False)
+        Ticket.sla_response_met == True,
+        Ticket.sla_resolution_met == True
     ).scalar() or 0
     
     return compliant / total if total > 0 else 0 
