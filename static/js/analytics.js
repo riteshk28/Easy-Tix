@@ -493,4 +493,32 @@ async function exportFilteredData() {
         console.error('Export error:', error);
         alert('Failed to export data. Please try again.');
     }
+}
+
+// Add this function for date range quick selection
+function setDateRange(range) {
+    const picker = $('#dateRange').data('daterangepicker');
+    switch(range) {
+        case 'today':
+            picker.setStartDate(moment());
+            picker.setEndDate(moment());
+            break;
+        case 'yesterday':
+            picker.setStartDate(moment().subtract(1, 'days'));
+            picker.setEndDate(moment().subtract(1, 'days'));
+            break;
+        case 'last7':
+            picker.setStartDate(moment().subtract(6, 'days'));
+            picker.setEndDate(moment());
+            break;
+        case 'last30':
+            picker.setStartDate(moment().subtract(29, 'days'));
+            picker.setEndDate(moment());
+            break;
+        case 'thisMonth':
+            picker.setStartDate(moment().startOf('month'));
+            picker.setEndDate(moment().endOf('month'));
+            break;
+    }
+    $('#dateRange').val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
 } 

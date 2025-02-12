@@ -735,4 +735,43 @@ def calculate_sla_compliance(start_date, end_date):
         Ticket.sla_resolution_met == True
     ).scalar() or 0
     
-    return compliant / total if total > 0 else 0 
+    return compliant / total if total > 0 else 0
+
+@analytics.route('/analytics/export', methods=['POST'])
+@login_required
+def export_data():
+    try:
+        data = request.get_json()
+        start_date, end_date = parse_date_range(data['dateRange'])
+        
+        tickets = Ticket.query.filter(
+            Ticket.tenant_id == current_user.tenant_id,
+            Ticket.created_at.between(start_date, end_date),
+            Ticket.status.in_(data['statuses']),
+            Ticket.priority.in_(data['priorities'])
+        ).all()
+        
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['ID', 'Title', 'Status', 'Priority', 'Created At', 'Resolved At'])
+        
+        for ticket in tickets:
+            writer.writerow([
+                ticket.id,
+                ticket.title,
+                ticket.status,
+                ticket.priority,
+                ticket.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                ticket.resolved_at.strftime('%Y-%m-%d %H:%M:%S') if ticket.resolved_at else ''
+            ])
+        
+        output.seek(0)
+        return send_file(
+            BytesIO(output.getvalue().encode('utf-8')),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name='ticket_data.csv'
+        )
+    except Exception as e:
+        current_app.logger.error(f"Export error: {str(e)}")
+        return jsonify({'error': str(e)}), 500 
