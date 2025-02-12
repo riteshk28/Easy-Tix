@@ -478,7 +478,7 @@ def first_response_trend():
     ).filter(
         Ticket.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date),
-        TicketComment.is_first_response == True
+        TicketComment.comment_type == 'response'
     ).group_by(
         func.date(Ticket.created_at)
     ).order_by(
@@ -492,7 +492,7 @@ def first_response_trend():
             'data': [float(rt.avg_first_response.total_seconds() / 3600) if rt.avg_first_response else 0 
                     for rt in response_times],
             'borderColor': '#4e73df',
-            'fill': false
+            'fill': False
         }]
     })
 
@@ -574,7 +574,7 @@ def get_summary_metrics(start_date, end_date):
         ).select_from(Ticket).join(
             TicketComment,
             (Ticket.id == TicketComment.ticket_id) & 
-            (TicketComment.is_response == True)
+            (TicketComment.comment_type == 'response')
         ).filter(
             Ticket.tenant_id == current_user.tenant_id,
             Ticket.created_at.between(start_date, end_date)
@@ -687,7 +687,7 @@ def get_response_time_data(start_date, end_date):
     ).join(
         TicketComment,
         (Ticket.id == TicketComment.ticket_id) & 
-        (TicketComment.is_response == True)
+        (TicketComment.comment_type == 'response')
     ).filter(
         Ticket.tenant_id == current_user.tenant_id,
         Ticket.created_at.between(start_date, end_date)
@@ -701,7 +701,8 @@ def get_response_time_data(start_date, end_date):
     for rt in response_times:
         if rt.priority not in data_by_priority:
             data_by_priority[rt.priority] = []
-        data_by_priority[rt.priority].append(rt.response_time / 3600)  # Convert to hours
+        if rt.response_time is not None:
+            data_by_priority[rt.priority].append(rt.response_time / 3600)  # Convert to hours
 
     return {
         'type': 'box',
