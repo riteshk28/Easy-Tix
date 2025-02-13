@@ -66,6 +66,17 @@ const colors = {
     danger: '#e74a3b'
 };
 
+const chartMappings = {
+    'ticketTrend': 'ticketTrendContainer',
+    'statusDistribution': 'statusDistributionContainer',
+    'agentPerformance': 'agentPerformanceContainer',
+    'responseTime': 'responseTimeContainer',
+    'slaBreachPriority': 'slaBreachContainer',
+    'firstResponseSLA': 'responseVsSLAContainer',
+    'sourceDistribution': 'sourceDistributionContainer',
+    'wordCloud': 'wordCloudContainer'
+};
+
 // Initialize everything when the document is ready
 document.addEventListener('DOMContentLoaded', function() {
     initializeDashboard();
@@ -230,29 +241,26 @@ async function initializeDashboard() {
         const data = await fetchDashboardData();
         updateDashboard(data);
         
-        // Initialize new charts
-        const slaBreachData = await fetchData('/analytics/api/custom/sla-breach-priority');
-        const responseVsSLAData = await fetchData('/analytics/api/custom/first-response-sla');
-        const sourceDistData = await fetchData('/analytics/api/custom/source-distribution');
-        const wordCloudData = await fetchData('/analytics/api/custom/word-cloud');
+        // Only initialize visible charts
+        const visibleCharts = document.querySelectorAll('.grid-stack-item[style="display: none;"] === null');
+        
+        if (visibleCharts.some(chart => chart.dataset.chart === 'slaBreachPriority')) {
+            const slaBreachData = await fetchData('/analytics/api/custom/sla-breach-priority');
+            Plotly.newPlot('slaBreachContainer', [slaBreachData], {
+                title: 'SLA Breaches by Priority',
+                showlegend: true
+            });
+        }
 
-        // Create the new charts
-        Plotly.newPlot('slaBreachContainer', [slaBreachData], {
-            title: 'SLA Breaches by Priority',
-            showlegend: true
-        });
+        if (visibleCharts.some(chart => chart.dataset.chart === 'firstResponseSLA')) {
+            const responseVsSLAData = await fetchData('/analytics/api/custom/first-response-sla');
+            Plotly.newPlot('responseVsSLAContainer', [responseVsSLAData], {
+                title: 'Response Time vs SLA Target',
+                showlegend: true
+            });
+        }
 
-        Plotly.newPlot('responseVsSLAContainer', [responseVsSLAData], {
-            title: 'Response Time vs SLA Target',
-            showlegend: true
-        });
-
-        Plotly.newPlot('sourceDistributionContainer', [sourceDistData], {
-            title: 'Ticket Sources',
-            showlegend: true
-        });
-
-        createWordCloud('wordCloudContainer', wordCloudData);
+        // Add similar checks for other charts...
 
     } catch (error) {
         console.error('Error initializing dashboard:', error);
@@ -303,17 +311,12 @@ function showLoading() {
 }
 
 function showError() {
-    document.querySelectorAll('.summary-tile h2').forEach(el => {
-        el.textContent = 'Error';
-    });
-    
-    document.querySelectorAll('.chart-container').forEach(container => {
-        container.innerHTML = `
-            <div class="alert alert-danger m-3">
-                Failed to load data. Please try again later.
-            </div>
-        `;
-    });
+    // Add a more visible error message
+    const errorAlert = document.createElement('div');
+    errorAlert.className = 'alert alert-danger position-fixed top-0 end-0 m-3';
+    errorAlert.textContent = 'Failed to load some charts. Please try refreshing the page.';
+    document.body.appendChild(errorAlert);
+    setTimeout(() => errorAlert.remove(), 5000);
 }
 
 function updateDashboard(data) {
@@ -616,11 +619,13 @@ async function fetchData(endpoint) {
     try {
         const response = await fetch(`${endpoint}?days=${currentDays}`);
         if (!response.ok) {
-            throw new Error('Failed to fetch data');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to fetch data');
         }
         return response.json();
     } catch (error) {
         console.error(`Error fetching from ${endpoint}:`, error);
+        showError();
         throw error;
     }
 }
@@ -659,16 +664,30 @@ function loadChartPreferences() {
 
 function updateVisibleCharts() {
     const checkboxes = document.querySelectorAll('#chartsModal input[type="checkbox"]');
+    let needsRefresh = false;
+
     checkboxes.forEach(checkbox => {
         const chartContainer = document.querySelector(`.grid-stack-item[data-chart="${checkbox.value}"]`);
         if (chartContainer) {
-            chartContainer.style.display = checkbox.checked ? '' : 'none';
+            const wasVisible = chartContainer.style.display !== 'none';
+            const shouldBeVisible = checkbox.checked;
+            
+            if (wasVisible !== shouldBeVisible) {
+                chartContainer.style.display = shouldBeVisible ? '' : 'none';
+                needsRefresh = true;
+            }
         }
     });
     
     saveChartPreferences();
-    window.dispatchEvent(new Event('resize'));
     
+    if (needsRefresh) {
+        // Reinitialize visible charts
+        initializeDashboard().catch(error => {
+            console.error('Error refreshing charts:', error);
+        });
+    }
+
     const modal = bootstrap.Modal.getInstance(document.getElementById('chartsModal'));
     if (modal) modal.hide();
 }
