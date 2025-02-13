@@ -28,7 +28,17 @@ def handle_analytics_errors(f):
 @login_required
 def index():
     """Analytics landing page"""
-    return render_template('analytics/index.html')
+    charts = {
+        'ticketTrend': {'label': 'Ticket Volume Trend'},
+        'statusDistribution': {'label': 'Status Distribution'},
+        'agentPerformance': {'label': 'Agent Performance'},
+        'responseTime': {'label': 'Response Time Analysis'},
+        'slaBreachPriority': {'label': 'SLA Breach Analysis'},
+        'firstResponseSLA': {'label': 'Response Time vs SLA'},
+        'sourceDistribution': {'label': 'Ticket Sources'},
+        'wordCloud': {'label': 'Common Ticket Subjects'}
+    }
+    return render_template('analytics/index.html', charts=charts)
 
 @analytics.route('/data/<report_type>', methods=['GET'])
 @login_required
@@ -834,33 +844,57 @@ def sla_breach_by_priority():
 @analytics.route('/api/custom/first-response-sla')
 @login_required
 def first_response_vs_sla():
-    date_range = request.args.get('dateRange')
-    start_date, end_date = parse_date_range(date_range)
-    
-    response_times = db.session.query(
-        func.date(Ticket.created_at).label('date'),
-        func.avg(
-            func.extract('epoch', Ticket.first_response_at - Ticket.created_at)
-        ).label('avg_response'),
-        func.avg(Ticket.sla_response_time).label('sla_target')
-    ).filter(
-        Ticket.tenant_id == current_user.tenant_id,
-        Ticket.created_at.between(start_date, end_date),
-        Ticket.first_response_at.isnot(None)
-    ).group_by(
-        func.date(Ticket.created_at)
-    ).order_by(
-        func.date(Ticket.created_at)
-    ).all()
-    
-    return jsonify({
-        'type': 'scatter',
-        'mode': 'lines',
-        'x': [rt.date.strftime('%Y-%m-%d') for rt in response_times],
-        'y': [float(rt.avg_response/3600) for rt in response_times],
-        'name': 'Actual Response Time',
-        'line': {'color': '#4e73df'}
-    })
+    try:
+        date_range = request.args.get('dateRange')
+        start_date, end_date = parse_date_range(date_range)
+        
+        # Get response times and SLA targets
+        response_data = db.session.query(
+            func.date(Ticket.created_at).label('date'),
+            func.avg(
+                func.extract('epoch', 
+                    func.coalesce(Ticket.first_response_at, func.now()) - Ticket.created_at
+                ) / 3600
+            ).label('avg_response'),
+            func.avg(
+                func.extract('epoch', Ticket.sla_response_due_at - Ticket.created_at) / 3600
+            ).label('sla_target')
+        ).filter(
+            Ticket.tenant_id == current_user.tenant_id,
+            Ticket.created_at.between(start_date, end_date)
+        ).group_by(
+            func.date(Ticket.created_at)
+        ).order_by(
+            func.date(Ticket.created_at)
+        ).all()
+
+        dates = [rd.date.strftime('%Y-%m-%d') for rd in response_data]
+        actual_times = [float(rd.avg_response or 0) for rd in response_data]
+        sla_targets = [float(rd.sla_target or 0) for rd in response_data]
+
+        return jsonify({
+            'data': [
+                {
+                    'type': 'scatter',
+                    'mode': 'lines',
+                    'name': 'Actual Response Time',
+                    'x': dates,
+                    'y': actual_times,
+                    'line': {'color': '#4e73df'}
+                },
+                {
+                    'type': 'scatter',
+                    'mode': 'lines',
+                    'name': 'SLA Target',
+                    'x': dates,
+                    'y': sla_targets,
+                    'line': {'color': '#e74a3b', 'dash': 'dash'}
+                }
+            ]
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error in first_response_vs_sla: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @analytics.route('/api/custom/source-distribution')
 @login_required

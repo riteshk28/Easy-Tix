@@ -219,6 +219,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const allChecked = $('input[name="priority"]').length === $('input[name="priority"]:checked').length;
         $('#selectAllPriority').prop('checked', allChecked);
     });
+
+    // Initialize chart preferences
+    loadChartPreferences();
 });
 
 async function initializeDashboard() {
@@ -632,23 +635,46 @@ function removeChartWidget(button) {
     }
 }
 
+// Add these functions for chart management
+function saveChartPreferences() {
+    const visibleCharts = {};
+    document.querySelectorAll('#chartsModal input[type="checkbox"]').forEach(checkbox => {
+        visibleCharts[checkbox.value] = checkbox.checked;
+    });
+    localStorage.setItem('chartPreferences', JSON.stringify(visibleCharts));
+}
+
+function loadChartPreferences() {
+    const savedPreferences = localStorage.getItem('chartPreferences');
+    if (savedPreferences) {
+        const preferences = JSON.parse(savedPreferences);
+        document.querySelectorAll('#chartsModal input[type="checkbox"]').forEach(checkbox => {
+            if (preferences.hasOwnProperty(checkbox.value)) {
+                checkbox.checked = preferences[checkbox.value];
+            }
+        });
+        updateVisibleCharts();
+    }
+}
+
 function updateVisibleCharts() {
     const checkboxes = document.querySelectorAll('#chartsModal input[type="checkbox"]');
     checkboxes.forEach(checkbox => {
         const chartContainer = document.querySelector(`.grid-stack-item[data-chart="${checkbox.value}"]`);
         if (chartContainer) {
-            if (checkbox.checked) {
-                chartContainer.style.display = '';
-            } else {
-                chartContainer.style.display = 'none';
-            }
+            chartContainer.style.display = checkbox.checked ? '' : 'none';
         }
     });
     
-    // Trigger resize event to adjust visible charts
+    saveChartPreferences();
     window.dispatchEvent(new Event('resize'));
     
-    // Close modal
     const modal = bootstrap.Modal.getInstance(document.getElementById('chartsModal'));
-    modal.hide();
+    if (modal) modal.hide();
+}
+
+function selectAllCharts(select) {
+    document.querySelectorAll('#chartsModal input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = select;
+    });
 } 
