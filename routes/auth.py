@@ -89,6 +89,10 @@ def complete_registration():
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
+    # If user is already logged in, redirect to dashboard
+    if current_user.is_authenticated:
+        return redirect(url_for('landing.index'))
+
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
