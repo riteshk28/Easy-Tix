@@ -241,26 +241,49 @@ async function initializeDashboard() {
         const data = await fetchDashboardData();
         updateDashboard(data);
         
-        // Only initialize visible charts
-        const visibleCharts = document.querySelectorAll('.grid-stack-item[style="display: none;"] === null');
+        // Get all visible charts (those that don't have display: none)
+        const chartElements = document.querySelectorAll('.grid-stack-item');
+        const visibleCharts = Array.from(chartElements).filter(el => 
+            el.style.display !== 'none'
+        );
         
-        if (visibleCharts.some(chart => chart.dataset.chart === 'slaBreachPriority')) {
-            const slaBreachData = await fetchData('/analytics/api/custom/sla-breach-priority');
-            Plotly.newPlot('slaBreachContainer', [slaBreachData], {
-                title: 'SLA Breaches by Priority',
-                showlegend: true
-            });
+        // Initialize each visible chart based on its data-chart attribute
+        for (const chartEl of visibleCharts) {
+            const chartType = chartEl.dataset.chart;
+            
+            switch(chartType) {
+                case 'slaBreachPriority':
+                    const slaBreachData = await fetchData('/analytics/api/custom/sla-breach-priority');
+                    Plotly.newPlot('slaBreachContainer', [slaBreachData], {
+                        title: 'SLA Breaches by Priority',
+                        showlegend: true
+                    });
+                    break;
+                    
+                case 'firstResponseSLA':
+                    const responseVsSLAData = await fetchData('/analytics/api/custom/first-response-sla');
+                    Plotly.newPlot('responseVsSLAContainer', responseVsSLAData.data, {
+                        title: 'Response Time vs SLA Target',
+                        showlegend: true
+                    });
+                    break;
+                    
+                case 'sourceDistribution':
+                    const sourceDistData = await fetchData('/analytics/api/custom/source-distribution');
+                    Plotly.newPlot('sourceDistributionContainer', [sourceDistData], {
+                        title: 'Ticket Sources',
+                        showlegend: true
+                    });
+                    break;
+                    
+                case 'wordCloud':
+                    const wordCloudData = await fetchData('/analytics/api/custom/word-cloud');
+                    createWordCloud('wordCloudContainer', wordCloudData);
+                    break;
+                    
+                // Add other chart types as needed
+            }
         }
-
-        if (visibleCharts.some(chart => chart.dataset.chart === 'firstResponseSLA')) {
-            const responseVsSLAData = await fetchData('/analytics/api/custom/first-response-sla');
-            Plotly.newPlot('responseVsSLAContainer', [responseVsSLAData], {
-                title: 'Response Time vs SLA Target',
-                showlegend: true
-            });
-        }
-
-        // Add similar checks for other charts...
 
     } catch (error) {
         console.error('Error initializing dashboard:', error);
