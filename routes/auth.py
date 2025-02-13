@@ -91,7 +91,7 @@ def complete_registration():
 def login():
     # If user is already logged in, redirect to dashboard
     if current_user.is_authenticated:
-        return redirect(url_for('landing.index'))
+        return redirect(url_for('dashboard.index'))
 
     if request.method == 'POST':
         email = request.form.get('email')
