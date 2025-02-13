@@ -2,9 +2,6 @@
 
 {% block analytics_header %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2>Analytics Dashboard</h2>
-    </div>
     <div class="btn-group">
         <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" id="timeRangeBtn">
             Last 30 Days
@@ -14,6 +11,9 @@
             <li><a class="dropdown-item" href="#" data-time-range="30">Last 30 Days</a></li>
             <li><a class="dropdown-item" href="#" data-time-range="90">Last 90 Days</a></li>
         </ul>
+        <button class="btn btn-outline-secondary ms-2" type="button" data-bs-toggle="modal" data-bs-target="#chartsModal">
+            <i class="fas fa-cog"></i>
+        </button>
         <button class="btn btn-primary ms-2" type="button" data-bs-toggle="modal" data-bs-target="#exportModal">
             <i class="fas fa-file-export"></i> Export Raw Data
         </button>
@@ -149,14 +149,6 @@
 {% endblock %}
 
 {% block analytics_content %}
-<!-- Add this near the top of your analytics content -->
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Analytics Dashboard</h2>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#chartsModal">
-        <i class="fas fa-plus"></i> Add/Remove Charts
-    </button>
-</div>
-
 <!-- Update the charts modal -->
 <div class="modal fade" id="chartsModal" tabindex="-1">
     <div class="modal-dialog">
