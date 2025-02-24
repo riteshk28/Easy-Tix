@@ -26,10 +26,10 @@ def extract_email_content(text_content, html_content):
         h = HTML2Text()
         h.ignore_links = False 
         h.ignore_images = True
-        h.body_width = 0
+        h.body_width = 0  # Don't wrap lines
         h.unicode_snob = True
         h.protect_links = True
-        h.single_line_break = True
+        h.single_line_break = False  # Preserve multiple line breaks
         h.ul_item_mark = '-'
         
         # Convert HTML to text if available
@@ -54,9 +54,10 @@ def extract_email_content(text_content, html_content):
         content_lines = []
         in_header = False
         header_count = 0
+        last_line_empty = False
         
         for line in lines:
-            line = line.strip()
+            line = line.rstrip()  # Keep leading whitespace but remove trailing
             
             # Check if this is a header line
             if any(header in line for header in forwarding_headers):
@@ -72,13 +73,22 @@ def extract_email_content(text_content, html_content):
                 'original message', '________________________________',
                 'forwarded message'
             ]):
-                if line:  # Only add non-empty lines
+                # Preserve paragraph breaks by not collapsing multiple empty lines
+                if not line:
+                    if not last_line_empty:
+                        content_lines.append(line)
+                        last_line_empty = True
+                else:
                     content_lines.append(line)
+                    last_line_empty = False
                     
         if content_lines:
-            return '\n'.join(content_lines).strip()
+            # Remove trailing empty lines but keep paragraph breaks
+            while content_lines and not content_lines[-1]:
+                content_lines.pop()
+            return '\n'.join(content_lines)
 
-        # If the above method didn't work, try HTML parsing
+        # If the above method didn't work, try HTML parsing with better structure preservation
         if html_content:
             soup = BeautifulSoup(html_content, 'html.parser')
             
@@ -86,32 +96,27 @@ def extract_email_content(text_content, html_content):
             for element in soup(['script', 'style', 'head', 'title', 'meta']):
                 element.decompose()
 
-            # Find all potential content blocks
+            # Process paragraphs and line breaks
             content_blocks = []
-            for element in soup.find_all(['div', 'p']):
-                text = element.get_text().strip()
-                if text and len(text) > 10:  # Minimum content length
-                    # Skip headers and footers
-                    if not any(marker in text.lower() for marker in [
-                        'from:', 'to:', 'sent:', 'date:', 'subject:',
-                        'forwarded message', 'original message',
-                        'get outlook', 'thanks & regards'
-                    ]):
-                        content_blocks.append((text, len(text)))
+            for element in soup.find_all(['p', 'div', 'br', 'ul', 'ol', 'li']):
+                if element.name == 'br':
+                    content_blocks.append('')
+                elif element.name in ['p', 'div']:
+                    text = element.get_text().strip()
+                    if text:
+                        content_blocks.append(text)
+                        content_blocks.append('')  # Add line break after paragraphs
+                elif element.name in ['ul', 'ol']:
+                    for li in element.find_all('li'):
+                        content_blocks.append(f"• {li.get_text().strip()}")
+                    content_blocks.append('')
 
-            # Sort by length and take the longest meaningful content
-            if content_blocks:
-                content_blocks.sort(key=lambda x: x[1], reverse=True)
-                return content_blocks[0][0].strip()
+            # Clean up and join blocks
+            while content_blocks and not content_blocks[-1]:
+                content_blocks.pop()
+            return '\n'.join(content_blocks)
 
-        # If all else fails, return cleaned original content
-        return ' '.join(line.strip() for line in main_content.split('\n') 
-                       if line.strip() and not any(marker in line.lower() for marker in [
-                           'from:', 'to:', 'sent:', 'date:', 'subject:',
-                           'cc:', 'bcc:', 'reply-to:', '>', '|',
-                           'get outlook', 'thanks & regards',
-                           'original message', '________________________________'
-                       ]))
+        return main_content
 
     except Exception as e:
         current_app.logger.error(f"Error extracting email content: {e}")
