@@ -27,8 +27,8 @@
             position: fixed;
             top: 0;
             left: 0;
-            box-shadow: 3px 0 10px rgba(0,0,0,.1);
-            background-color: #1a237e;  /* Dark blue to match theme */
+            box-shadow: 0 0 15px rgba(0,0,0,.05);
+            background-color: #fff;
             padding-top: 1rem;
             z-index: 1000;
         }
@@ -37,14 +37,14 @@
         .nav-logo {
             padding: 1rem 1.5rem;
             margin-bottom: 1rem;
-            border-bottom: 1px solid rgba(255,255,255,.2);
+            border-bottom: 1px solid #f0f0f0;
         }
 
         .nav-logo a {
             display: flex;
             align-items: center;
             gap: 12px;
-            color: #fff;
+            color: #2c3e50;
             text-decoration: none;
             font-size: 1.5rem;
             font-weight: bold;
@@ -55,39 +55,43 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 3px;
-            width: 24px;
-            height: 24px;
+            width: 32px;
+            height: 32px;
+            padding: 3px;
         }
 
         .logo-square {
-            width: 10px;
-            height: 10px;
+            width: 13px;
+            height: 13px;
             background-color: #fff;
-            border-radius: 2px;
+            border-radius: 3px;
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
         }
 
-        .logo-square:nth-child(1) { background-color: #64b5f6; }  /* Light blue */
-        .logo-square:nth-child(2) { background-color: #2196f3; }  /* Medium blue */
-        .logo-square:nth-child(3) { background-color: #1976d2; }  /* Dark blue */
+        .logo-square:nth-child(1) { background-color: #4299e1; }
+        .logo-square:nth-child(2) { background-color: #3182ce; }
+        .logo-square:nth-child(3) { background-color: #2b6cb0; }
 
         .vertical-nav .nav-link {
-            color: rgba(255,255,255,.75);
+            color: #718096;
             padding: 0.8rem 1.5rem;
             display: flex;
             align-items: center;
             gap: 10px;
             transition: all 0.2s ease;
+            border-radius: 6px;
+            margin: 0 0.5rem;
         }
 
         .vertical-nav .nav-link:hover {
-            color: #fff;
-            background-color: rgba(255,255,255,.15);
+            color: #2d3748;
+            background-color: #f7fafc;
         }
 
         .vertical-nav .nav-link.active {
-            color: #fff;
-            background-color: rgba(26, 35, 126, .7);  /* Slightly lighter than background */
-            border-right: 3px solid #64b5f6;  /* Light blue accent */
+            color: #2b6cb0;
+            background-color: #ebf8ff;
+            font-weight: 500;
         }
 
         /* Main content area */
@@ -131,11 +135,12 @@
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
+            padding: 0.5rem;
         }
         
         .nav-items hr {
             margin: 0.5rem 1.5rem;
-            border-color: rgba(255,255,255,.1);
+            border-color: #f0f0f0;
         }
         
         .nav-section {
