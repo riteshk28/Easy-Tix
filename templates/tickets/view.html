@@ -25,7 +25,7 @@
                 <h4>{{ ticket.title }}</h4>
                 <div class="email-content">
                     <div class="email-body">
-                        {{ ticket.description }}
+                        {{ ticket.description|safe }}
                     </div>
                 </div>
             </div>

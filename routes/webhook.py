@@ -31,6 +31,7 @@ def extract_email_content(text_content, html_content):
         h.protect_links = True
         h.single_line_break = False  # Preserve multiple line breaks
         h.ul_item_mark = '-'
+        h.br_style = 'css'  # Use CSS style line breaks
         
         # Convert HTML to text if available
         if html_content:
@@ -55,6 +56,7 @@ def extract_email_content(text_content, html_content):
         in_header = False
         header_count = 0
         last_line_empty = False
+        paragraph_break = False
         
         for line in lines:
             line = line.rstrip()  # Keep leading whitespace but remove trailing
@@ -73,19 +75,28 @@ def extract_email_content(text_content, html_content):
                 'original message', '________________________________',
                 'forwarded message'
             ]):
-                # Preserve paragraph breaks by not collapsing multiple empty lines
+                # Handle paragraph breaks
                 if not line:
                     if not last_line_empty:
-                        content_lines.append(line)
+                        content_lines.append('<br>')  # Add HTML line break
                         last_line_empty = True
+                        paragraph_break = True
                 else:
+                    if paragraph_break:
+                        content_lines.append('<p>')  # Start new paragraph
+                        paragraph_break = False
                     content_lines.append(line)
                     last_line_empty = False
                     
         if content_lines:
-            # Remove trailing empty lines but keep paragraph breaks
-            while content_lines and not content_lines[-1]:
+            # Clean up trailing breaks and join with proper spacing
+            while content_lines and content_lines[-1] in ['<br>', '<p>']:
                 content_lines.pop()
+            
+            # Close any open paragraphs
+            if not paragraph_break:
+                content_lines.append('</p>')
+                
             return '\n'.join(content_lines)
 
         # If the above method didn't work, try HTML parsing with better structure preservation
@@ -100,16 +111,16 @@ def extract_email_content(text_content, html_content):
             content_blocks = []
             for element in soup.find_all(['p', 'div', 'br', 'ul', 'ol', 'li']):
                 if element.name == 'br':
-                    content_blocks.append('')
+                    content_blocks.append('<br>')
                 elif element.name in ['p', 'div']:
                     text = element.get_text().strip()
                     if text:
-                        content_blocks.append(text)
-                        content_blocks.append('')  # Add line break after paragraphs
+                        content_blocks.append(f'<p>{text}</p>')
                 elif element.name in ['ul', 'ol']:
+                    content_blocks.append('<ul>')
                     for li in element.find_all('li'):
-                        content_blocks.append(f"• {li.get_text().strip()}")
-                    content_blocks.append('')
+                        content_blocks.append(f'<li>{li.get_text().strip()}</li>')
+                    content_blocks.append('</ul>')
 
             # Clean up and join blocks
             while content_blocks and not content_blocks[-1]:
