@@ -41,16 +41,20 @@ def extract_email_content(text_content, html_content):
 
         # Common forwarding patterns from different email providers
         forwarding_patterns = [
+            # Outlook style (more permissive)
+            r'(?:Subject:.*?\n)(.*?)(?=(?:From:|$))',
+            
             # Gmail style
             r'(?:---------- Forwarded message ---------.*?From:.*?Subject:.*?\n)(.*?)(?=(?:\s*(?:Get Outlook|Thanks & Regards|$)))',
-            # Outlook style
-            r'(?:From:.*?Sent:.*?To:.*?Subject:.*?\n)(.*?)(?=(?:\s*(?:________________________________|$)))',
+            
             # Apple Mail style
             r'(?:Begin forwarded message:.*?\n)(.*?)(?=(?:\s*(?:End forwarded message|$)))',
+            
             # Yahoo style
             r'(?:----- Forwarded Message -----.*?\n)(.*?)(?=(?:\s*(?:$)))',
+            
             # Generic style (fallback)
-            r'(?:^.*?From:.*?Subject:.*?\n)(.*?)(?=(?:\s*$))',
+            r'(?:^.*?Subject:.*?\n)(.*?)(?=(?:\s*$))',
         ]
 
         # Try each pattern
@@ -70,14 +74,15 @@ def extract_email_content(text_content, html_content):
                         line = line.strip()
                         
                         # Skip common header markers and empty lines
-                        if not line or any(marker in line for marker in [
-                            'From:', 'To:', 'Sent:', 'Date:', 'Subject:',
-                            'CC:', 'BCC:', 'Reply-To:', '>', '|',
-                            'Get Outlook', 'Thanks & Regards',
-                            'Original Message', '________________________________'
+                        if not line or any(marker in line.lower() for marker in [
+                            'from:', 'to:', 'sent:', 'date:', 'subject:',
+                            'cc:', 'bcc:', 'reply-to:', '>', '|',
+                            'get outlook', 'thanks & regards',
+                            'original message', '________________________________',
+                            'forwarded message'
                         ]):
                             continue
-                            
+
                         # Skip lines that look like email addresses or dates
                         if re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', line) or \
                            re.match(r'^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)', line):
@@ -86,7 +91,7 @@ def extract_email_content(text_content, html_content):
                         # We've found some real content
                         found_content = True
                         clean_lines.append(line)
-                    
+
                     if clean_lines:
                         return '\n'.join(clean_lines).strip()
 
@@ -104,9 +109,9 @@ def extract_email_content(text_content, html_content):
                 text = div.get_text().strip()
                 if text and len(text) > 10:  # Minimum content length
                     # Skip if div contains common header/footer text
-                    if not any(marker in text for marker in [
-                        'Forwarded message', 'Original Message',
-                        'Get Outlook', 'Thanks & Regards'
+                    if not any(marker in text.lower() for marker in [
+                        'forwarded message', 'original message',
+                        'get outlook', 'thanks & regards'
                     ]):
                         content_divs.append((div, len(text)))
             
@@ -120,9 +125,10 @@ def extract_email_content(text_content, html_content):
                 clean_lines = []
                 for line in lines:
                     line = line.strip()
-                    if line and not any(marker in line for marker in [
-                        'From:', 'To:', 'Subject:', 'Date:',
-                        'Get Outlook', 'Thanks & Regards'
+                    if line and not any(marker in line.lower() for marker in [
+                        'from:', 'to:', 'subject:', 'date:', 'sent:',
+                        'get outlook', 'thanks & regards',
+                        'original message', '________________________________'
                     ]):
                         clean_lines.append(line)
                         
@@ -134,10 +140,10 @@ def extract_email_content(text_content, html_content):
         clean_lines = []
         for line in lines:
             line = line.strip()
-            if line and not any(marker in line for marker in [
-                'From:', 'To:', 'Subject:', 'Date:', 'Sent:',
-                'Get Outlook', 'Thanks & Regards',
-                'Original Message', '________________________________',
+            if line and not any(marker in line.lower() for marker in [
+                'from:', 'to:', 'subject:', 'date:', 'sent:',
+                'get outlook', 'thanks & regards',
+                'original message', '________________________________',
                 '>', '|', '@'
             ]):
                 clean_lines.append(line)
