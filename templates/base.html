@@ -121,53 +121,51 @@
     {% endblock %}
 </head>
 <body>
+    {% if current_user.is_authenticated %}
     <!-- Mobile nav toggle -->
     <button class="btn btn-dark nav-toggle" id="navToggle">
         <i class="fas fa-bars"></i>
     </button>
+    {% endif %}
 
+    {% if current_user.is_authenticated %}
     <!-- Vertical navbar -->
     <nav class="vertical-nav">
         <div class="nav-logo">
             <a href="{{ url_for('dashboard.index') }}">Easy-Tix</a>
         </div>
         <div class="nav-items">
-            {% if current_user.is_authenticated %}
-                <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="{{ url_for('tickets.index') }}" class="nav-link {% if request.endpoint.startswith('tickets.') %}active{% endif %}">
-                    <i class="fas fa-ticket-alt"></i> Tickets
-                </a>
-                <a href="{{ url_for('analytics.index') }}" class="nav-link {% if request.endpoint.startswith('analytics.') %}active{% endif %}">
-                    <i class="fas fa-chart-bar"></i> Analytics
-                </a>
-                {% if current_user.is_admin %}
-                <a href="{{ url_for('admin.index') }}" class="nav-link {% if request.endpoint.startswith('admin.') %}active{% endif %}">
-                    <i class="fas fa-cog"></i> Admin
-                </a>
-                {% endif %}
-                {% if current_user.is_superadmin %}
-                <a href="{{ url_for('superadmin.index') }}" class="nav-link {% if request.endpoint.startswith('superadmin.') %}active{% endif %}">
-                    <i class="fas fa-user-shield"></i> Super Admin
-                </a>
-                {% endif %}
-                <a href="{{ url_for('auth.profile') }}" class="nav-link {% if request.endpoint == 'auth.profile' %}active{% endif %}">
-                    <i class="fas fa-user"></i> My Profile
-                </a>
-                <a href="{{ url_for('auth.logout') }}" class="nav-link">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            {% else %}
-                <a href="{{ url_for('auth.login') }}" class="nav-link {% if request.endpoint == 'auth.login' %}active{% endif %}">
-                    <i class="fas fa-sign-in-alt"></i> Login
-                </a>
+            <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a href="{{ url_for('tickets.index') }}" class="nav-link {% if request.endpoint.startswith('tickets.') %}active{% endif %}">
+                <i class="fas fa-ticket-alt"></i> Tickets
+            </a>
+            <a href="{{ url_for('analytics.index') }}" class="nav-link {% if request.endpoint.startswith('analytics.') %}active{% endif %}">
+                <i class="fas fa-chart-bar"></i> Analytics
+            </a>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('admin.index') }}" class="nav-link {% if request.endpoint.startswith('admin.') %}active{% endif %}">
+                <i class="fas fa-cog"></i> Admin
+            </a>
             {% endif %}
+            {% if current_user.is_superadmin %}
+            <a href="{{ url_for('superadmin.index') }}" class="nav-link {% if request.endpoint.startswith('superadmin.') %}active{% endif %}">
+                <i class="fas fa-user-shield"></i> Super Admin
+            </a>
+            {% endif %}
+            <a href="{{ url_for('auth.profile') }}" class="nav-link {% if request.endpoint == 'auth.profile' %}active{% endif %}">
+                <i class="fas fa-user"></i> My Profile
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="nav-link">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
         </div>
     </nav>
+    {% endif %}
 
     <!-- Main content -->
-    <div class="main-content">
+    <div class="{% if current_user.is_authenticated %}main-content{% else %}container py-4{% endif %}">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
