@@ -18,6 +18,13 @@ class MailerSendService:
         try:
             logger.info(f"Attempting to send email to {ticket.contact_email}")
             
+            # Get tenant for portal URL
+            tenant = Tenant.query.get(ticket.tenant_id)
+            portal_url = url_for('public.track_ticket', 
+                               portal_key=tenant.portal_key,
+                               ticket_id=ticket.id,
+                               _external=True)
+            
             # Prepare recipients
             recipients = [
                 {
@@ -26,16 +33,58 @@ class MailerSendService:
                 }
             ]
             
+            # Create HTML content with better formatting
+            html_content = f"""
+                <div style="font-family: Arial, sans-serif; padding: 20px;">
+                    <h2>New Update on Ticket #{ticket.ticket_number}</h2>
+                    
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                        <p>{comment.content}</p>
+                    </div>
+
+                    <div style="margin: 20px 0; padding-top: 15px; border-top: 1px solid #eee;">
+                        <p><strong>Ticket Details:</strong></p>
+                        <ul>
+                            <li>Title: {ticket.title}</li>
+                            <li>Status: {ticket.status}</li>
+                            <li>Priority: {ticket.priority}</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: #e9ecef; padding: 15px; border-radius: 5px;">
+                        <p><strong>How to Respond:</strong></p>
+                        <p>View or update your ticket here: <a href="{portal_url}">View Ticket</a></p>
+                        <p>You can also reply to this email to add your response.</p>
+                    </div>
+                </div>
+            """
+            
+            # Plain text version
+            text_content = f"""
+New Update on Ticket #{ticket.ticket_number}
+
+{comment.content}
+
+Ticket Details:
+- Title: {ticket.title}
+- Status: {ticket.status}
+- Priority: {ticket.priority}
+
+How to Respond:
+View or update your ticket at: {portal_url}
+You can also reply to this email to add your response.
+            """
+            
             # Prepare email data
             mail_body = {
                 "from": {
-                    "email": current_app.config['MAILERSEND_FROM_EMAIL'],
-                    "name": current_app.config['MAILERSEND_FROM_NAME']
+                    "email": tenant.support_email or current_app.config['MAILERSEND_FROM_EMAIL'],
+                    "name": f"{tenant.name} Support"
                 },
                 "to": recipients,
                 "subject": f"Re: [{ticket.ticket_number}] {ticket.title}",
-                "text": comment.content,
-                "html": f"<p>{comment.content}</p>"
+                "text": text_content,
+                "html": html_content
             }
             
             # Send email
@@ -46,7 +95,7 @@ class MailerSendService:
             
         except Exception as e:
             logger.error(f"Error sending email: {str(e)}")
-            raise 
+            raise
 
     def send_password_change_otp(self, email, otp, user=None):
         """Send password change OTP email"""
