@@ -75,16 +75,20 @@ View or update your ticket at: {portal_url}
 You can also reply to this email to add your response.
             """
             
-            # Prepare email data
+            # Always use the verified MailerSend email address
             mail_body = {
                 "from": {
-                    "email": tenant.support_email or current_app.config['MAILERSEND_FROM_EMAIL'],
-                    "name": f"{tenant.name} Support"
+                    "email": current_app.config['MAILERSEND_FROM_EMAIL'],  # Use verified email
+                    "name": f"{tenant.name} Support"  # Can customize display name
                 },
                 "to": recipients,
                 "subject": f"Re: [{ticket.ticket_number}] {ticket.title}",
                 "text": text_content,
-                "html": html_content
+                "html": html_content,
+                "reply_to": {  # Add reply-to header with tenant's support email
+                    "email": tenant.support_email,
+                    "name": f"{tenant.name} Support"
+                } if tenant.support_email else None
             }
             
             # Send email
