@@ -28,7 +28,7 @@
             top: 0;
             left: 0;
             box-shadow: 0 0 15px rgba(0,0,0,.05);
-            background-color: #fff;
+            background-color: #1e293b;  /* Match landing page dark theme */
             padding-top: 1rem;
             z-index: 1000;
         }
@@ -37,14 +37,14 @@
         .nav-logo {
             padding: 1rem 1.5rem;
             margin-bottom: 1rem;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid rgba(255,255,255,.1);
         }
 
         .nav-logo a {
             display: flex;
             align-items: center;
             gap: 12px;
-            color: #2c3e50;
+            color: #fff;
             text-decoration: none;
             font-size: 1.5rem;
             font-weight: bold;
@@ -55,25 +55,24 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 3px;
-            width: 32px;
-            height: 32px;
-            padding: 3px;
+            width: 28px;
+            height: 28px;
         }
 
         .logo-square {
-            width: 13px;
-            height: 13px;
+            width: 12px;
+            height: 12px;
             background-color: #fff;
             border-radius: 3px;
-            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,.2);
         }
 
-        .logo-square:nth-child(1) { background-color: #4299e1; }
-        .logo-square:nth-child(2) { background-color: #3182ce; }
-        .logo-square:nth-child(3) { background-color: #2b6cb0; }
+        .logo-square:nth-child(1) { background-color: #60a5fa; }  /* Match landing page blue */
+        .logo-square:nth-child(2) { background-color: #3b82f6; }
+        .logo-square:nth-child(3) { background-color: #2563eb; }
 
         .vertical-nav .nav-link {
-            color: #718096;
+            color: rgba(255,255,255,.7);
             padding: 0.8rem 1.5rem;
             display: flex;
             align-items: center;
@@ -84,14 +83,15 @@
         }
 
         .vertical-nav .nav-link:hover {
-            color: #2d3748;
-            background-color: #f7fafc;
+            color: #fff;
+            background-color: rgba(255,255,255,.1);
         }
 
         .vertical-nav .nav-link.active {
-            color: #2b6cb0;
-            background-color: #ebf8ff;
+            color: #fff;
+            background-color: rgba(255,255,255,.15);
             font-weight: 500;
+            border-right: 3px solid #60a5fa;
         }
 
         /* Main content area */
@@ -140,7 +140,7 @@
         
         .nav-items hr {
             margin: 0.5rem 1.5rem;
-            border-color: #f0f0f0;
+            border-color: rgba(255,255,255,.1);
         }
         
         .nav-section {
