@@ -371,4 +371,22 @@
 
 {% block scripts %}
 {{ super() }}
+<style>
+    .analytics-card {
+        min-height: 150px;  /* Match dashboard tile height */
+        padding: 1.5rem;
+        border-radius: 8px;
+        background: white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        margin-bottom: 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .analytics-card h3 {
+        margin-bottom: 1rem;
+        font-size: 1.25rem;  /* Match dashboard tile title size */
+    }
+</style>
 {% endblock %} 

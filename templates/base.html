@@ -53,23 +53,30 @@
         /* Logo squares */
         .logo-squares {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 3px;
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
         }
 
         .logo-square {
-            width: 12px;
-            height: 12px;
+            width: 9px;
+            height: 9px;
             background-color: #fff;
             border-radius: 3px;
             box-shadow: 0 2px 4px rgba(0,0,0,.2);
         }
 
-        .logo-square:nth-child(1) { background-color: #60a5fa; }  /* Match landing page blue */
+        /* Logo square colors - matching landing page exactly */
+        .logo-square:nth-child(1) { background-color: #60a5fa; }
         .logo-square:nth-child(2) { background-color: #3b82f6; }
         .logo-square:nth-child(3) { background-color: #2563eb; }
+        .logo-square:nth-child(4) { background-color: #3b82f6; }
+        .logo-square:nth-child(5) { background-color: #2563eb; }
+        .logo-square:nth-child(6) { background-color: #1d4ed8; }
+        .logo-square:nth-child(7) { background-color: #2563eb; }
+        .logo-square:nth-child(8) { background-color: #1d4ed8; }
+        .logo-square:nth-child(9) { background-color: #1e40af; }
 
         .vertical-nav .nav-link {
             color: rgba(255,255,255,.7);
@@ -163,6 +170,9 @@
         <div class="nav-logo">
             <a href="{{ url_for('dashboard.index') }}">
                 <div class="logo-squares">
+                    <div class="logo-square"></div>
+                    <div class="logo-square"></div>
+                    <div class="logo-square"></div>
                     <div class="logo-square"></div>
                     <div class="logo-square"></div>
                     <div class="logo-square"></div>
