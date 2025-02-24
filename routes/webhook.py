@@ -29,7 +29,7 @@ def extract_email_content(text_content, html_content):
         h.body_width = 0  # Don't wrap lines
         h.unicode_snob = True
         h.protect_links = True
-        h.single_line_break = False  # Preserve multiple line breaks
+        h.single_line_break = True  # Change to True to reduce extra spacing
         h.ul_item_mark = '-'
         h.br_style = 'css'  # Use CSS style line breaks
         
