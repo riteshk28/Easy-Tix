@@ -39,116 +39,79 @@ def extract_email_content(text_content, html_content):
         else:
             main_content = text_content
 
-        # Common forwarding patterns from different email providers
-        forwarding_patterns = [
-            # Outlook style (more permissive)
-            r'(?:Subject:.*?\n)(.*?)(?=(?:From:|$))',
-            
-            # Gmail style
-            r'(?:---------- Forwarded message ---------.*?From:.*?Subject:.*?\n)(.*?)(?=(?:\s*(?:Get Outlook|Thanks & Regards|$)))',
-            
-            # Apple Mail style
-            r'(?:Begin forwarded message:.*?\n)(.*?)(?=(?:\s*(?:End forwarded message|$)))',
-            
-            # Yahoo style
-            r'(?:----- Forwarded Message -----.*?\n)(.*?)(?=(?:\s*(?:$)))',
-            
-            # Generic style (fallback)
-            r'(?:^.*?Subject:.*?\n)(.*?)(?=(?:\s*$))',
+        # First try to find the forwarded content block
+        forwarding_headers = [
+            'From:',
+            'Sent:',
+            'To:',
+            'Subject:',
+            '---------- Forwarded message ---------',
+            '----- Forwarded Message -----',
+            'Begin forwarded message:'
         ]
 
-        # Try each pattern
-        for pattern in forwarding_patterns:
-            matches = re.search(pattern, main_content, re.DOTALL | re.IGNORECASE | re.MULTILINE)
-            if matches:
-                content = matches.group(1).strip()
-                if content:
-                    # Clean up the extracted content
-                    lines = content.split('\n')
-                    clean_lines = []
+        lines = main_content.split('\n')
+        content_lines = []
+        in_header = False
+        header_count = 0
+        
+        for line in lines:
+            line = line.strip()
+            
+            # Check if this is a header line
+            if any(header in line for header in forwarding_headers):
+                in_header = True
+                header_count += 1
+                continue
+                
+            # After we've seen at least 3 headers, start capturing content
+            if header_count >= 3 and not any(marker in line.lower() for marker in [
+                'from:', 'to:', 'sent:', 'date:', 'subject:',
+                'cc:', 'bcc:', 'reply-to:', '>', '|',
+                'get outlook', 'thanks & regards',
+                'original message', '________________________________',
+                'forwarded message'
+            ]):
+                if line:  # Only add non-empty lines
+                    content_lines.append(line)
                     
-                    # Track when we've found the actual content
-                    found_content = False
-                    
-                    for line in lines:
-                        line = line.strip()
-                        
-                        # Skip common header markers and empty lines
-                        if not line or any(marker in line.lower() for marker in [
-                            'from:', 'to:', 'sent:', 'date:', 'subject:',
-                            'cc:', 'bcc:', 'reply-to:', '>', '|',
-                            'get outlook', 'thanks & regards',
-                            'original message', '________________________________',
-                            'forwarded message'
-                        ]):
-                            continue
+        if content_lines:
+            return '\n'.join(content_lines).strip()
 
-                        # Skip lines that look like email addresses or dates
-                        if re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', line) or \
-                           re.match(r'^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)', line):
-                            continue
-                            
-                        # We've found some real content
-                        found_content = True
-                        clean_lines.append(line)
-
-                    if clean_lines:
-                        return '\n'.join(clean_lines).strip()
-
-        # If no patterns worked, try to extract from HTML structure
+        # If the above method didn't work, try HTML parsing
         if html_content:
             soup = BeautifulSoup(html_content, 'html.parser')
             
-            # Remove unwanted elements
+            # Remove script, style tags etc
             for element in soup(['script', 'style', 'head', 'title', 'meta']):
                 element.decompose()
-                
-            # Find the most likely content div
-            content_divs = []
-            for div in soup.find_all(['div', 'p']):
-                text = div.get_text().strip()
+
+            # Find all potential content blocks
+            content_blocks = []
+            for element in soup.find_all(['div', 'p']):
+                text = element.get_text().strip()
                 if text and len(text) > 10:  # Minimum content length
-                    # Skip if div contains common header/footer text
+                    # Skip headers and footers
                     if not any(marker in text.lower() for marker in [
+                        'from:', 'to:', 'sent:', 'date:', 'subject:',
                         'forwarded message', 'original message',
                         'get outlook', 'thanks & regards'
                     ]):
-                        content_divs.append((div, len(text)))
-            
-            # Sort by content length and take the longest that's not a header/footer
-            if content_divs:
-                content_divs.sort(key=lambda x: x[1], reverse=True)
-                main_content = content_divs[0][0].get_text().strip()
-                
-                # Clean up the content
-                lines = main_content.split('\n')
-                clean_lines = []
-                for line in lines:
-                    line = line.strip()
-                    if line and not any(marker in line.lower() for marker in [
-                        'from:', 'to:', 'subject:', 'date:', 'sent:',
-                        'get outlook', 'thanks & regards',
-                        'original message', '________________________________'
-                    ]):
-                        clean_lines.append(line)
-                        
-                if clean_lines:
-                    return '\n'.join(clean_lines).strip()
+                        content_blocks.append((text, len(text)))
 
-        # If all else fails, try to clean the original content
-        lines = main_content.split('\n')
-        clean_lines = []
-        for line in lines:
-            line = line.strip()
-            if line and not any(marker in line.lower() for marker in [
-                'from:', 'to:', 'subject:', 'date:', 'sent:',
-                'get outlook', 'thanks & regards',
-                'original message', '________________________________',
-                '>', '|', '@'
-            ]):
-                clean_lines.append(line)
-                
-        return '\n'.join(clean_lines).strip()
+            # Sort by length and take the longest meaningful content
+            if content_blocks:
+                content_blocks.sort(key=lambda x: x[1], reverse=True)
+                return content_blocks[0][0].strip()
+
+        # If all else fails, return cleaned original content
+        return ' '.join(line.strip() for line in main_content.split('\n') 
+                       if line.strip() and not any(marker in line.lower() for marker in [
+                           'from:', 'to:', 'sent:', 'date:', 'subject:',
+                           'cc:', 'bcc:', 'reply-to:', '>', '|',
+                           'get outlook', 'thanks & regards',
+                           'original message', '________________________________'
+                       ]))
 
     except Exception as e:
         current_app.logger.error(f"Error extracting email content: {e}")
