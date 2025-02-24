@@ -8,9 +8,9 @@ class Config:
 
     # Use test keys during development
 
-    STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_51PjB1DCAG2id8PGup8xoSmRpDVzeVdk6BqlDJ0RtXhTOGASgXmZGv6Axhcqw9pLLsauS2zir5FV0eVixeKkiuscq004ZzZVvIE')
+    STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
 
-    STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY', 'pk_test_51PjB1DCAG2id8PGuLWS21ps83GNrfJAFON5BCnUFW5C4AFuCdGqBsP5KzAJDrr0hTAnrIfDsqAw2Z9BhA1Kayaai005XOGltGF')
+    STRIPE_PUBLIC_KEY = os.environ.get('STRIPE_PUBLIC_KEY')
 
     STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
@@ -20,7 +20,7 @@ class Config:
 
     STRIPE_PRICE_IDS = {
 
-        'pro': os.environ.get('STRIPE_PRO_PRICE_ID', 'price_1Qf6ZeCAG2id8PGuxsKmTMSm')
+        'pro': os.environ.get('STRIPE_PRO_PRICE_ID')
 
     }
 
@@ -106,7 +106,7 @@ class Config:
 
     MAILERSEND_FROM_NAME = os.getenv('MAILERSEND_FROM_NAME', 'Easy-Tix Support')
 
-    MAILERSEND_DOMAIN = 'trial-jy7zpl9yy25g5vx6.mlsender.net'
+    MAILERSEND_DOMAIN = os.getenv('MAILERSEND_DOMAIN')
 
     MAILERSEND_PASSWORD_RESET_TEMPLATE_ID = os.getenv('MAILERSEND_PASSWORD_RESET_TEMPLATE_ID')
 
@@ -118,21 +118,21 @@ class Config:
 
     SMTP_PORT = 587
 
-    SMTP_USERNAME = 'MS_WiZzl5@trial-jy7zpl9yy25g5vx6.mlsender.net'
+    SMTP_USERNAME = os.getenv('SMTP_USERNAME')
 
-    SMTP_PASSWORD = '9MxEBy0e1C1aAvev' 
+    SMTP_PASSWORD = os.getenv('SMTP_PASSWORD') 
 
     
 
     # Email Configuration
 
-    CLOUDMAILIN_ADDRESS = '364fe2ab6334d1d485a5@cloudmailin.net'
+    CLOUDMAILIN_ADDRESS = os.getenv('CLOUDMAILIN_ADDRESS') 
 
-    CLOUDMAILIN_API_KEY = '364fe2ab6334d1d485a5'  # The part before @ in your address
+    CLOUDMAILIN_API_KEY = os.getenv('CLOUDMAILIN_API_KEY')  # The part before @ in your address
 
-    CLOUDMAILIN_BASE_URL = 'https://api.cloudmailin.com/api/v0.1'
+    CLOUDMAILIN_BASE_URL = os.getenv('CLOUDMAILIN_BASE_URL')
 
-    CLOUDMAILIN_TARGET_URL = 'https://easy-tix-gold.vercel.app/api/email/incoming'  # Your webhook URL
+    CLOUDMAILIN_TARGET_URL = os.getenv('CLOUDMAILIN_TARGET_URL')  # Your webhook URL
 
     
 
@@ -152,7 +152,7 @@ class Config:
 
     # CloudMailin Configuration
 
-    CLOUDMAILIN_ADDRESS = '364fe2ab6334d1d485a5@cloudmailin.net'
+  
 
     CLOUDMAILIN_WEBHOOK_URL = 'https://easy-tix-gold.vercel.app/api/email/incoming'  # Get this from ngrok 
 
@@ -166,7 +166,7 @@ class Config:
 
     # Superadmin setup
 
-    SETUP_KEY = 'setup_key_123456789'  # Change this to something secure
+    SETUP_KEY = os.getenv('SETUP_KEY')  # Change this to something secure
 
     SUPERADMIN_EMAIL = os.getenv('SUPERADMIN_EMAIL')
 

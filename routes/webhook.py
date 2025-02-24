@@ -20,225 +20,163 @@ logger = logging.getLogger(__name__)
 webhook = Blueprint('webhook', __name__)
 
 def extract_email_content(text_content, html_content):
-    """Extract clean email content from forwarded messages"""
+    """Extract clean email content from forwarded messages with improved parsing"""
     try:
-        # If HTML content is available, use it
+        # Initialize HTML2Text with better config
+        h = HTML2Text()
+        h.ignore_links = False 
+        h.ignore_images = True
+        h.body_width = 0
+        h.unicode_snob = True
+        h.protect_links = True
+        h.single_line_break = True
+        h.ul_item_mark = '-'  # Consistent list markers
+        
+        # Get both versions of content
         if html_content:
-            h = HTML2Text()
-            h.ignore_links = False
-            h.ignore_images = False
-            h.body_width = 0
-            h.unicode_snob = True
-            h.protect_links = True
-            text_content = h.handle(html_content)
+            text_from_html = h.handle(html_content)
+            # Use the longer/more complete version
+            main_content = text_from_html if len(text_from_html) > len(text_content) else text_content
+        else:
+            main_content = text_content
 
-        # Log the initial content for debugging
-        current_app.logger.debug(f"Initial content:\n{text_content[:500]}...")
+        # Common email client patterns
+        email_patterns = {
+            'office365': r'\*\s*\*\s*\*.*?(?=\*\s*\*\s*\*|$)',
+            'gmail': r'(?<=---------- Forwarded message ----------).*?(?=(?:^>|^On.*wrote:|$))',
+            'apple': r'(?<=Begin forwarded message:).*?(?=(?:^>|^On.*wrote:|$))',
+            'outlook': r'(?<=From:).*?(?=(?:^>|^Original Message|^________________________________|$))',
+            'yahoo': r'(?<=----- Forwarded Message -----).*?(?=(?:^>|^On.*wrote:|$))',
+            'generic': r'(?:^>.*\n?)+'
+        }
 
-        # Handle Office 365 forwarded emails
-        if '* * *' in text_content:  # Office 365 separator
-            # Split on the Office 365 markers
-            parts = text_content.split('* * *')
-            if len(parts) > 1:
-                # Look for the part that contains the original email
-                for part in parts:
-                    if 'From:' in part and 'Subject:' in part:
-                        # Extract the content after the email headers
-                        header_end = part.find('Subject:')
-                        if header_end != -1:
-                            # Find the next newline after Subject:
-                            content_start = part.find('\n', header_end)
-                            if content_start != -1:
-                                text_content = part[content_start:].strip()
-                                break
+        # Extract content using regex patterns
+        content_parts = []
+        for client, pattern in email_patterns.items():
+            matches = re.findall(pattern, main_content, re.MULTILINE | re.DOTALL)
+            if matches:
+                content_parts.extend(matches)
 
-        # Handle Gmail forwarded emails
-        elif '---------- Forwarded message ---------' in text_content:
-            parts = text_content.split('---------- Forwarded message ---------')
-            if len(parts) > 1:
-                text_content = parts[-1]
+        # If no patterns matched, use the original content
+        if not content_parts:
+            content_parts = [main_content]
 
-        # Process the content line by line
-        lines = text_content.split('\n')
-        clean_lines = []
-        in_header = True
-        found_content = False
-        
-        for line in lines:
-            line = line.rstrip()
+        # Clean the extracted content
+        cleaned_content = []
+        for part in content_parts:
+            lines = part.split('\n')
+            clean_lines = []
             
-            # Skip empty lines until we find content
-            if not line:
-                continue
+            # State tracking
+            in_header = True
+            in_signature = False
+            quote_level = 0
+            
+            for line in lines:
+                line = line.strip()
+                
+                # Skip empty lines until we find content
+                if not line:
+                    continue
+                    
+                # Check for quoted content
+                quote_match = re.match(r'^[>]+', line)
+                if quote_match:
+                    quote_level = len(quote_match.group())
+                    line = line[quote_level:].strip()
+                
+                # Skip headers
+                if in_header and any(header in line.lower() for header in [
+                    'from:', 'sent:', 'to:', 'subject:', 'date:', 'cc:', 'bcc:'
+                ]):
+                    continue
+                
+                # Mark end of headers
+                if in_header and line and not any(header in line.lower() for header in [
+                    'from:', 'sent:', 'to:', 'subject:', 'date:', 'cc:', 'bcc:'
+                ]):
+                    in_header = False
+                
+                # Check for signature markers
+                if any(sig in line.lower() for sig in [
+                    'regards,', 'best regards', 'thanks & regards', 'thank you,',
+                    'best wishes', 'sincerely,', '--', 'sent from my'
+                ]):
+                    in_signature = True
+                    continue
+                
+                # Skip signature block
+                if in_signature:
+                    continue
+                
+                # Skip disclaimers and automated footers
+                if any(footer in line.lower() for footer in [
+                    'disclaimer', 'confidential', 'privileged', 'legal notice',
+                    'virus', 'scanned', 'security', 'click here', 'unsubscribe'
+                ]):
+                    continue
+                
+                # Add line if it passes all filters
+                if not in_header and not in_signature and quote_level == 0:
+                    clean_lines.append(line)
+            
+            if clean_lines:
+                cleaned_content.extend(clean_lines)
 
-            # Skip quoted content and common markers
-            if (line.startswith('>') or 
-                line.startswith('On ') or 
-                line.endswith('wrote:') or
-                line.startswith('From:') or
-                line.startswith('Sent:') or
-                line.startswith('To:') or
-                line.startswith('Subject:')):
-                continue
-
-            # Skip signature lines and footers
-            if any(sig in line for sig in [
-                'Thanks & Regards',
-                'Best regards',
-                'Regards',
-                '--',
-                'Service Delivery Coordinator',
-                'Bounteous merges with Accolite',
-                'Get Outlook for',
-                '+1',
-                '![](cid:'  # Skip image references
-            ]):
-                continue
-
-            # Found actual content
-            found_content = True
-            clean_lines.append(line)
-
-        # Join lines with proper spacing
-        result = '\n'.join(line for line in clean_lines if line.strip())
+        # Join cleaned content with proper spacing
+        result = '\n'.join(cleaned_content)
         
-        # Log the final content for debugging
-        current_app.logger.debug(f"Cleaned content:\n{result}")
+        # Remove excessive newlines
+        result = re.sub(r'\n{3,}', '\n\n', result)
         
         return result.strip()
 
     except Exception as e:
         current_app.logger.error(f"Error extracting email content: {e}")
-        current_app.logger.error(f"Original content: {text_content[:500]}...")
         return text_content
 
 def format_email_content(text_content):
-    """Format the content to look like a real email"""
+    """Format the content with improved structure preservation"""
     try:
         if '<html' in text_content:
             soup = BeautifulSoup(text_content, 'html.parser')
             
-            # First, get all the text content preserving structure
-            all_content = []
-            for element in soup.stripped_strings:
-                text = element.strip()
-                if text:
-                    all_content.append(text)
+            # Extract all text content while preserving structure
+            content_blocks = []
+            for element in soup.find_all(['p', 'div', 'br', 'ul', 'ol', 'li']):
+                if element.name == 'br':
+                    content_blocks.append('')
+                elif element.name in ['ul', 'ol']:
+                    for li in element.find_all('li'):
+                        content_blocks.append(f"• {li.get_text().strip()}")
+                else:
+                    text = element.get_text().strip()
+                    if text:
+                        content_blocks.append(text)
             
-            # Join all content with newlines
-            full_content = '\n'.join(all_content)
-            current_app.logger.info(f"Full content:\n{full_content}")
+            # Join blocks with appropriate spacing
+            formatted_content = []
+            prev_block = ''
             
-            # Look for email sections
-            sections = re.split(r'(?:From:|Begin forwarded message:|---------- Forwarded message ----------)', full_content)
-            
-            # Get the original email section (first section after the split that has content)
-            original_section = None
-            for section in sections:
-                if section.strip():
-                    original_section = section
-                    break
-            
-            if original_section:
-                # Extract headers from the original section
-                headers = {}
-                lines = original_section.split('\n')
-                message_lines = []
-                in_headers = True
-                
-                for line in lines:
-                    line = line.strip()
-                    if not line:
-                        continue
-                        
-                    if in_headers:
-                        # Look for header patterns
-                        header_match = re.match(r'^(From|To|Subject|Date|Sent):\s*(.+)$', line)
-                        if header_match:
-                            key, value = header_match.groups()
-                            headers[key] = value.strip()
-                            continue
-                        else:
-                            in_headers = False
-                    
-                    # If we're past headers and it's not a signature line
-                    if not any(sig in line for sig in ['Thanks & Regards', 'Best regards', '+1', 'http://']):
-                        message_lines.append(line)
-                
-                # Format the output
-                formatted_parts = []
-                
-                # Add headers in order
-                for header in ['From', 'To', 'Date', 'Subject']:
-                    if header in headers:
-                        formatted_parts.append(f"{header}: {headers[header]}")
-                
-                # Add separator
-                formatted_parts.append("\n" + "-" * 50 + "\n")
-                
-                # Add message body
-                if message_lines:
-                    formatted_parts.append('\n'.join(message_lines).strip())
-                
-                return '\n'.join(formatted_parts)
-            
-            return full_content
-            
-        else:
-            # Handle plain text emails using the same logic
-            sections = re.split(r'(?:From:|Begin forwarded message:|---------- Forwarded message ----------)', text_content)
-            
-            # Get the original email section
-            original_section = None
-            for section in reversed(sections):
-                if not section.strip():
+            for block in content_blocks:
+                # Skip duplicate content
+                if block == prev_block:
                     continue
-                if all(line.strip().startswith(('Thanks', 'Best', 'Regards', '+1')) 
-                      for line in section.strip().split('\n')):
-                    continue
-                original_section = section
-                break
-            
-            if original_section:
-                # Process the section same as HTML content
-                headers = {}
-                lines = original_section.split('\n')
-                message_lines = []
-                in_headers = True
-                
-                for line in lines:
-                    line = line.strip()
-                    if not line:
-                        continue
-                        
-                    if in_headers:
-                        header_match = re.match(r'^(From|To|Subject|Date|Sent):\s*(.+)$', line)
-                        if header_match:
-                            key, value = header_match.groups()
-                            headers[key] = value.strip()
-                            continue
-                        else:
-                            in_headers = False
                     
-                    if not any(sig in line for sig in ['Thanks & Regards', 'Best regards', '+1', 'http://']):
-                        message_lines.append(line)
+                # Add spacing between different content blocks
+                if block and prev_block:
+                    formatted_content.append('')
                 
-                formatted_parts = []
-                for header in ['From', 'To', 'Date', 'Subject']:
-                    if header in headers:
-                        formatted_parts.append(f"{header}: {headers[header]}")
-                
-                formatted_parts.append("\n" + "-" * 50 + "\n")
-                
-                if message_lines:
-                    formatted_parts.append('\n'.join(message_lines).strip())
-                
-                return '\n'.join(formatted_parts)
+                if block:
+                    formatted_content.append(block)
+                    prev_block = block
             
-            return text_content
+            return '\n'.join(formatted_content)
             
+        return text_content
+        
     except Exception as e:
-        current_app.logger.error(f"Error formatting email: {e}")
+        current_app.logger.error(f"Error formatting email content: {e}")
         return text_content
 
 def get_original_sender(email_content, support_email):
