@@ -71,8 +71,7 @@ Ticket Details:
 - Priority: {ticket.priority}
 
 How to Respond:
-View or update your ticket at: {portal_url}
-You can also reply to this email to add your response.
+View & update your ticket at: {portal_url}
             """
             
             # Always use the verified MailerSend email address
