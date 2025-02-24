@@ -118,40 +118,68 @@ def extract_email_content(text_content, html_content):
         return text_content
 
 def format_email_content(text_content):
-    """Format the content with improved structure preservation"""
+    """Format the content with improved structure preservation and signature handling"""
     try:
         if '<html' in text_content:
             soup = BeautifulSoup(text_content, 'html.parser')
             
             # Extract all text content while preserving structure
             content_blocks = []
+            signature_blocks = []
+            in_signature = False
+            
             for element in soup.find_all(['p', 'div', 'br', 'ul', 'ol', 'li']):
+                text = element.get_text().strip()
+                
+                # Check if this is likely the start of a signature
+                if not in_signature and text and any(sig_marker in text.lower() for sig_marker in [
+                    'thanks & regards',
+                    'best regards',
+                    'regards',
+                    'thank you',
+                    'thanks,',
+                    'sincerely',
+                    'cheers',
+                ]):
+                    in_signature = True
+                
                 if element.name == 'br':
-                    content_blocks.append('')
+                    if in_signature:
+                        signature_blocks.append('')
+                    else:
+                        content_blocks.append('')
                 elif element.name in ['ul', 'ol']:
+                    items = []
                     for li in element.find_all('li'):
-                        content_blocks.append(f"• {li.get_text().strip()}")
-                else:
-                    text = element.get_text().strip()
-                    if text:
+                        items.append(f"• {li.get_text().strip()}")
+                    if in_signature:
+                        signature_blocks.extend(items)
+                    else:
+                        content_blocks.extend(items)
+                elif text:
+                    if in_signature:
+                        signature_blocks.append(text)
+                    else:
                         content_blocks.append(text)
             
             # Join blocks with appropriate spacing
             formatted_content = []
             prev_block = ''
             
+            # Add main content
             for block in content_blocks:
-                # Skip duplicate content
-                if block == prev_block:
-                    continue
-                    
-                # Add spacing between different content blocks
-                if block and prev_block:
-                    formatted_content.append('')
-                
-                if block:
-                    formatted_content.append(block)
-                    prev_block = block
+                if block != prev_block:  # Skip duplicates
+                    if block and prev_block:
+                        formatted_content.append('')
+                    if block:
+                        formatted_content.append(block)
+                        prev_block = block
+            
+            # Add signature if present
+            if signature_blocks:
+                if formatted_content:
+                    formatted_content.extend(['', '---'])  # Add separator before signature
+                formatted_content.extend(signature_blocks)
             
             return '\n'.join(formatted_content)
             
