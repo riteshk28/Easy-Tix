@@ -28,10 +28,47 @@
             top: 0;
             left: 0;
             box-shadow: 3px 0 10px rgba(0,0,0,.1);
-            background-color: #343a40;
+            background-color: #1a237e;  /* Dark blue to match theme */
             padding-top: 1rem;
             z-index: 1000;
         }
+
+        /* Logo area */
+        .nav-logo {
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,.2);
+        }
+
+        .nav-logo a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* Logo squares */
+        .logo-squares {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 3px;
+            width: 24px;
+            height: 24px;
+        }
+
+        .logo-square {
+            width: 10px;
+            height: 10px;
+            background-color: #fff;
+            border-radius: 2px;
+        }
+
+        .logo-square:nth-child(1) { background-color: #64b5f6; }  /* Light blue */
+        .logo-square:nth-child(2) { background-color: #2196f3; }  /* Medium blue */
+        .logo-square:nth-child(3) { background-color: #1976d2; }  /* Dark blue */
 
         .vertical-nav .nav-link {
             color: rgba(255,255,255,.75);
@@ -44,26 +81,13 @@
 
         .vertical-nav .nav-link:hover {
             color: #fff;
-            background-color: rgba(255,255,255,.1);
+            background-color: rgba(255,255,255,.15);
         }
 
         .vertical-nav .nav-link.active {
             color: #fff;
-            background-color: rgba(255,255,255,.1);
-        }
-
-        /* Logo area */
-        .nav-logo {
-            padding: 1rem 1.5rem;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid rgba(255,255,255,.1);
-        }
-
-        .nav-logo a {
-            color: #fff;
-            text-decoration: none;
-            font-size: 1.5rem;
-            font-weight: bold;
+            background-color: rgba(26, 35, 126, .7);  /* Slightly lighter than background */
+            border-right: 3px solid #64b5f6;  /* Light blue accent */
         }
 
         /* Main content area */
@@ -132,7 +156,14 @@
     <!-- Vertical navbar -->
     <nav class="vertical-nav">
         <div class="nav-logo">
-            <a href="{{ url_for('dashboard.index') }}">Easy-Tix</a>
+            <a href="{{ url_for('dashboard.index') }}">
+                <div class="logo-squares">
+                    <div class="logo-square"></div>
+                    <div class="logo-square"></div>
+                    <div class="logo-square"></div>
+                </div>
+                Easy-Tix
+            </a>
         </div>
         <div class="nav-items">
             <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
