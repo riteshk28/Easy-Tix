@@ -115,13 +115,12 @@ def get_analytics_data(report_type):
 
         elif report_type == 'agentPerformance':
             try:
-                # Tickets handled by each agent
                 agent_performance = db.session.query(
                     User.email.label('name'),
                     func.count(Ticket.id).label('tickets_handled')
                 ).join(
                     Ticket, 
-                    (User.id == Ticket.assigned_to) & 
+                    (User.id == Ticket.assigned_to_id) & 
                     (User.tenant_id == Ticket.tenant_id)
                 ).filter(
                     User.tenant_id == current_user.tenant_id,
@@ -172,7 +171,7 @@ def get_analytics_data(report_type):
                 sla_breaches = db.session.query(
                     Ticket.priority,
                     func.count(case([
-                        (Ticket.sla_breached == True, 1)
+                        (Ticket.sla_status == 'breached', 1)
                     ])).label('breached'),
                     func.count(Ticket.id).label('total')
                 ).filter(
