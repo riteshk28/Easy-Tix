@@ -447,8 +447,9 @@
 }
 
 .vertical-nav.collapsed {
-    width: 70px;
-    min-width: 70px;
+    width: 60px;
+    min-width: 60px;
+    overflow: hidden;
 }
 
 .vertical-nav.collapsed .collapse-text {
@@ -459,9 +460,9 @@
     position: absolute;
     right: -12px;
     top: 20px;
-    width: 24px;
-    height: 24px;
-    background: white;
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.7);
     border: none;
     border-radius: 50%;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -471,6 +472,15 @@
     justify-content: center;
     z-index: 1001;
     transition: transform 0.3s;
+}
+
+.sidebar-toggle i {
+    font-size: 10px;
+    color: #1e293b;
+}
+
+.sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.9);
 }
 
 .vertical-nav.collapsed .sidebar-toggle i {
@@ -486,7 +496,18 @@
 }
 
 .main-content.sidebar-collapsed {
-    margin-left: 70px;
+    margin-left: 60px;
+}
+
+/* Adjust nav items for collapsed state */
+.vertical-nav.collapsed .nav-link {
+    padding: 0.8rem;
+    justify-content: center;
+}
+
+.vertical-nav.collapsed .nav-link i {
+    margin: 0;
+    font-size: 18px;
 }
 
 /* Responsive adjustments */
