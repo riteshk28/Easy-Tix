@@ -294,10 +294,14 @@ async function initializeDashboard() {
                 if (chartType === 'wordCloud') {
                     createWordCloud(container, data);
                 } else {
-                    Plotly.newPlot(container, [data], {
+                    const plotData = Array.isArray(data) ? data : [data];
+                    Plotly.newPlot(container, plotData, {
                         margin: { t: 20, r: 20, l: 40, b: 40 },
                         showlegend: data.type === 'pie',
-                        height: 300
+                        height: 300,
+                        yaxis: {
+                            tickformat: data.type === 'bar' ? ',.0f' : undefined
+                        }
                     });
                 }
             } catch (error) {

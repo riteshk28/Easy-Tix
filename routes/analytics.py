@@ -170,9 +170,10 @@ def get_analytics_data(report_type):
                 # SLA breaches by priority
                 sla_breaches = db.session.query(
                     Ticket.priority,
-                    func.count(case([
-                        (Ticket.sla_response_met == False, 1)
-                    ])).label('breached'),
+                    func.sum(case(
+                        [(Ticket.sla_response_met == False, 1)],
+                        else_=0
+                    )).label('breached'),
                     func.count(Ticket.id).label('total')
                 ).filter(
                     Ticket.tenant_id == current_user.tenant_id,
@@ -200,7 +201,8 @@ def get_analytics_data(report_type):
                     ],
                     'type': 'bar',
                     'name': 'SLA Breach %',
-                    'marker': {'color': '#e74a3b'}
+                    'marker': {'color': '#e74a3b'},
+                    'hovertemplate': '%{y:.1f}% breached<extra></extra>'
                 }
                 return jsonify(data)
             except Exception as e:
