@@ -327,6 +327,21 @@
 {{ super() }}
 <script src="https://cdn.plot.ly/plotly-2.27.1.min.js"></script>
 <style>
+    .chart-container {
+        width: 100%;
+        height: 300px;
+        min-height: 300px;
+        overflow: visible !important;
+    }
+
+    .grid-stack-item-content {
+        overflow: visible !important;
+    }
+
+    .grid-stack > .grid-stack-item > .grid-stack-item-content {
+        overflow: visible !important;
+    }
+
     .analytics-card {
         padding: 1rem;
         border-radius: 8px;
@@ -353,11 +368,6 @@
     .analytics-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    }
-
-    .chart-container {
-        width: 100%;
-        height: 300px;
     }
 </style>
 {% endblock %} 

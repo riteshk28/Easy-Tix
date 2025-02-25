@@ -296,11 +296,20 @@ async function initializeDashboard() {
                 } else {
                     const plotData = Array.isArray(data) ? data : [data];
                     Plotly.newPlot(container, plotData, {
-                        margin: { t: 20, r: 20, l: 40, b: 40 },
+                        margin: { t: 30, r: 30, l: 50, b: 80 },
                         showlegend: data.type === 'pie',
                         height: 300,
+                        autosize: true,
                         yaxis: {
-                            tickformat: data.type === 'bar' ? ',.0f' : undefined
+                            tickformat: data.type === 'bar' ? ',.0f' : undefined,
+                            automargin: true
+                        },
+                        xaxis: {
+                            automargin: true,
+                            tickangle: -45
+                        },
+                        font: {
+                            size: 11
                         }
                     });
                 }

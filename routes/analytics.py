@@ -120,12 +120,9 @@ def get_analytics_data(report_type):
                     User.email.label('name'),
                     func.count(Ticket.id).label('tickets_handled')
                 ).join(
-                    Ticket, 
-                    and_(
-                        User.id == Ticket.assigned_to_id,
-                        User.tenant_id == Ticket.tenant_id
-                    )
+                    Ticket
                 ).filter(
+                    User.id == Ticket.assigned_to_id,
                     User.tenant_id == current_user.tenant_id,
                     Ticket.status != 'deleted',
                     User.is_active == True
@@ -143,7 +140,9 @@ def get_analytics_data(report_type):
                         'x': [a.name for a in agent_performance],
                         'y': [a.tickets_handled for a in agent_performance],
                         'type': 'bar',
-                        'marker': {'color': '#4e73df'}
+                        'marker': {'color': '#4e73df'},
+                        'textposition': 'auto',
+                        'hovertemplate': '%{x}<br>Tickets: %{y}<extra></extra>'
                     }
                 return jsonify(data)
             except Exception as e:
@@ -921,7 +920,9 @@ def get_agent_performance_data(start_date, end_date):
         'name': 'Tickets Handled',
         'marker': {
             'color': '#4e73df'
-        }
+        },
+        'textposition': 'auto',
+        'hovertemplate': '%{x}<br>Tickets: %{y}<extra></extra>'
     }
 
 def get_status_distribution_data(start_date, end_date):
