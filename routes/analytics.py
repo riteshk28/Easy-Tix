@@ -6,7 +6,7 @@ import csv
 from io import StringIO, BytesIO
 from datetime import datetime, timedelta
 from extensions import db
-from sqlalchemy import func, case
+from sqlalchemy import func, case, and_
 from functools import wraps
 
 analytics = Blueprint('analytics', __name__)
@@ -115,13 +115,16 @@ def get_analytics_data(report_type):
 
         elif report_type == 'agentPerformance':
             try:
+                # Tickets handled by each agent
                 agent_performance = db.session.query(
                     User.email.label('name'),
                     func.count(Ticket.id).label('tickets_handled')
                 ).join(
                     Ticket, 
-                    (User.id == Ticket.assigned_to_id) & 
-                    (User.tenant_id == Ticket.tenant_id)
+                    and_(
+                        User.id == Ticket.assigned_to_id,
+                        User.tenant_id == Ticket.tenant_id
+                    )
                 ).filter(
                     User.tenant_id == current_user.tenant_id,
                     Ticket.status != 'deleted',
@@ -170,16 +173,18 @@ def get_analytics_data(report_type):
                 # SLA breaches by priority
                 sla_breaches = db.session.query(
                     Ticket.priority,
-                    func.sum(case(
-                        [(Ticket.sla_response_met == False, 1)],
-                        else_=0
-                    )).label('breached'),
+                    func.sum(
+                        case(
+                            (Ticket.sla_response_met == False, 1),
+                            else_=0
+                        )
+                    ).label('breached'),
                     func.count(Ticket.id).label('total')
                 ).filter(
                     Ticket.tenant_id == current_user.tenant_id,
                     Ticket.status != 'deleted',
                     Ticket.priority.isnot(None),
-                    Ticket.sla_response_met.isnot(None)  # Only count tickets where SLA was measured
+                    Ticket.sla_response_met.isnot(None)
                 ).group_by(Ticket.priority).all()
                 
                 priorities = ['low', 'medium', 'high', 'urgent']
