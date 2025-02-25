@@ -117,7 +117,7 @@ def get_analytics_data(report_type):
             try:
                 # Tickets handled by each agent
                 agent_performance = db.session.query(
-                    User.username.label('name'),
+                    User.email.label('name'),
                     func.count(Ticket.id).label('tickets_handled')
                 ).join(
                     Ticket, 
@@ -127,7 +127,7 @@ def get_analytics_data(report_type):
                     User.tenant_id == current_user.tenant_id,
                     Ticket.status != 'deleted',
                     User.is_active == True
-                ).group_by(User.id, User.username).all()
+                ).group_by(User.id, User.email).all()
                 
                 if not agent_performance:
                     data = {
@@ -171,7 +171,9 @@ def get_analytics_data(report_type):
                 # SLA breaches by priority
                 sla_breaches = db.session.query(
                     Ticket.priority,
-                    func.count(case([(Ticket.sla_status == 'breached', 1)])).label('breached'),
+                    func.count(case([
+                        (Ticket.sla_breached == True, 1)
+                    ])).label('breached'),
                     func.count(Ticket.id).label('total')
                 ).filter(
                     Ticket.tenant_id == current_user.tenant_id,
@@ -207,6 +209,14 @@ def get_analytics_data(report_type):
 
         elif report_type == 'firstResponseSLA':
             try:
+                # Define SLA targets (in hours) for each priority
+                sla_targets = {
+                    'urgent': 1,    # 1 hour
+                    'high': 4,      # 4 hours
+                    'medium': 8,    # 8 hours
+                    'low': 24       # 24 hours
+                }
+
                 actual_response = db.session.query(
                     Ticket.priority,
                     func.avg(
