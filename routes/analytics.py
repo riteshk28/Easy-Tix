@@ -35,17 +35,23 @@ def index():
         'open_tickets': base_query.filter_by(status='open').count(),
         'in_progress': base_query.filter_by(status='in_progress').count(),
         'avg_response_time': format_duration(
-            db.session.query(func.avg(Ticket.first_response_time))
-            .filter(
+            db.session.query(
+                func.avg(
+                    func.extract('epoch', Ticket.first_response_at - Ticket.created_at) / 3600
+                )
+            ).filter(
                 Ticket.tenant_id == current_user.tenant_id,
-                Ticket.first_response_time.isnot(None)
+                Ticket.first_response_at.isnot(None)
             ).scalar() or 0
         ),
         'avg_resolution_time': format_duration(
-            db.session.query(func.avg(Ticket.resolution_time))
-            .filter(
+            db.session.query(
+                func.avg(
+                    func.extract('epoch', Ticket.resolved_at - Ticket.created_at) / 3600
+                )
+            ).filter(
                 Ticket.tenant_id == current_user.tenant_id,
-                Ticket.resolution_time.isnot(None)
+                Ticket.resolved_at.isnot(None)
             ).scalar() or 0
         )
     }
@@ -127,15 +133,17 @@ def get_analytics_data(report_type):
             # Average response time by priority
             response_times = db.session.query(
                 Ticket.priority,
-                func.avg(Ticket.first_response_time).label('avg_time')
+                func.avg(
+                    func.extract('epoch', Ticket.first_response_at - Ticket.created_at) / 3600
+                ).label('avg_time')
             ).filter(
                 Ticket.tenant_id == current_user.tenant_id,
-                Ticket.first_response_time.isnot(None)
+                Ticket.first_response_at.isnot(None)
             ).group_by(Ticket.priority).all()
             
             data = {
                 'x': [r.priority for r in response_times],
-                'y': [float(r.avg_time) for r in response_times],
+                'y': [float(r.avg_time) if r.avg_time else 0 for r in response_times],
                 'type': 'bar'
             }
 
