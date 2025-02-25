@@ -53,17 +53,17 @@
 
         /* Logo squares */
         .logo-squares {
-            display: grid;
-            grid-template-columns: repeat(2, 12px);
+            display: inline-grid;
+            grid-template-columns: repeat(2, 1fr);
             gap: 3px;
-            width: 27px;
-            height: 27px;
+            width: 24px;
+            height: 24px;
             position: relative;
         }
 
         .logo-square {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             background-color: #fff;
             border-radius: 2px;
             transition: transform 0.2s;
@@ -81,7 +81,7 @@
         .logo-square:nth-child(2) { background-color: #3b82f6; }
         .logo-square:nth-child(3) { background-color: #2563eb; }
 
-        .logo-square:hover {
+        .nav-logo a:hover .logo-square {
             transform: scale(1.1);
         }
 

@@ -28,17 +28,26 @@ def handle_analytics_errors(f):
 @login_required
 def index():
     """Analytics landing page"""
+    # Get metrics
+    metrics = {
+        'open_tickets': Ticket.query.filter_by(status='open').count(),
+        'in_progress': Ticket.query.filter_by(status='in_progress').count(),
+        'avg_response_time': '2d',  # You should calculate this from actual data
+        'avg_resolution_time': '0m'  # You should calculate this from actual data
+    }
+
     charts = {
         'ticketTrend': {'label': 'Ticket Volume Trend'},
         'statusDistribution': {'label': 'Status Distribution'},
         'agentPerformance': {'label': 'Agent Performance'},
         'responseTime': {'label': 'Response Time Analysis'},
         'slaBreachPriority': {'label': 'SLA Breach Analysis'},
-        'firstResponseSLA': {'label': 'Response Time vs SLA'},
-        'sourceDistribution': {'label': 'Ticket Sources'},
+        'firstResponseSLA': {'label': 'First Response vs SLA'},
+        'sourceDistribution': {'label': 'Source Distribution'},
         'wordCloud': {'label': 'Common Ticket Subjects'}
     }
-    return render_template('analytics/index.html', charts=charts)
+
+    return render_template('analytics/index.html', charts=charts, metrics=metrics)
 
 @analytics.route('/data/<report_type>', methods=['GET'])
 @login_required
