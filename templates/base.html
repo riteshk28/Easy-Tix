@@ -159,14 +159,15 @@
 
     {% if current_user.is_authenticated %}
     <!-- Vertical navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand brand-logo" href="#">
+    <nav class="vertical-nav">
+        <div class="nav-logo">
+            <a href="{{ url_for('dashboard.index') }}">
                 <div class="logo-squares">
                     <div class="logo-square"></div>
                     <div class="logo-square"></div>
                     <div class="logo-square"></div>
                 </div>
+                Easy-Tix
             </a>
         </div>
         <div class="nav-items">
