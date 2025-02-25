@@ -117,41 +117,54 @@ def get_analytics_data(report_type):
             try:
                 # Tickets handled by each agent
                 agent_performance = db.session.query(
-                    User.email.label('name'),
+                    User.name.label('name'),
                     func.count(Ticket.id).label('tickets_handled')
                 ).join(
-                    Ticket, User.id == Ticket.assigned_to_id
+                    Ticket,
+                    and_(
+                        User.id == Ticket.assigned_to_id,
+                        Ticket.tenant_id == User.tenant_id
+                    )
                 ).filter(
                     User.tenant_id == current_user.tenant_id,
                     Ticket.status != 'deleted',
-                    Ticket.tenant_id == current_user.tenant_id,
                     User.is_active == True
-                ).group_by(User.id, User.email).all()
+                ).group_by(User.id, User.name).all()
+
+                # Add debug logging
+                current_app.logger.info(f"Agent Performance Data: {agent_performance}")
                 
                 data = {
                     'data': [{
                         'x': [a.name for a in agent_performance],
-                        'y': [a.tickets_handled for a in agent_performance],
+                        'y': [int(a.tickets_handled) for a in agent_performance],
                         'type': 'bar',
                         'marker': {'color': '#4e73df'},
                         'textposition': 'auto',
                         'hovertemplate': '<b>%{x}</b><br>Tickets: %{y}<extra></extra>',
-                        'text': [a.tickets_handled for a in agent_performance],
+                        'text': [int(a.tickets_handled) for a in agent_performance],
                     }],
                     'layout': {
                         'xaxis': {
                             'tickangle': -45,
-                            'automargin': True
+                            'automargin': True,
+                            'title': 'Agents'
                         },
                         'yaxis': {
                             'title': 'Number of Tickets',
-                            'automargin': True
+                            'automargin': True,
+                            'rangemode': 'nonnegative'
                         },
                         'bargap': 0.3,
                         'height': 300,
-                        'margin': {'t': 30, 'r': 30, 'l': 50, 'b': 100}
+                        'margin': {'t': 30, 'r': 30, 'l': 50, 'b': 100},
+                        'showlegend': False
                     }
                 }
+
+                # Add debug logging
+                current_app.logger.info(f"Formatted Data: {data}")
+                
                 return jsonify(data)
             except Exception as e:
                 current_app.logger.error(f"Agent Performance Error: {str(e)}")

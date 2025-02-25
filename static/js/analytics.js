@@ -295,8 +295,21 @@ async function initializeDashboard() {
                     createWordCloud(container, data);
                 } else {
                     if (data.data && data.layout) {
+                        console.log('Using pre-formatted data:', data);
                         // For pre-formatted data with layout
-                        Plotly.newPlot(container, data.data, data.layout);
+                        try {
+                            Plotly.newPlot(container, data.data, {
+                                ...data.layout,
+                                autosize: true,
+                                responsive: true
+                            }).then(() => {
+                                console.log('Chart created successfully');
+                            }).catch(err => {
+                                console.error('Error creating chart:', err);
+                            });
+                        } catch (err) {
+                            console.error('Error in Plotly.newPlot:', err);
+                        }
                     } else {
                         // For simple data
                         const plotData = Array.isArray(data) ? data : [data];
