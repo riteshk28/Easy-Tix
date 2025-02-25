@@ -116,12 +116,16 @@ def get_analytics_data(report_type):
         elif report_type == 'agentPerformance':
             # Tickets handled by each agent
             agent_performance = db.session.query(
-                User.name,
+                User.username.label('name'),
                 func.count(Ticket.id).label('tickets_handled')
-            ).join(Ticket, Ticket.assigned_to == User.id
+            ).join(
+                Ticket, 
+                (Ticket.assigned_to == User.id) & 
+                (Ticket.tenant_id == current_user.tenant_id)
             ).filter(
-                Ticket.tenant_id == current_user.tenant_id
-            ).group_by(User.id, User.name).all()
+                User.tenant_id == current_user.tenant_id,
+                Ticket.status != 'deleted'
+            ).group_by(User.id, User.username).all()
             
             data = {
                 'x': [a.name for a in agent_performance],
@@ -151,10 +155,13 @@ def get_analytics_data(report_type):
             # SLA breaches by priority
             sla_breaches = db.session.query(
                 Ticket.priority,
-                func.sum(case([(Ticket.sla_breached == True, 1)], else_=0)).label('breached'),
+                func.sum(case([
+                    (Ticket.sla_status == 'breached', 1)
+                ], else_=0)).label('breached'),
                 func.count(Ticket.id).label('total')
             ).filter(
-                Ticket.tenant_id == current_user.tenant_id
+                Ticket.tenant_id == current_user.tenant_id,
+                Ticket.status != 'deleted'
             ).group_by(Ticket.priority).all()
             
             data = {
@@ -162,6 +169,74 @@ def get_analytics_data(report_type):
                 'y': [s.breached / s.total * 100 if s.total > 0 else 0 for s in sla_breaches],
                 'type': 'bar',
                 'name': 'SLA Breach %'
+            }
+
+        elif report_type == 'firstResponseSLA':
+            # First response time vs SLA target
+            response_data = db.session.query(
+                Ticket.priority,
+                func.avg(
+                    func.extract('epoch', Ticket.first_response_at - Ticket.created_at) / 3600
+                ).label('avg_response'),
+                func.avg(Ticket.sla_response_time).label('sla_target')
+            ).filter(
+                Ticket.tenant_id == current_user.tenant_id,
+                Ticket.first_response_at.isnot(None),
+                Ticket.status != 'deleted'
+            ).group_by(Ticket.priority).all()
+            
+            data = {
+                'x': [r.priority for r in response_data],
+                'y': [float(r.avg_response) if r.avg_response else 0 for r in response_data],
+                'type': 'bar',
+                'name': 'Actual Response Time'
+            }
+
+        elif report_type == 'sourceDistribution':
+            # Ticket sources distribution
+            sources = db.session.query(
+                Ticket.source,
+                func.count(Ticket.id).label('count')
+            ).filter(
+                Ticket.tenant_id == current_user.tenant_id,
+                Ticket.status != 'deleted'
+            ).group_by(Ticket.source).all()
+            
+            data = {
+                'labels': [s.source for s in sources],
+                'values': [s.count for s in sources],
+                'type': 'pie'
+            }
+
+        elif report_type == 'wordCloud':
+            # Common words in ticket titles
+            tickets = db.session.query(Ticket.title).filter(
+                Ticket.tenant_id == current_user.tenant_id,
+                Ticket.status != 'deleted'
+            ).all()
+            
+            # Combine all titles and split into words
+            words = ' '.join([t.title for t in tickets]).lower().split()
+            
+            # Count word frequencies (excluding common words)
+            stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by'}
+            word_freq = {}
+            for word in words:
+                if len(word) > 3 and word not in stop_words:
+                    word_freq[word] = word_freq.get(word, 0) + 1
+            
+            # Sort by frequency and take top 50 words
+            sorted_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:50]
+            
+            data = {
+                'type': 'scatter',
+                'mode': 'text',
+                'text': [word for word, _ in sorted_words],
+                'x': list(range(len(sorted_words))),
+                'y': [freq for _, freq in sorted_words],
+                'textfont': {
+                    'size': [min(freq * 5, 50) for _, freq in sorted_words]
+                }
             }
 
         if data is None:
