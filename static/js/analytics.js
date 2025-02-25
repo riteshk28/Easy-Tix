@@ -79,8 +79,20 @@ const chartMappings = {
 
 // Initialize everything when the document is ready
 document.addEventListener('DOMContentLoaded', function() {
-    initializeDashboard();
-    initializeEventListeners();
+    try {
+        // Load Plotly.js first
+        loadScript('https://cdn.plot.ly/plotly-latest.min.js')
+            .then(() => {
+                console.log('Plotly loaded successfully');
+                initializeDashboard();
+                initializeEventListeners();
+            })
+            .catch(error => {
+                console.error('Error loading Plotly:', error);
+            });
+    } catch (error) {
+        console.error('Error in initialization:', error);
+    }
 
     // Initialize grid with draggable and removable options
     const gridContainer = document.querySelector('.grid-stack');
@@ -235,59 +247,66 @@ document.addEventListener('DOMContentLoaded', function() {
     loadChartPreferences();
 });
 
+// Add helper function to load scripts
+function loadScript(url) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+// Update the initializeDashboard function
 async function initializeDashboard() {
     try {
-        showLoading();
-        const data = await fetchDashboardData();
-        updateDashboard(data);
+        console.log('Initializing dashboard...');
         
-        // Get all visible charts (those that don't have display: none)
-        const chartElements = document.querySelectorAll('.grid-stack-item');
-        const visibleCharts = Array.from(chartElements).filter(el => 
-            el.style.display !== 'none'
-        );
-        
-        // Initialize each visible chart based on its data-chart attribute
-        for (const chartEl of visibleCharts) {
-            const chartType = chartEl.dataset.chart;
-            
-            switch(chartType) {
-                case 'slaBreachPriority':
-                    const slaBreachData = await fetchData('/analytics/api/custom/sla-breach-priority');
-                    Plotly.newPlot('slaBreachContainer', [slaBreachData], {
-                        title: 'SLA Breaches by Priority',
-                        showlegend: true
-                    });
-                    break;
-                    
-                case 'firstResponseSLA':
-                    const responseVsSLAData = await fetchData('/analytics/api/custom/first-response-sla');
-                    Plotly.newPlot('responseVsSLAContainer', responseVsSLAData.data, {
-                        title: 'Response Time vs SLA Target',
-                        showlegend: true
-                    });
-                    break;
-                    
-                case 'sourceDistribution':
-                    const sourceDistData = await fetchData('/analytics/api/custom/source-distribution');
-                    Plotly.newPlot('sourceDistributionContainer', [sourceDistData], {
-                        title: 'Ticket Sources',
-                        showlegend: true
-                    });
-                    break;
-                    
-                case 'wordCloud':
-                    const wordCloudData = await fetchData('/analytics/api/custom/word-cloud');
-                    createWordCloud('wordCloudContainer', wordCloudData);
-                    break;
-                    
-                // Add other chart types as needed
-            }
+        // Make sure Plotly is loaded
+        if (typeof Plotly === 'undefined') {
+            throw new Error('Plotly is not loaded');
         }
 
+        // Get all chart containers
+        const chartElements = document.querySelectorAll('[data-chart]');
+        console.log('Found chart elements:', chartElements.length);
+
+        for (const element of chartElements) {
+            const chartType = element.dataset.chart;
+            console.log('Processing chart:', chartType);
+
+            try {
+                const response = await fetch(`/analytics/data/${chartType}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                console.log('Chart data received:', chartType, data);
+
+                const containerId = chartMappings[chartType];
+                const container = document.getElementById(containerId);
+
+                if (!container) {
+                    console.error(`Container not found for ${chartType}:`, containerId);
+                    continue;
+                }
+
+                // Create the chart based on type
+                if (chartType === 'wordCloud') {
+                    createWordCloud(container, data);
+                } else {
+                    Plotly.newPlot(container, [data], {
+                        margin: { t: 20, r: 20, l: 40, b: 40 },
+                        showlegend: data.type === 'pie',
+                        height: 300
+                    });
+                }
+            } catch (error) {
+                console.error(`Error creating chart ${chartType}:`, error);
+            }
+        }
     } catch (error) {
         console.error('Error initializing dashboard:', error);
-        showError();
+        throw error;
     }
 }
 
