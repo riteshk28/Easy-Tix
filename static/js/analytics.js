@@ -294,24 +294,30 @@ async function initializeDashboard() {
                 if (chartType === 'wordCloud') {
                     createWordCloud(container, data);
                 } else {
-                    const plotData = Array.isArray(data) ? data : [data];
-                    Plotly.newPlot(container, plotData, {
-                        margin: { t: 30, r: 30, l: 50, b: 80 },
-                        showlegend: data.type === 'pie',
-                        height: 300,
-                        autosize: true,
-                        yaxis: {
-                            tickformat: data.type === 'bar' ? ',.0f' : undefined,
-                            automargin: true
-                        },
-                        xaxis: {
-                            automargin: true,
-                            tickangle: -45
-                        },
-                        font: {
-                            size: 11
-                        }
-                    });
+                    if (data.data && data.layout) {
+                        // For pre-formatted data with layout
+                        Plotly.newPlot(container, data.data, data.layout);
+                    } else {
+                        // For simple data
+                        const plotData = Array.isArray(data) ? data : [data];
+                        Plotly.newPlot(container, plotData, {
+                            margin: { t: 30, r: 30, l: 50, b: 80 },
+                            showlegend: data.type === 'pie',
+                            height: 300,
+                            autosize: true,
+                            yaxis: {
+                                tickformat: data.type === 'bar' ? ',.0f' : undefined,
+                                automargin: true
+                            },
+                            xaxis: {
+                                automargin: true,
+                                tickangle: -45
+                            },
+                            font: {
+                                size: 11
+                            }
+                        });
+                    }
                 }
             } catch (error) {
                 console.error(`Error creating chart ${chartType}:`, error);

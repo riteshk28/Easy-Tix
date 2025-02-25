@@ -128,36 +128,29 @@ def get_analytics_data(report_type):
                     User.is_active == True
                 ).group_by(User.id, User.email).all()
                 
-                if not agent_performance:
-                    data = {
-                        'x': [],
-                        'y': [],
-                        'type': 'bar',
-                        'marker': {'color': '#4e73df'}
-                    }
-                else:
-                    data = {
+                data = {
+                    'data': [{
                         'x': [a.name for a in agent_performance],
                         'y': [a.tickets_handled for a in agent_performance],
                         'type': 'bar',
                         'marker': {'color': '#4e73df'},
                         'textposition': 'auto',
                         'hovertemplate': '<b>%{x}</b><br>Tickets: %{y}<extra></extra>',
-                        'texttemplate': '%{y}',
-                        'textangle': 0
+                        'text': [a.tickets_handled for a in agent_performance],
+                    }],
+                    'layout': {
+                        'xaxis': {
+                            'tickangle': -45,
+                            'automargin': True
+                        },
+                        'yaxis': {
+                            'title': 'Number of Tickets',
+                            'automargin': True
+                        },
+                        'bargap': 0.3,
+                        'height': 300,
+                        'margin': {'t': 30, 'r': 30, 'l': 50, 'b': 100}
                     }
-                data['layout'] = {
-                    'xaxis': {
-                        'tickangle': -45,
-                        'automargin': True
-                    },
-                    'yaxis': {
-                        'title': 'Number of Tickets',
-                        'automargin': True
-                    },
-                    'bargap': 0.3,
-                    'height': 300,
-                    'margin': {'t': 30, 'r': 30, 'l': 50, 'b': 100}
                 }
                 return jsonify(data)
             except Exception as e:
