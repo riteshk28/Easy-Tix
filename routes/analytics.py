@@ -171,13 +171,14 @@ def get_analytics_data(report_type):
                 sla_breaches = db.session.query(
                     Ticket.priority,
                     func.count(case([
-                        (Ticket.sla_status == 'breached', 1)
+                        (Ticket.sla_response_met == False, 1)
                     ])).label('breached'),
                     func.count(Ticket.id).label('total')
                 ).filter(
                     Ticket.tenant_id == current_user.tenant_id,
                     Ticket.status != 'deleted',
-                    Ticket.priority.isnot(None)
+                    Ticket.priority.isnot(None),
+                    Ticket.sla_response_met.isnot(None)  # Only count tickets where SLA was measured
                 ).group_by(Ticket.priority).all()
                 
                 priorities = ['low', 'medium', 'high', 'urgent']
