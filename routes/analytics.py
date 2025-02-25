@@ -114,28 +114,39 @@ def get_analytics_data(report_type):
             }
 
         elif report_type == 'agentPerformance':
-            # Tickets handled by each agent
-            agent_performance = db.session.query(
-                User.username.label('name'),
-                func.count(Ticket.id).label('tickets_handled')
-            ).join(
-                Ticket, User.id == Ticket.assigned_to
-            ).filter(
-                User.tenant_id == current_user.tenant_id,
-                Ticket.tenant_id == current_user.tenant_id,
-                Ticket.status != 'deleted',
-                User.is_active == True,
-                Ticket.assigned_to.isnot(None)
-            ).group_by(User.id, User.username).all()
-            
-            data = {
-                'x': [a.name for a in agent_performance],
-                'y': [a.tickets_handled for a in agent_performance],
-                'type': 'bar',
-                'marker': {
-                    'color': '#4e73df'
-                }
-            }
+            try:
+                # Tickets handled by each agent
+                agent_performance = db.session.query(
+                    User.username.label('name'),
+                    func.count(Ticket.id).label('tickets_handled')
+                ).join(
+                    Ticket, 
+                    (User.id == Ticket.assigned_to) & 
+                    (User.tenant_id == Ticket.tenant_id)
+                ).filter(
+                    User.tenant_id == current_user.tenant_id,
+                    Ticket.status != 'deleted',
+                    User.is_active == True
+                ).group_by(User.id, User.username).all()
+                
+                if not agent_performance:
+                    data = {
+                        'x': [],
+                        'y': [],
+                        'type': 'bar',
+                        'marker': {'color': '#4e73df'}
+                    }
+                else:
+                    data = {
+                        'x': [a.name for a in agent_performance],
+                        'y': [a.tickets_handled for a in agent_performance],
+                        'type': 'bar',
+                        'marker': {'color': '#4e73df'}
+                    }
+                return jsonify(data)
+            except Exception as e:
+                current_app.logger.error(f"Agent Performance Error: {str(e)}")
+                return jsonify({'error': str(e)}), 500
 
         elif report_type == 'responseTime':
             # Average response time by priority
@@ -156,90 +167,86 @@ def get_analytics_data(report_type):
             }
 
         elif report_type == 'slaBreachPriority':
-            # SLA breaches by priority
-            sla_breaches = db.session.query(
-                Ticket.priority,
-                func.count(case([(Ticket.sla_status == 'breached', 1)])).label('breached'),
-                func.count(Ticket.id).label('total')
-            ).filter(
-                Ticket.tenant_id == current_user.tenant_id,
-                Ticket.status != 'deleted',
-                Ticket.priority.isnot(None)
-            ).group_by(Ticket.priority).all()
-            
-            priorities = ['low', 'medium', 'high', 'urgent']
-            breach_data = {p: {'breached': 0, 'total': 0} for p in priorities}
-            
-            for record in sla_breaches:
-                if record.priority in breach_data:
-                    breach_data[record.priority] = {
-                        'breached': record.breached,
-                        'total': record.total
-                    }
-            
-            data = {
-                'x': priorities,
-                'y': [
-                    (breach_data[p]['breached'] / breach_data[p]['total'] * 100)
-                    if breach_data[p]['total'] > 0 else 0
-                ],
-                'type': 'bar',
-                'name': 'SLA Breach %',
-                'marker': {
-                    'color': '#e74a3b'
+            try:
+                # SLA breaches by priority
+                sla_breaches = db.session.query(
+                    Ticket.priority,
+                    func.count(case([(Ticket.sla_status == 'breached', 1)])).label('breached'),
+                    func.count(Ticket.id).label('total')
+                ).filter(
+                    Ticket.tenant_id == current_user.tenant_id,
+                    Ticket.status != 'deleted',
+                    Ticket.priority.isnot(None)
+                ).group_by(Ticket.priority).all()
+                
+                priorities = ['low', 'medium', 'high', 'urgent']
+                breach_data = {p: {'breached': 0, 'total': 0} for p in priorities}
+                
+                for record in sla_breaches:
+                    if record.priority in breach_data:
+                        breach_data[record.priority] = {
+                            'breached': record.breached or 0,
+                            'total': record.total or 0
+                        }
+                
+                data = {
+                    'x': priorities,
+                    'y': [
+                        (breach_data[p]['breached'] / breach_data[p]['total'] * 100)
+                        if breach_data[p]['total'] > 0 else 0
+                        for p in priorities
+                    ],
+                    'type': 'bar',
+                    'name': 'SLA Breach %',
+                    'marker': {'color': '#e74a3b'}
                 }
-            }
+                return jsonify(data)
+            except Exception as e:
+                current_app.logger.error(f"SLA Breach Error: {str(e)}")
+                return jsonify({'error': str(e)}), 500
 
         elif report_type == 'firstResponseSLA':
-            # First response time vs SLA target
-            actual_response = db.session.query(
-                Ticket.priority,
-                func.avg(
-                    func.extract('epoch', Ticket.first_response_at - Ticket.created_at) / 3600
-                ).label('avg_response')
-            ).filter(
-                Ticket.tenant_id == current_user.tenant_id,
-                Ticket.first_response_at.isnot(None),
-                Ticket.status != 'deleted',
-                Ticket.priority.isnot(None)
-            ).group_by(Ticket.priority).all()
-            
-            # Define SLA targets (in hours) for each priority
-            sla_targets = {
-                'urgent': 1,    # 1 hour
-                'high': 4,      # 4 hours
-                'medium': 8,    # 8 hours
-                'low': 24       # 24 hours
-            }
-            
-            priorities = ['low', 'medium', 'high', 'urgent']
-            response_times = {p: 0 for p in priorities}
-            
-            for record in actual_response:
-                if record.priority in response_times:
-                    response_times[record.priority] = float(record.avg_response or 0)
-            
-            data = {
-                'type': 'bar', 
-                'name': 'Response Time vs SLA',
-                'x': priorities,
-                'y': [response_times[p] for p in priorities],
-                'marker': {'color': '#4e73df'},
-                'name': 'Actual Response Time (hours)'
-            }
-            
-            # Add SLA target line
-            data = [
-                data,
-                {
-                    'type': 'scatter',
-                    'mode': 'lines+markers',
-                    'x': priorities,
-                    'y': [sla_targets[p] for p in priorities],
-                    'name': 'SLA Target (hours)',
-                    'line': {'color': '#e74a3b', 'dash': 'dash'}
-                }
-            ]
+            try:
+                actual_response = db.session.query(
+                    Ticket.priority,
+                    func.avg(
+                        func.extract('epoch', Ticket.first_response_at - Ticket.created_at) / 3600
+                    ).label('avg_response')
+                ).filter(
+                    Ticket.tenant_id == current_user.tenant_id,
+                    Ticket.first_response_at.isnot(None),
+                    Ticket.status != 'deleted',
+                    Ticket.priority.isnot(None)
+                ).group_by(Ticket.priority).all()
+
+                priorities = ['low', 'medium', 'high', 'urgent']
+                response_times = {p: 0 for p in priorities}
+                
+                for record in actual_response:
+                    if record.priority in response_times:
+                        response_times[record.priority] = float(record.avg_response or 0)
+
+                chart_data = [
+                    {
+                        'type': 'bar',
+                        'name': 'Actual Response Time (hours)',
+                        'x': priorities,
+                        'y': [response_times[p] for p in priorities],
+                        'marker': {'color': '#4e73df'}
+                    },
+                    {
+                        'type': 'scatter',
+                        'mode': 'lines+markers',
+                        'x': priorities,
+                        'y': [sla_targets[p] for p in priorities],
+                        'name': 'SLA Target (hours)',
+                        'line': {'color': '#e74a3b', 'dash': 'dash'}
+                    }
+                ]
+                return jsonify(chart_data)
+            except Exception as e:
+                current_app.logger.error(f"First Response SLA Error: {str(e)}")
+                return jsonify({'error': str(e)}), 500
 
         elif report_type == 'sourceDistribution':
             # Ticket sources distribution

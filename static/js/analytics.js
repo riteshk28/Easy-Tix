@@ -1,5 +1,5 @@
 // Global variables
-let grid;
+var grid;
 const charts = {};
 let currentDays = 30;
 
