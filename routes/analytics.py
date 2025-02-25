@@ -120,11 +120,11 @@ def get_analytics_data(report_type):
                     User.email.label('name'),
                     func.count(Ticket.id).label('tickets_handled')
                 ).join(
-                    Ticket
+                    Ticket, User.id == Ticket.assigned_to_id
                 ).filter(
-                    User.id == Ticket.assigned_to_id,
                     User.tenant_id == current_user.tenant_id,
                     Ticket.status != 'deleted',
+                    Ticket.tenant_id == current_user.tenant_id,
                     User.is_active == True
                 ).group_by(User.id, User.email).all()
                 
@@ -142,8 +142,23 @@ def get_analytics_data(report_type):
                         'type': 'bar',
                         'marker': {'color': '#4e73df'},
                         'textposition': 'auto',
-                        'hovertemplate': '%{x}<br>Tickets: %{y}<extra></extra>'
+                        'hovertemplate': '<b>%{x}</b><br>Tickets: %{y}<extra></extra>',
+                        'texttemplate': '%{y}',
+                        'textangle': 0
                     }
+                data['layout'] = {
+                    'xaxis': {
+                        'tickangle': -45,
+                        'automargin': True
+                    },
+                    'yaxis': {
+                        'title': 'Number of Tickets',
+                        'automargin': True
+                    },
+                    'bargap': 0.3,
+                    'height': 300,
+                    'margin': {'t': 30, 'r': 30, 'l': 50, 'b': 100}
+                }
                 return jsonify(data)
             except Exception as e:
                 current_app.logger.error(f"Agent Performance Error: {str(e)}")
@@ -922,7 +937,9 @@ def get_agent_performance_data(start_date, end_date):
             'color': '#4e73df'
         },
         'textposition': 'auto',
-        'hovertemplate': '%{x}<br>Tickets: %{y}<extra></extra>'
+        'hovertemplate': '<b>%{x}</b><br>Tickets: %{y}<extra></extra>',
+        'texttemplate': '%{y}',
+        'textangle': 0
     }
 
 def get_status_distribution_data(start_date, end_date):
