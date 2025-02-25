@@ -28,12 +28,26 @@ def handle_analytics_errors(f):
 @login_required
 def index():
     """Analytics landing page"""
-    # Get metrics
+    # Calculate actual metrics
+    base_query = Ticket.query.filter_by(tenant_id=current_user.tenant_id)
+    
     metrics = {
-        'open_tickets': Ticket.query.filter_by(status='open').count(),
-        'in_progress': Ticket.query.filter_by(status='in_progress').count(),
-        'avg_response_time': '2d',  # You should calculate this from actual data
-        'avg_resolution_time': '0m'  # You should calculate this from actual data
+        'open_tickets': base_query.filter_by(status='open').count(),
+        'in_progress': base_query.filter_by(status='in_progress').count(),
+        'avg_response_time': format_duration(
+            db.session.query(func.avg(Ticket.first_response_time))
+            .filter(
+                Ticket.tenant_id == current_user.tenant_id,
+                Ticket.first_response_time.isnot(None)
+            ).scalar() or 0
+        ),
+        'avg_resolution_time': format_duration(
+            db.session.query(func.avg(Ticket.resolution_time))
+            .filter(
+                Ticket.tenant_id == current_user.tenant_id,
+                Ticket.resolution_time.isnot(None)
+            ).scalar() or 0
+        )
     }
 
     charts = {
@@ -56,17 +70,92 @@ def get_analytics_data(report_type):
         days = request.args.get('days', 30, type=int)
         data = None
         
-        if report_type == 'summary':
-            data = AnalyticsService.get_summary_metrics(current_user.tenant_id, days)
-        elif report_type == 'tickets_by_status':
-            data = AnalyticsService.get_tickets_by_status(current_user.tenant_id, days)
-        elif report_type == 'response_times':
-            data = AnalyticsService.get_response_times(current_user.tenant_id, days)
-        elif report_type == 'sla_compliance':
-            data = AnalyticsService.get_sla_compliance(current_user.tenant_id, days)
-        elif report_type == 'agent_performance':
-            data = AnalyticsService.get_agent_performance(current_user.tenant_id, days)
+        # Get tickets for current tenant only
+        base_query = Ticket.query.filter_by(tenant_id=current_user.tenant_id)
         
+        if report_type == 'ticketTrend':
+            # Daily ticket count for the last N days
+            end_date = datetime.utcnow()
+            start_date = end_date - timedelta(days=days)
+            daily_tickets = db.session.query(
+                func.date(Ticket.created_at).label('date'),
+                func.count(Ticket.id).label('count')
+            ).filter(
+                Ticket.tenant_id == current_user.tenant_id,
+                Ticket.created_at.between(start_date, end_date)
+            ).group_by(func.date(Ticket.created_at)).all()
+            
+            data = {
+                'x': [str(t.date) for t in daily_tickets],
+                'y': [t.count for t in daily_tickets],
+                'type': 'scatter',
+                'name': 'Daily Tickets'
+            }
+
+        elif report_type == 'statusDistribution':
+            # Count of tickets by status
+            status_counts = db.session.query(
+                Ticket.status,
+                func.count(Ticket.id).label('count')
+            ).filter(
+                Ticket.tenant_id == current_user.tenant_id
+            ).group_by(Ticket.status).all()
+            
+            data = {
+                'values': [s.count for s in status_counts],
+                'labels': [s.status for s in status_counts],
+                'type': 'pie'
+            }
+
+        elif report_type == 'agentPerformance':
+            # Tickets handled by each agent
+            agent_performance = db.session.query(
+                User.name,
+                func.count(Ticket.id).label('tickets_handled')
+            ).join(Ticket, Ticket.assigned_to == User.id
+            ).filter(
+                Ticket.tenant_id == current_user.tenant_id
+            ).group_by(User.id, User.name).all()
+            
+            data = {
+                'x': [a.name for a in agent_performance],
+                'y': [a.tickets_handled for a in agent_performance],
+                'type': 'bar'
+            }
+
+        elif report_type == 'responseTime':
+            # Average response time by priority
+            response_times = db.session.query(
+                Ticket.priority,
+                func.avg(Ticket.first_response_time).label('avg_time')
+            ).filter(
+                Ticket.tenant_id == current_user.tenant_id,
+                Ticket.first_response_time.isnot(None)
+            ).group_by(Ticket.priority).all()
+            
+            data = {
+                'x': [r.priority for r in response_times],
+                'y': [float(r.avg_time) for r in response_times],
+                'type': 'bar'
+            }
+
+        elif report_type == 'slaBreachPriority':
+            # SLA breaches by priority
+            sla_breaches = db.session.query(
+                Ticket.priority,
+                func.sum(case([(Ticket.sla_breached == True, 1)], else_=0)).label('breached'),
+                func.count(Ticket.id).label('total')
+            ).filter(
+                Ticket.tenant_id == current_user.tenant_id
+            ).group_by(Ticket.priority).all()
+            
+            data = {
+                'x': [s.priority for s in sla_breaches],
+                'y': [s.breached / s.total * 100 if s.total > 0 else 0 for s in sla_breaches],
+                'type': 'bar',
+                'name': 'SLA Breach %'
+            }
+
         if data is None:
             return jsonify({'error': 'Invalid report type'}), 400
             
@@ -958,4 +1047,14 @@ def ticket_subjects_wordcloud():
         'textfont': {
             'size': [v * 10 for v in word_freq.values()]  # Size based on frequency
         }
-    }) 
+    })
+
+def format_duration(hours):
+    """Format duration in hours to a human-readable string"""
+    if not hours:
+        return '0h'
+    if hours < 1:
+        return f"{int(hours * 60)}m"
+    if hours < 24:
+        return f"{int(hours)}h"
+    return f"{int(hours / 24)}d" 
