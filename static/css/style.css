@@ -429,4 +429,71 @@
 
 .daterangepicker .btn {
     font-size: 0.875rem;
+}
+
+/* Vertical navbar styles */
+.vertical-nav {
+    min-width: 250px;
+    width: 250px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    box-shadow: 0 0 15px rgba(0,0,0,.05);
+    background-color: #1e293b;
+    padding-top: 1rem;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.vertical-nav.collapsed {
+    width: 70px;
+    min-width: 70px;
+}
+
+.vertical-nav.collapsed .collapse-text {
+    display: none;
+}
+
+.sidebar-toggle {
+    position: absolute;
+    right: -12px;
+    top: 20px;
+    width: 24px;
+    height: 24px;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    transition: transform 0.3s;
+}
+
+.vertical-nav.collapsed .sidebar-toggle i {
+    transform: rotate(180deg);
+}
+
+/* Main content area */
+.main-content {
+    margin-left: 250px;
+    padding: 2rem;
+    min-height: 100vh;
+    transition: margin-left 0.3s ease;
+}
+
+.main-content.sidebar-collapsed {
+    margin-left: 70px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .vertical-nav {
+        margin-left: -250px;
+        transform: translateX(-100%);
+        transition: all 0.3s ease;
+    }
 } 

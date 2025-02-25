@@ -99,3 +99,31 @@ function setupDeleteOrgModal() {
         });
     }
 } 
+
+// Sidebar toggle functionality 
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('content');
+    const toggle = document.getElementById('sidebarToggle');
+    
+    if (!sidebar || !content || !toggle) {
+        console.log('Sidebar elements not found');
+        return;
+    }
+
+    // Load saved state
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isCollapsed) {
+        sidebar.classList.add('collapsed');
+        content.classList.add('sidebar-collapsed');
+    }
+
+    toggle.addEventListener('click', function() {
+        sidebar.classList.toggle('collapsed');
+        content.classList.toggle('sidebar-collapsed');
+        
+        // Save state
+        localStorage.setItem('sidebarCollapsed', 
+            sidebar.classList.contains('collapsed'));
+    });
+}); 
