@@ -118,7 +118,7 @@ def delete_user(user_id):
     # Prevent deleting the last admin
     if user.role == 'admin' and User.query.filter_by(tenant_id=current_user.tenant_id, role='admin').count() <= 1:
         flash('Cannot delete the last admin user', 'error')
-        return redirect(url_for('admin.users'))
+        return redirect(url_for('admin.index'))
     
     try:
         db.session.delete(user)
@@ -129,7 +129,7 @@ def delete_user(user_id):
         db.session.rollback()
         flash('Error deleting user', 'error')
     
-    return redirect(url_for('admin.users'))
+    return redirect(url_for('admin.index'))
 
 @admin.route('/update-subscription', methods=['POST'])
 @admin_required
