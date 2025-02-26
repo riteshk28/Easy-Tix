@@ -70,11 +70,29 @@ def delete_tenant(tenant_id):
         db.session.execute(text("DELETE FROM analytics_dashboard WHERE user_id IN (SELECT id FROM \"user\" WHERE tenant_id = :tenant_id)"),
                          {"tenant_id": tenant_id})
 
+        current_app.logger.info("Deleting saved views...")
+        db.session.execute(text("DELETE FROM saved_view WHERE tenant_id = :tenant_id"),
+                         {"tenant_id": tenant_id})
+
+        current_app.logger.info("Deleting report configs...")
+        db.session.execute(text("DELETE FROM report_config WHERE tenant_id = :tenant_id"),
+                         {"tenant_id": tenant_id})
+
+        current_app.logger.info("Deleting dashboards...")
+        db.session.execute(text("DELETE FROM dashboards WHERE tenant_id = :tenant_id"),
+                         {"tenant_id": tenant_id})
+
+        current_app.logger.info("Deleting SLA configs...")
+        db.session.execute(text("DELETE FROM sla_config WHERE tenant_id = :tenant_id"),
+                         {"tenant_id": tenant_id})
+
         current_app.logger.info("Deleting tenant configurations...")
         db.session.execute(text("DELETE FROM email_config WHERE tenant_id = :tenant_id"), 
                          {"tenant_id": tenant_id})
 
         current_app.logger.info("Deleting tickets and related records...")
+        db.session.execute(text("DELETE FROM ticket_activity WHERE ticket_id IN (SELECT id FROM ticket WHERE tenant_id = :tenant_id)"),
+                         {"tenant_id": tenant_id})
         db.session.execute(text("DELETE FROM ticket_comment WHERE ticket_id IN (SELECT id FROM ticket WHERE tenant_id = :tenant_id)"),
                          {"tenant_id": tenant_id})
         db.session.execute(text("DELETE FROM ticket WHERE tenant_id = :tenant_id"), 
