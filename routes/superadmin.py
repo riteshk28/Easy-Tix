@@ -63,7 +63,7 @@ def delete_tenant(tenant_id):
 
         # Delete in correct order to handle foreign key constraints
         current_app.logger.info("Deleting subscription payments...")
-        db.session.execute(text("DELETE FROM subscription_payment WHERE tenant_id = :tenant_id"), 
+        db.session.execute(text("DELETE FROM subscription_payments WHERE tenant_id = :tenant_id"), 
                          {"tenant_id": tenant_id})
 
         current_app.logger.info("Deleting analytics data...")
