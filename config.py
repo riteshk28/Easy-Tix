@@ -20,7 +20,7 @@ class Config:
 
     STRIPE_PRICE_IDS = {
 
-        'pro': os.environ.get('STRIPE_PRO_PRICE_ID')
+        'pro': os.environ.get('STRIPE_PRICE_IDS')
 
     }
 
