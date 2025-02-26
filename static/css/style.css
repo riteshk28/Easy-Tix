@@ -276,7 +276,7 @@
     width: 22px;
     height: 22px;
     border-radius: 3px;
-    border: 2px solid #4169e1;
+    border: 2px solid #4169e1;  /* This should be white in navbar/dark contexts */
     background: transparent;
 }
 
@@ -577,7 +577,7 @@
 }
 
 .vertical-nav .logo-square {
-    border-color: #fff;
+    border-color: #fff;  /* Already white, which is correct */
 }
 
 .vertical-nav.collapsed .logo-squares {
