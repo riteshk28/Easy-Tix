@@ -276,7 +276,7 @@
     width: 22px;
     height: 22px;
     border-radius: 3px;
-    border: 2px solid #4169e1;  /* This should be white in navbar/dark contexts */
+    border: 2px solid #fff;     /* White borders everywhere */
     background: transparent;
 }
 
@@ -299,11 +299,6 @@
     top: 13px;
     left: 13px;
     opacity: 1;
-}
-
-/* For dark navbar */
-.navbar-dark .logo-square {
-    border-color: #fff;  /* White borders for dark background */
 }
 
 /* For footer (muted version) */
