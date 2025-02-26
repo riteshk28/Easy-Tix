@@ -180,30 +180,30 @@
             </a>
         </div>
         <div class="nav-items">
-            <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
-                <i class="fas fa-tachometer-alt"></i> <span class="collapse-text">Dashboard</span>
+            <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}" data-title="Dashboard">
+                <i class="fas fa-tachometer-alt"></i><span class="collapse-text">Dashboard</span>
             </a>
-            <a href="{{ url_for('tickets.index') }}" class="nav-link {% if request.endpoint.startswith('tickets.') %}active{% endif %}">
-                <i class="fas fa-ticket-alt"></i> <span class="collapse-text">Tickets</span>
+            <a href="{{ url_for('tickets.index') }}" class="nav-link {% if request.endpoint.startswith('tickets.') %}active{% endif %}" data-title="Tickets">
+                <i class="fas fa-ticket-alt"></i><span class="collapse-text">Tickets</span>
             </a>
-            <a href="{{ url_for('analytics.index') }}" class="nav-link {% if request.endpoint.startswith('analytics.') %}active{% endif %}">
-                <i class="fas fa-chart-bar"></i> Analytics
+            <a href="{{ url_for('analytics.index') }}" class="nav-link {% if request.endpoint.startswith('analytics.') %}active{% endif %}" data-title="Analytics">
+                <i class="fas fa-chart-bar"></i><span class="collapse-text">Analytics</span>
             </a>
             {% if current_user.is_admin %}
-            <a href="{{ url_for('admin.index') }}" class="nav-link {% if request.endpoint.startswith('admin.') %}active{% endif %}">
-                <i class="fas fa-cog"></i> Admin
+            <a href="{{ url_for('admin.index') }}" class="nav-link {% if request.endpoint.startswith('admin.') %}active{% endif %}" data-title="Admin">
+                <i class="fas fa-cog"></i><span class="collapse-text">Admin</span>
             </a>
             {% endif %}
             {% if current_user.is_superadmin %}
-            <a href="{{ url_for('superadmin.index') }}" class="nav-link {% if request.endpoint.startswith('superadmin.') %}active{% endif %}">
-                <i class="fas fa-user-shield"></i> Super Admin
+            <a href="{{ url_for('superadmin.index') }}" class="nav-link {% if request.endpoint.startswith('superadmin.') %}active{% endif %}" data-title="Super Admin">
+                <i class="fas fa-user-shield"></i><span class="collapse-text">Super Admin</span>
             </a>
             {% endif %}
-            <a href="{{ url_for('auth.profile') }}" class="nav-link {% if request.endpoint == 'auth.profile' %}active{% endif %}">
-                <i class="fas fa-user"></i> My Profile
+            <a href="{{ url_for('auth.profile') }}" class="nav-link {% if request.endpoint == 'auth.profile' %}active{% endif %}" data-title="My Profile">
+                <i class="fas fa-user"></i><span class="collapse-text">My Profile</span>
             </a>
-            <a href="{{ url_for('auth.logout') }}" class="nav-link">
-                <i class="fas fa-sign-out-alt"></i> Logout
+            <a href="{{ url_for('auth.logout') }}" class="nav-link" data-title="Logout">
+                <i class="fas fa-sign-out-alt"></i><span class="collapse-text">Logout</span>
             </a>
         </div>
     </nav>

@@ -503,11 +503,46 @@
 .vertical-nav.collapsed .nav-link {
     padding: 0.8rem;
     justify-content: center;
+    text-align: center;
+    width: 100%;
 }
 
 .vertical-nav.collapsed .nav-link i {
     margin: 0;
     font-size: 18px;
+    display: inline-block;
+}
+
+/* Ensure text is completely hidden in collapsed mode */
+.vertical-nav.collapsed .collapse-text {
+    display: none;
+    visibility: hidden;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+}
+
+/* Center logo in collapsed state */
+.vertical-nav.collapsed .logo-squares {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+}
+
+/* Add tooltips for collapsed sidebar */
+.vertical-nav.collapsed .nav-link:hover::after {
+    content: attr(data-title);
+    position: absolute;
+    left: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #2d3748;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 1002;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 /* Responsive adjustments */
@@ -521,17 +556,20 @@
 
 /* Sidebar specific logo styles */
 .vertical-nav .logo-squares {
-    margin-left: 10px;
+    margin-left: 5px;
+    margin-right: 10px;
+}
+
+.vertical-nav .logo-square {
+    border-color: #fff;
+}
+
+.vertical-nav.collapsed .logo-squares {
+    margin: 15px auto;
 }
 
 /* Hide text in collapsed sidebar */
 .vertical-nav.collapsed .brand-text,
 .vertical-nav.collapsed .brand-tagline {
     display: none;
-}
-
-/* Center logo in collapsed state */
-.vertical-nav.collapsed .logo-squares {
-    margin-left: auto;
-    margin-right: auto;
 } 
