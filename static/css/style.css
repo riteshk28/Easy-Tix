@@ -564,6 +564,10 @@
         transform: translateX(-100%);
         transition: all 0.3s ease;
     }
+    
+    .main-content {
+        margin-left: 0;
+    }
 }
 
 /* Sidebar specific logo styles */

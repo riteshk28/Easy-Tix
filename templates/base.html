@@ -54,26 +54,6 @@
             padding: 0.5rem 0;
         }
 
-        /* Logo squares */
-        .logo-squares {
-            display: flex;
-            flex-wrap: wrap;
-            width: 30px;
-            gap: 3px;
-        }
-
-        .logo-square {
-            width: 10px;
-            height: 10px;
-            background-color: #fff;
-            border-radius: 2px;
-        }
-
-        /* Logo square colors */
-        .logo-square:nth-child(1) { background-color: #60a5fa; }
-        .logo-square:nth-child(2) { background-color: #3b82f6; }
-        .logo-square:nth-child(3) { background-color: #2563eb; }
-
         .vertical-nav .nav-link {
             color: rgba(255,255,255,.7);
             padding: 0.8rem 1.5rem;
@@ -167,13 +147,6 @@
 </head>
 <body>
     {% if current_user.is_authenticated %}
-    <!-- Mobile nav toggle -->
-    <button class="btn btn-dark nav-toggle" id="navToggle">
-        <i class="fas fa-bars"></i>
-    </button>
-    {% endif %}
-
-    {% if current_user.is_authenticated %}
     <!-- Vertical navbar -->
     <nav class="vertical-nav" id="sidebar">
         <!-- Toggle button -->
@@ -188,7 +161,7 @@
                         <div class="logo-square"></div>
                         <div class="logo-square"></div>
                     </div>
-                    <div class="d-flex flex-column ms-2">
+                    <div class="d-flex flex-column ms-3">
                         <span class="brand-text text-white">Easy-Tix</span>
                         <small class="brand-tagline text-white">HELPDESK MADE EASY</small>
                     </div>
