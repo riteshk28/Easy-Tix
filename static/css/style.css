@@ -319,10 +319,10 @@
 }
 
 .brand-tagline {
-    font-size: 0.9rem;
-    color: #6c757d;
-    letter-spacing: 2px;
+    font-size: 0.8rem;
     text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.7;
 }
 
 .sla-indicator {
@@ -517,4 +517,21 @@
         transform: translateX(-100%);
         transition: all 0.3s ease;
     }
+}
+
+/* Sidebar specific logo styles */
+.vertical-nav .logo-squares {
+    margin-left: 10px;
+}
+
+/* Hide text in collapsed sidebar */
+.vertical-nav.collapsed .brand-text,
+.vertical-nav.collapsed .brand-tagline {
+    display: none;
+}
+
+/* Center logo in collapsed state */
+.vertical-nav.collapsed .logo-squares {
+    margin-left: auto;
+    margin-right: auto;
 } 
