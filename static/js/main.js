@@ -106,17 +106,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const content = document.getElementById('content');
     const toggle = document.getElementById('sidebarToggle');
     
-    if (!sidebar || !content || !toggle) {
-        console.log('Sidebar elements not found');
-        return;
-    }
-
-    // Load saved state
-    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-    if (isCollapsed) {
+    // Get sidebar state from localStorage
+    const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    
+    if (sidebarCollapsed) {
         sidebar.classList.add('collapsed');
         content.classList.add('sidebar-collapsed');
+        document.documentElement.classList.remove('sidebar-collapsed-init');
     }
+    
+    // Enable transitions after initial state is set
+    setTimeout(() => {
+        sidebar.classList.add('transition-enabled');
+        content.classList.add('transition-enabled');
+    }, 100);
 
     toggle.addEventListener('click', function() {
         sidebar.classList.toggle('collapsed');

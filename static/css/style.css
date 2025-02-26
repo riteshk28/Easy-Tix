@@ -433,16 +433,23 @@
 
 /* Vertical navbar styles */
 .vertical-nav {
-    min-width: 250px;
+    background-color: #1e293b;
     width: 250px;
+    min-width: 250px;
     height: 100vh;
     position: fixed;
     top: 0;
     left: 0;
-    box-shadow: 0 0 15px rgba(0,0,0,.05);
-    background-color: #1e293b;
-    padding-top: 1rem;
-    z-index: 1000;
+    padding: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    overflow-y: auto;
+    transition: none; /* No transition on initial load */
+}
+
+/* Apply transitions only after page load */
+.vertical-nav.transition-enabled {
     transition: all 0.3s ease;
 }
 
@@ -456,35 +463,39 @@
     display: none;
 }
 
-.sidebar-toggle {
+.sidebar-line-toggle {
     position: absolute;
-    right: -12px;
-    top: 20px;
-    width: 20px;
-    height: 20px;
-    background: rgba(255, 255, 255, 0.7);
-    border: none;
-    border-radius: 50%;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    top: 0;
+    right: 0;
+    width: 10px;
+    height: 100%;
     cursor: pointer;
+    z-index: 1000;
     display: flex;
-    align-items: center;
     justify-content: center;
-    z-index: 1001;
-    transition: transform 0.3s;
 }
 
-.sidebar-toggle i {
-    font-size: 10px;
-    color: #1e293b;
+.toggle-line {
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(to bottom, 
+        transparent 0%, 
+        rgba(255,255,255,0.15) 15%, 
+        rgba(255,255,255,0.15) 85%, 
+        transparent 100%);
+    transition: background 0.3s;
 }
 
-.sidebar-toggle:hover {
-    background: rgba(255, 255, 255, 0.9);
+.sidebar-line-toggle:hover .toggle-line {
+    background: linear-gradient(to bottom, 
+        transparent 0%, 
+        rgba(255,255,255,0.3) 15%, 
+        rgba(255,255,255,0.3) 85%, 
+        transparent 100%);
 }
 
-.vertical-nav.collapsed .sidebar-toggle i {
-    transform: rotate(180deg);
+.vertical-nav.collapsed .sidebar-line-toggle {
+    background-color: rgba(255,255,255,0.05);
 }
 
 /* Main content area */
@@ -492,6 +503,11 @@
     margin-left: 250px;
     padding: 2rem;
     min-height: 100vh;
+    transition: none; /* No transition on initial load */
+}
+
+/* Apply transitions only after page load */
+.main-content.transition-enabled {
     transition: margin-left 0.3s ease;
 }
 
