@@ -57,65 +57,45 @@ def update_tenant(tenant_id):
 @login_required
 @superadmin_required
 def delete_tenant(tenant_id):
-    tenant = Tenant.query.get_or_404(tenant_id)
     try:
-        # Delete related records first
+        tenant = Tenant.query.get_or_404(tenant_id)
         current_app.logger.info(f"Deleting tenant {tenant.id} ({tenant.name})")
-        
-        # Delete subscription payments
+
+        # Delete in correct order to handle foreign key constraints
         current_app.logger.info("Deleting subscription payments...")
-        db.session.execute(
-            text('DELETE FROM subscription_payments WHERE tenant_id = :tenant_id'),
-            {'tenant_id': tenant_id}
-        )
-        
-        # Delete email and SLA configs
+        db.session.execute(text("DELETE FROM subscription_payment WHERE tenant_id = :tenant_id"), 
+                         {"tenant_id": tenant_id})
+
+        current_app.logger.info("Deleting analytics data...")
+        db.session.execute(text("DELETE FROM analytics_dashboard WHERE user_id IN (SELECT id FROM \"user\" WHERE tenant_id = :tenant_id)"),
+                         {"tenant_id": tenant_id})
+
         current_app.logger.info("Deleting tenant configurations...")
-        db.session.execute(
-            text('DELETE FROM email_config WHERE tenant_id = :tenant_id'),
-            {'tenant_id': tenant_id}
-        )
-        db.session.execute(
-            text('DELETE FROM sla_config WHERE tenant_id = :tenant_id'),
-            {'tenant_id': tenant_id}
-        )
-        
-        # Delete tickets and related records
+        db.session.execute(text("DELETE FROM email_config WHERE tenant_id = :tenant_id"), 
+                         {"tenant_id": tenant_id})
+
         current_app.logger.info("Deleting tickets and related records...")
-        db.session.execute(
-            text('DELETE FROM ticket_activity WHERE ticket_id IN '
-                 '(SELECT id FROM ticket WHERE tenant_id = :tenant_id)'),
-            {'tenant_id': tenant_id}
-        )
-        db.session.execute(
-            text('DELETE FROM ticket_comment WHERE ticket_id IN '
-                 '(SELECT id FROM ticket WHERE tenant_id = :tenant_id)'),
-            {'tenant_id': tenant_id}
-        )
-        db.session.execute(
-            text('DELETE FROM ticket WHERE tenant_id = :tenant_id'),
-            {'tenant_id': tenant_id}
-        )
-        
-        # Delete users
+        db.session.execute(text("DELETE FROM ticket_comment WHERE ticket_id IN (SELECT id FROM ticket WHERE tenant_id = :tenant_id)"),
+                         {"tenant_id": tenant_id})
+        db.session.execute(text("DELETE FROM ticket WHERE tenant_id = :tenant_id"), 
+                         {"tenant_id": tenant_id})
+
         current_app.logger.info("Deleting users...")
-        db.session.execute(
-            text('DELETE FROM "user" WHERE tenant_id = :tenant_id'),
-            {'tenant_id': tenant_id}
-        )
-        
-        # Finally delete the tenant
+        db.session.execute(text("DELETE FROM \"user\" WHERE tenant_id = :tenant_id"), 
+                         {"tenant_id": tenant_id})
+
         current_app.logger.info("Deleting tenant...")
-        db.session.delete(tenant)
+        db.session.execute(text("DELETE FROM tenant WHERE id = :tenant_id"), 
+                         {"tenant_id": tenant_id})
+
         db.session.commit()
-        current_app.logger.info("Tenant deletion completed successfully")
-        
         flash('Tenant deleted successfully', 'success')
+
     except Exception as e:
-        current_app.logger.error(f"Error deleting tenant: {str(e)}", exc_info=True)
         db.session.rollback()
+        current_app.logger.error(f"Error deleting tenant: {str(e)}")
         flash('Error deleting tenant', 'error')
-    
+
     return redirect(url_for('superadmin.index'))
 
 @superadmin.route('/tenant/<int:tenant_id>/user/<int:user_id>/update', methods=['POST'])
