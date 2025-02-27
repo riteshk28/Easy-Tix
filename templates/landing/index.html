@@ -8,6 +8,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
+        .highlight-offer {
+            color: #16a34a;
+            font-weight: 500;
+        }
         .feature-card {
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
             border-radius: 12px;
@@ -204,11 +208,12 @@
                     <div class="card pricing-card h-100">
                         <div class="card-body text-center">
                             <h5 class="card-title">Pro</h5>
-                            <h6 class="card-subtitle mb-2 text-muted">$49/month</h6>
+                            <h6 class="card-subtitle mb-2 text-muted">$29/month</h6>
                             <ul class="list-unstyled mt-3 mb-4">
                                 <li>Unlimited tickets</li>
                                 <li>10 team members</li>
                                 <li>Priority support</li>
+                                <li><span class="highlight-offer">$1 a month</span> for a limited time</li>
                             </ul>
                             <div class="card-footer">
                                 <a href="{{ url_for('auth.register', plan='pro') }}" class="btn btn-primary">
