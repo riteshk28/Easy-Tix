@@ -5,7 +5,7 @@ from routes.dashboard import dashboard
 from routes.admin import admin
 from routes.tickets import tickets
 from routes.public import public
-from routes.webhooks import webhooks
+from routes.webhook import webhook
 from datetime import datetime
 from commands.recalculate_sla import recalculate_sla
 from flask_wtf.csrf import generate_csrf
@@ -60,7 +60,7 @@ def create_app():
     app.register_blueprint(admin, url_prefix='/admin')
     app.register_blueprint(tickets, url_prefix='/tickets')
     app.register_blueprint(public, url_prefix='/public')
-    app.register_blueprint(webhooks)
+    app.register_blueprint(webhook)
     
     # Context processor for template globals
     @app.context_processor
